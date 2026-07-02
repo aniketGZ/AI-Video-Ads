@@ -397,7 +397,7 @@ async def generate_video_seedance(
 ) -> str:
     storyboard_public_url = f"{base_url}{storyboard_url}"
     
-    reference_urls = []
+    reference_urls = [storyboard_public_url]
     if product_image_paths:
         for path in product_image_paths:
             reference_urls.append(f"{base_url}{path}")
@@ -412,13 +412,10 @@ async def generate_video_seedance(
         "model": "bytedance/seedance-2-mini",
         "input": {
             "prompt": prompt,
-            "first_frame_url": storyboard_public_url,
-            "aspect_ratio": "9:16"
+            "aspect_ratio": "9:16",
+            "reference_image_urls": reference_urls
         }
     }
-    
-    if reference_urls:
-        payload["input"]["reference_image_urls"] = reference_urls
         
     logger.info(f"Triggering Kie AI task for model bytedance/seedance-2-mini...")
     res = requests.post(kie_url, json=payload, headers=headers, timeout=15)
