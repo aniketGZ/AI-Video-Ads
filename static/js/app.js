@@ -498,25 +498,55 @@ async function animateVideo() {
     
     if (!response.ok) {
       const err = await response.json();
-      throw new Error(err.detail || "Video animation failed");
+      throw new Error(err.detail || "Video animation failed to start");
     }
     
-    const data = await response.json();
-    state.generatedVideos[key] = data.video_url;
+    const triggerRes = await response.json();
+    const jobId = triggerRes.job_id;
     
-    // Display video
-    document.getElementById("video_placeholder").style.display = "none";
-    const videoEl = document.getElementById("ad_video");
-    videoEl.src = data.video_url;
-    videoEl.style.display = "block";
+    let finished = false;
+    let pollAttempts = 0;
+    const maxPollAttempts = 120; // 120 attempts * 2 seconds = 240 seconds
     
-    // Show download button
-    const downloadBtn = document.getElementById("download_video_btn");
-    downloadBtn.href = data.video_url;
-    downloadBtn.style.display = "flex";
+    while (!finished && pollAttempts < maxPollAttempts) {
+      pollAttempts++;
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const statusRes = await fetch(`/api/video-status/${jobId}`);
+      if (!statusRes.ok) {
+        throw new Error("Failed to check video status");
+      }
+      
+      const jobData = await statusRes.json();
+      if (jobData.status === "success") {
+        finished = true;
+        state.generatedVideos[key] = jobData.video_url;
+        
+        // Display video
+        document.getElementById("video_placeholder").style.display = "none";
+        const videoEl = document.getElementById("ad_video");
+        videoEl.src = jobData.video_url;
+        videoEl.style.display = "block";
+        
+        // Show download button
+        const downloadBtn = document.getElementById("download_video_btn");
+        downloadBtn.href = jobData.video_url;
+        downloadBtn.style.display = "flex";
+        
+        statusEl.className = "generator-status success";
+        statusEl.querySelector("span").textContent = "Video Animated Successfully!";
+      } else if (jobData.status === "failed") {
+        finished = true;
+        throw new Error(jobData.error || "Video animation failed on the server");
+      } else {
+        // Still processing
+        statusEl.querySelector("span").textContent = `Generating video... (polling status, attempt ${pollAttempts})`;
+      }
+    }
     
-    statusEl.className = "generator-status success";
-    statusEl.querySelector("span").textContent = "Video Animated Successfully!";
+    if (!finished) {
+      throw new Error("Video generation timed out on the client side");
+    }
     
   } catch (error) {
     console.error(error);
