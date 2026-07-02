@@ -30,9 +30,15 @@
           <span>Powered by Gemini & Omni Flash</span>
         </div>
       </div>
-      <div class="api-key-container">
-        <label for="api_key_input" class="dna-label" style="margin-bottom: 0; margin-right: 0.5rem;">Gemini Key:</label>
-        <input type="password" id="api_key_input" class="api-key-input" placeholder="Enter Gemini API Key" value="AQ.Ab8RN6JfyEoy2Y2Pux5ClqNjjAXzPPL8mSiOYSkBWoYyifu28g">
+      <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
+        <div class="api-key-container">
+          <label for="api_key_input" class="dna-label" style="margin-bottom: 0; margin-right: 0.5rem;">Gemini Key:</label>
+          <input type="password" id="api_key_input" class="api-key-input" placeholder="Enter Gemini API Key" value="AQ.Ab8RN6JfyEoy2Y2Pux5ClqNjjAXzPPL8mSiOYSkBWoYyifu28g">
+        </div>
+        <div class="api-key-container">
+          <label for="kie_key_input" class="dna-label" style="margin-bottom: 0; margin-right: 0.5rem;">Kie AI Key:</label>
+          <input type="password" id="kie_key_input" class="api-key-input" placeholder="Enter Kie AI Key">
+        </div>
       </div>
     </header>
 
@@ -250,6 +256,14 @@
               <p>Generate Storyboard First as Reference</p>
             </div>
             <video src="" id="ad_video" class="preview-video" style="display: none;" controls autoplay loop></video>
+          </div>
+          
+          <div style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%;">
+            <label for="video_generator_select" class="dna-label" style="margin-bottom: 0; font-size: 0.85rem;">Generator Model:</label>
+            <select id="video_generator_select" style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-white); padding: 0.4rem 0.6rem; font-size: 0.85rem; outline: none; cursor: pointer; flex-grow: 1; max-width: 220px;" onchange="updateGeneratorModelText()">
+              <option value="omni-flash">Gemini Omni Flash</option>
+              <option value="seedance">Seedance 2 Mini (Kie AI)</option>
+            </select>
           </div>
           
           <div class="pane-actions">

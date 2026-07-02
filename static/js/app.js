@@ -440,7 +440,7 @@ async function generateStoryboard() {
   }
 }
 
-// Animate Storyboard using Omni Flash
+// Animate Storyboard using Omni Flash or Seedance 2 Mini
 async function animateVideo() {
   const key = `${state.selectedAdGroupIndex}_${state.selectedVideoIndex}`;
   const storyboardUrl = state.generatedStoryboards[key];
@@ -449,10 +449,23 @@ async function animateVideo() {
   const ag = state.campaignData.ad_groups[state.selectedAdGroupIndex];
   const video = ag.videos[state.selectedVideoIndex];
   
+  const generator = document.getElementById("video_generator_select").value;
+  const kieKey = document.getElementById("kie_key_input").value;
+  
+  if (generator === "seedance" && !kieKey) {
+    alert("Please enter a Kie AI API Key in the header to use Seedance 2 Mini.");
+    return;
+  }
+  
   const statusEl = document.getElementById("video_status");
   statusEl.className = "generator-status working";
   statusEl.style.display = "flex";
-  statusEl.querySelector("span").textContent = "Omni Flash generating vertical MP4 (10s)...";
+  
+  if (generator === "seedance") {
+    statusEl.querySelector("span").textContent = "Seedance 2 Mini (Kie AI) generating vertical MP4 (10s)...";
+  } else {
+    statusEl.querySelector("span").textContent = "Omni Flash generating vertical MP4 (10s)...";
+  }
   
   const animateBtn = document.getElementById("generate_video_btn");
   animateBtn.disabled = true;
@@ -463,13 +476,17 @@ async function animateVideo() {
                   `Hook is: "${video.hook_line}". ` +
                   `Visual description: ${video.visual_directions}. ` +
                   `Follow the 4 panels left-to-right, top-to-bottom as reference frames.`,
-    product_image_paths: state.campaignData.product_image_paths || []
+    product_image_paths: state.campaignData.product_image_paths || [],
+    generator: generator
   };
   
   const apiKey = document.getElementById("api_key_input").value;
   const headers = { "Content-Type": "application/json" };
   if (apiKey) {
     headers["x-api-key"] = apiKey;
+  }
+  if (kieKey) {
+    headers["x-kie-key"] = kieKey;
   }
   
   try {
@@ -507,5 +524,15 @@ async function animateVideo() {
     statusEl.querySelector("span").textContent = "Error: " + error.message;
   } finally {
     animateBtn.disabled = false;
+  }
+}
+
+function updateGeneratorModelText() {
+  const model = document.getElementById("video_generator_select").value;
+  const generateBtn = document.getElementById("generate_video_btn");
+  if (model === "seedance") {
+    generateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Animate Video (Seedance 2 Mini)';
+  } else {
+    generateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Animate Video (Omni Flash)';
   }
 }
