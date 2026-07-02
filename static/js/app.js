@@ -208,7 +208,7 @@ function renderDashboard() {
   selectAdGroup(0);
   
   // Show dashboard
-  document.getElementById("dashboard_container").style.display = "grid";
+  document.getElementById("dashboard_container").style.display = "flex";
   // Smooth scroll to dashboard
   document.getElementById("dashboard_container").scrollIntoView({ behavior: 'smooth' });
 }
@@ -240,30 +240,32 @@ function selectAdGroup(index) {
     card.className = "script-card";
     
     card.innerHTML = `
-      <div class="script-header">
-        <span class="script-type">Video #${vIdx + 1}: ${video.video_style_type}</span>
-        <button class="btn" style="padding: 0.6rem 1.2rem; font-size: 0.85rem;" onclick="openStudio(${vIdx})">
-          <i class="fa-solid fa-clapperboard"></i> Creator Studio
-        </button>
+      <div style="flex-grow: 1;">
+        <div class="script-header">
+          <span class="script-type">Video #${vIdx + 1}: ${video.video_style_type}</span>
+        </div>
+        <div class="script-detail-grid">
+          <div class="script-field">
+            <div class="script-field-title">Script Hook</div>
+            <div class="script-field-value">"${video.hook_line}"</div>
+          </div>
+          <div class="script-field">
+            <div class="script-field-title">Voiceover / Audio</div>
+            <div class="script-field-value">${video.voiceover}</div>
+          </div>
+          <div class="script-field">
+            <div class="script-field-title">Visual Directions</div>
+            <div class="script-field-value">${video.visual_directions}</div>
+          </div>
+          <div class="script-field" style="margin-bottom: 1.5rem;">
+            <div class="script-field-title">Call To Action</div>
+            <div class="script-field-value">"${video.cta_line}"</div>
+          </div>
+        </div>
       </div>
-      <div class="script-detail-grid">
-        <div class="script-field">
-          <div class="script-field-title">Script Hook</div>
-          <div class="script-field-value">"${video.hook_line}"</div>
-        </div>
-        <div class="script-field">
-          <div class="script-field-title">Voiceover / Audio</div>
-          <div class="script-field-value">${video.voiceover}</div>
-        </div>
-        <div class="script-field">
-          <div class="script-field-title">Visual Directions</div>
-          <div class="script-field-value">${video.visual_directions}</div>
-        </div>
-        <div class="script-field">
-          <div class="script-field-title">Call To Action</div>
-          <div class="script-field-value">"${video.cta_line}"</div>
-        </div>
-      </div>
+      <button class="btn" style="width: 100%; justify-content: center;" onclick="openStudio(${vIdx})">
+        <i class="fa-solid fa-clapperboard"></i> Creator Studio
+      </button>
     `;
     
     grid.appendChild(card);
@@ -315,7 +317,7 @@ function openStudio(videoIndex) {
     storyboardImg.style.display = "none";
     storyboardImg.src = "";
     
-    generateStoryboardBtn.textContent = "Generate Storyboard (Imagen 4)";
+    generateStoryboardBtn.textContent = "Generate Storyboard (Nano Banana Pro)";
     generateVideoBtn.disabled = true;
     generateVideoBtn.style.opacity = "0.5";
     videoPlaceholder.querySelector("p").textContent = "Generate Storyboard First as Reference";
@@ -358,7 +360,7 @@ async function generateStoryboard() {
   const statusEl = document.getElementById("storyboard_status");
   statusEl.className = "generator-status working";
   statusEl.style.display = "flex";
-  statusEl.querySelector("span").textContent = "Drafting 9:16 layout using Imagen 4...";
+  statusEl.querySelector("span").textContent = "Drafting 9:16 layout using Nano Banana Pro...";
   
   const generateBtn = document.getElementById("generate_storyboard_btn");
   generateBtn.disabled = true;

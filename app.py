@@ -303,20 +303,22 @@ async def generate_storyboard(
             f"NEGATIVE: watermark, extra logos, misspelled text, blurry frames, distorted hands, warped product packaging, inconsistent character faces, cluttered layout, overlapping panels, sketch lines, low quality."
         )
         
-        logger.info(f"Generating storyboard with Imagen 4.0... Prompt length: {len(storyboard_prompt)}")
+        logger.info(f"Generating storyboard with Nano Banana Pro (nano-banana-pro-preview)... Prompt length: {len(storyboard_prompt)}")
         
-        result = client.models.generate_images(
-            model='imagen-4.0-generate-001',
-            prompt=storyboard_prompt,
-            config=types.GenerateImagesConfig(
-                number_of_images=1,
-                output_mime_type="image/jpeg",
-                aspect_ratio="9:16"
-            )
+        response = client.models.generate_content(
+            model='nano-banana-pro-preview',
+            contents=storyboard_prompt
         )
         
-        if not result.generated_images:
-            raise HTTPException(status_code=500, detail="Imagen failed to generate images")
+        image_bytes = None
+        if response.candidates:
+            for part in response.candidates[0].content.parts:
+                if part.inline_data and part.inline_data.data:
+                    image_bytes = part.inline_data.data
+                    break
+                    
+        if not image_bytes:
+            raise HTTPException(status_code=500, detail="Nano Banana Pro failed to generate storyboard image")
             
         # Save generated storyboard image
         import uuid
@@ -324,7 +326,7 @@ async def generate_storyboard(
         file_path = os.path.join("static/generated", filename)
         
         with open(file_path, "wb") as f:
-            f.write(result.generated_images[0].image.image_bytes)
+            f.write(image_bytes)
             
         logger.info(f"Storyboard generated and saved to {file_path}")
         
