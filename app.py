@@ -133,9 +133,31 @@ async def analyze_campaign(
     try:
         client = get_client(x_api_key)
         
-        # 1. Scrape & ground URL
+        # 1. Scrape & ground URL using Search Grounding
+        logger.info("Step 1: Running Google Search Grounding to analyze the URL...")
         scraped_content = scrape_url(url)
         
+        grounding_research_prompt = (
+            f"You are a professional research agent analyzing the brand landing page URL: {url}.\n"
+            f"Here is some scraped text from the site:\n{scraped_content}\n\n"
+            "Analyze the website thoroughly. Identify the brand name, core product name, product category, "
+            "detailed list of services or products showcased, target demographics, brand voice/tone, "
+            "potential color palette ideas, and key benefits. Use Google Search grounding to ensure accuracy."
+        )
+        
+        grounding_config = types.GenerateContentConfig(
+            tools=[types.Tool(google_search=types.GoogleSearch())]
+        )
+        
+        research_response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=grounding_research_prompt,
+            config=grounding_config
+        )
+        
+        research_summary = research_response.text
+        logger.info("URL Search Grounding and research completed.")
+
         product_images_analysis = ""
         # 2. If tangible and images are uploaded, analyze them
         if is_tangible and images:
@@ -160,19 +182,19 @@ async def analyze_campaign(
                 product_images_analysis = image_analysis_response.text
                 logger.info(f"Product image analysis completed: {product_images_analysis[:100]}...")
 
-        # 3. Compile prompt for campaign building
-        grounding_prompt = (
-            f"You are a professional campaign builder and Meta ads script writer. "
-            f"Analyze the landing page URL: {url}.\n"
-            f"Here is some scraped text from the site:\n{scraped_content}\n\n"
+        # 3. Step 2: Compile prompt for campaign building using the Pydantic schema
+        logger.info("Step 2: Calling Gemini with schema validation to build the ad campaign...")
+        campaign_prompt = (
+            f"You are a professional campaign builder and Meta ads script writer.\n"
+            f"Based on the following research summary of the brand:\n{research_summary}\n\n"
         )
         
         if product_images_analysis:
-            grounding_prompt += f"Visual description of the physical product from uploaded images:\n{product_images_analysis}\n\n"
+            campaign_prompt += f"Visual description of the physical product from uploaded images:\n{product_images_analysis}\n\n"
             
-        grounding_prompt += (
+        campaign_prompt += (
             "Create a best-in-class campaign containing exactly 6 ad groups. "
-            "Each ad group should focus on a distinct service or product angle showcased on the URL. "
+            "Each ad group should focus on a distinct service or product angle showcased in the research summary. "
             "For each ad group, write exactly 3 video scripts selecting from these styles:\n"
             "1. Before/After videos\n"
             "2. Person Clone videos\n"
@@ -196,20 +218,17 @@ async def analyze_campaign(
             "visual_style is one of (UGC_REALISTIC, CINEMATIC_PREMIUM, PIXAR_3D_STYLIZED, CLEAN_STUDIO, FOOD_APPETITE), "
             "and on_screen_talent, setting, mood_keywords are appropriately filled."
         )
-
-        logger.info("Calling Gemini for campaign analysis and script writing...")
         
-        # Use Search Grounding to complement the scraped details
-        config = types.GenerateContentConfig(
-            tools=[types.Tool(google_search=types.GoogleSearch())],
+        # Do NOT include tools here, so response_schema works perfectly
+        schema_config = types.GenerateContentConfig(
             response_mime_type="application/json",
             response_schema=CampaignAnalysis
         )
         
         response = client.models.generate_content(
             model="gemini-2.5-flash",
-            contents=grounding_prompt,
-            config=config
+            contents=campaign_prompt,
+            config=schema_config
         )
         
         # Parse the JSON response
