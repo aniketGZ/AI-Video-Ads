@@ -487,6 +487,13 @@ async def generate_video(
     try:
         if req.generator == "seedance":
             kie_key = x_kie_key or os.environ.get("KIE_API_KEY")
+            if kie_key:
+                kie_key = kie_key.strip()
+            
+            key_len = len(kie_key) if kie_key else 0
+            masked_key = f"{kie_key[:4]}...{kie_key[-4:]}" if key_len > 8 else "too_short"
+            logger.info(f"Using Kie AI API Key: length={key_len}, key={masked_key}")
+            
             if not kie_key:
                 raise HTTPException(status_code=400, detail="Kie AI API Key is required for Seedance 2 Mini")
             base_url = str(request.base_url).rstrip("/")
