@@ -462,7 +462,8 @@ async function animateVideo() {
     video_prompt: `Create a 10s advertising video from this storyboard grid. ` +
                   `Hook is: "${video.hook_line}". ` +
                   `Visual description: ${video.visual_directions}. ` +
-                  `Follow the 6 panels left-to-right, top-to-bottom as reference frames.`
+                  `Follow the 4 panels left-to-right, top-to-bottom as reference frames.`,
+    product_image_paths: state.campaignData.product_image_paths || []
   };
   
   const apiKey = document.getElementById("api_key_input").value;

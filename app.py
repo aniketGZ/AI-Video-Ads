@@ -43,8 +43,6 @@ class VideoAdScript(BaseModel):
     shot_2: str
     shot_3: str
     shot_4: str
-    shot_5: str
-    shot_6: str
 
 class AdGroup(BaseModel):
     name: str
@@ -88,13 +86,12 @@ class StoryboardRequest(BaseModel):
     shot_2: str
     shot_3: str
     shot_4: str
-    shot_5: str
-    shot_6: str
     product_image_paths: Optional[List[str]] = None
 
 class VideoRequest(BaseModel):
     storyboard_image_url: str
     video_prompt: str
+    product_image_paths: Optional[List[str]] = None
 
 # Helper to get the GenAI client
 def get_client(api_key: Optional[str] = None) -> genai.Client:
@@ -217,16 +214,14 @@ async def analyze_campaign(
             "8. Testimonial Video\n"
             "9. Storytelling video\n"
             "10. Creative Product studio shoot\n\n"
-            "For every single video script, write full script details and split them into 6 distinct storyboard shots "
-            "(`shot_1` through `shot_6`) matching the 10-second arc in the template:\n"
-            "- shot_1: HOOK SHOT (~1.5s)\n"
-            "- shot_2: PRODUCT REVEAL (~1.5s)\n"
-            "- shot_3: PRODUCT IN ACTION (~2s)\n"
-            "- shot_4: BENEFIT/TRANSFORMATION (~2s)\n"
-            "- shot_5: LIFESTYLE/EMOTION (~1.5s)\n"
-            "- shot_6: CALL TO ACTION (~1.5s)\n\n"
+            "For every single video script, write full script details and split them into exactly 4 distinct storyboard shots "
+            "(`shot_1` through `shot_4`) matching the 10-second arc in the template:\n"
+            "- shot_1: HOOK SHOT (~2.5s)\n"
+            "- shot_2: PRODUCT REVEAL & ACTION (~2.5s)\n"
+            "- shot_3: BENEFIT/TRANSFORMATION (~2.5s)\n"
+            "- shot_4: CALL TO ACTION / CTA SHOT (~2.5s)\n\n"
             "CRITICAL INSTRUCTIONS FOR VOICEOVER FLOW:\n"
-            "- The voiceover text across all 6 shots must form a continuous, naturally flowing narration.\n"
+            "- The voiceover text across all 4 shots must form a continuous, naturally flowing narration.\n"
             "- Avoid abrupt transitions, disjointed sentences, or sudden pauses. Every shot's voiceover should connect smoothly to the next to build a cohesive narrative.\n"
             "- Keep all text crisp, clean, engaging, and high-impact. Avoid clutter or over-explaining.\n\n"
             "Generate your response matching the requested schema. Make sure color_palette consists of 3-5 premium color terms, "
@@ -292,10 +287,10 @@ async def generate_storyboard(
         storyboard_prompt = (
             f"Create a crisp, clean, professional AD STORYBOARD POSTER for \"{req.product_name}\" by {req.brand_name}.\n\n"
             f"LAYOUT & FORMAT:\n"
-            f"9:16 layout, clean white background, thin black panel borders, bold black sans-serif typography, premium advertising-agency presentation board. Grid of 6 numbered storyboard panels arranged left-to-right, top-to-bottom (2 columns x 3 rows). Each panel is a fully rendered cinematic frame — NOT a sketch — with a number badge in the top-left corner, a bold shot title, a one-line caption beneath it, and a small clock icon with its duration.\n\n"
+            f"9:16 layout, clean white background, thin black panel borders, bold black sans-serif typography, premium advertising-agency presentation board. Grid of 4 numbered storyboard panels arranged left-to-right, top-to-bottom (2 columns x 2 rows). Each panel is a fully rendered cinematic frame — NOT a sketch — with a number badge in the top-left corner, a bold shot title, a one-line caption beneath it, and a small clock icon with its duration.\n\n"
             f"TOP HEADER (exact text, large bold type):\n"
-            f"\"{req.product_name}\" — subtitle: \"TOTAL VIDEO TIME: 10 SECONDS · 6 SHOTS · {req.mood_keywords}\"\n"
-            f"Legend row of 4 small icons with labels: HOOK, PRODUCT, BENEFIT, CTA.\n\n"
+            f"\"{req.product_name}\" — subtitle: \"TOTAL VIDEO TIME: 10 SECONDS · 4 SHOTS · {req.mood_keywords}\"\n"
+            f"Legend row of 4 small icons with labels: HOOK, REVEAL, BENEFIT, CTA.\n\n"
             f"VISUAL STYLE:\n"
             f"{style_block}\n"
             f"Color palette locked to: {req.color_palette}. Lighting: soft natural window daylight.\n\n"
@@ -303,15 +298,13 @@ async def generate_storyboard(
             f"The SAME product appears in every panel where mentioned: {req.product_visual_description}. Preserve exact packaging shape, label layout, colors, cap design, materials, and proportions across all panels. Hero angle: {req.product_hero_angle}.\n"
             f"The SAME single on-screen talent appears throughout: {req.on_screen_talent}. Identical face, hair, outfit, and skin tone in every panel — no character drift.\n"
             f"Setting consistent across panels: {req.setting}.\n\n"
-            f"THE 6 PANELS (render each as a distinct full-frame cinematic shot):\n\n"
-            f"Panel 1 — HOOK SHOT (~1.5s): {req.shot_1} Caption text: \"{req.hook_line}\"\n"
-            f"Panel 2 — PRODUCT REVEAL (~1.5s): {req.shot_2}\n"
-            f"Panel 3 — PRODUCT IN ACTION (~2s): {req.shot_3}\n"
-            f"Panel 4 — BENEFIT / TRANSFORMATION (~2s): {req.shot_4}\n"
-            f"Panel 5 — LIFESTYLE / EMOTION (~1.5s): {req.shot_5}\n"
-            f"Panel 6 — CALL TO ACTION (~1.5s): {req.shot_6} Caption text: \"{req.cta_line}\" with \"{req.logo_text}\" rendered as clean typography.\n\n"
+            f"THE 4 PANELS (render each as a distinct full-frame cinematic shot):\n\n"
+            f"Panel 1 — HOOK SHOT (~2.5s): {req.shot_1} Caption text: \"{req.hook_line}\"\n"
+            f"Panel 2 — PRODUCT REVEAL & ACTION (~2.5s): {req.shot_2}\n"
+            f"Panel 3 — BENEFIT / TRANSFORMATION (~2.5s): {req.shot_3}\n"
+            f"Panel 4 — CALL TO ACTION / CTA (~2.5s): {req.shot_4} Caption text: \"{req.cta_line}\" with \"{req.logo_text}\" rendered as clean typography.\n\n"
             f"FOOTER STRIP (4 columns, small icons + short text):\n"
-            f"• VIDEO FLOW: \"6 shots ≈ 10 seconds. Hook to CTA.\"\n"
+            f"• VIDEO FLOW: \"4 shots ≈ 10 seconds. Hook to CTA.\"\n"
             f"• CAMERA TIPS: \"macro on product texture, close-up on talent expression, wide establishing on {req.setting}, slow push-in on final CTA frame\"\n"
             f"• LIGHT & STYLE: \"soft natural window daylight, {req.color_palette}, shallow depth of field\"\n"
             f"• AUDIENCE NOTES: \"made for {req.target_audience_persona} — every frame must feel {req.mood_keywords}\"\n\n"
@@ -397,20 +390,46 @@ async def generate_video(
         omni_prompt = (
             "IMPORTANT: The attached storyboard is a reference board. Treat each numbered panel as an "
             "individual full-screen shot, read left-to-right, top-to-bottom. Do NOT animate the collage or "
-            "show the grid. Total duration 10 seconds across 6 shots with hard cuts. Preserve the exact product "
-            "design and the same on-screen talent from the reference in every shot.\n\n"
+            "show the grid. Total duration 10 seconds across 4 shots with hard cuts. "
+            "Preserve the exact product design, label layout, package look-and-feel, and talent from the reference storyboard in every shot. "
+            "Also reference the attached product photos to ensure the product appears identical and consistent in the generated video.\n\n"
             f"Ad Motion Guidelines: {req.video_prompt}\n"
             "Animate this storyboard into a high-quality vertical 9:16 advertising video."
         )
         
         logger.info("Calling Omni Flash interactions API for video generation...")
         
+        inputs = []
+        
+        # 1. Add Storyboard Image reference
+        inputs.append({"type": "image", "data": base64_image, "mime_type": "image/jpeg"})
+        
+        # 2. Add original uploaded product image references if available
+        if req.product_image_paths:
+            logger.info(f"Adding {len(req.product_image_paths)} uploaded product image references to Omni Flash...")
+            for img_path in req.product_image_paths:
+                relative_path = img_path.lstrip("/")
+                if os.path.exists(relative_path):
+                    with open(relative_path, "rb") as f:
+                        img_data = f.read()
+                    base64_ref = base64.b64encode(img_data).decode('utf-8')
+                    ext = os.path.splitext(img_path)[1].lower()
+                    mime_type = "image/jpeg"
+                    if ext == ".png":
+                        mime_type = "image/png"
+                    elif ext == ".gif":
+                        mime_type = "image/gif"
+                    elif ext == ".webp":
+                        mime_type = "image/webp"
+                        
+                    inputs.append({"type": "image", "data": base64_ref, "mime_type": mime_type})
+        
+        # 3. Add text prompt instructions
+        inputs.append({"type": "text", "text": omni_prompt})
+        
         interaction = client.interactions.create(
             model='gemini-omni-flash-preview',
-            input=[
-                {"type": "image", "data": base64_image, "mime_type": "image/jpeg"},
-                {"type": "text", "text": omni_prompt}
-            ]
+            input=inputs
         )
         
         video_b64 = None
