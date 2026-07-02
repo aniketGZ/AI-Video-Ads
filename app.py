@@ -412,13 +412,18 @@ async def generate_video_seedance(
         "model": "bytedance/seedance-2-mini",
         "input": {
             "prompt": prompt,
-            "first_frame_url": storyboard_public_url,
             "aspect_ratio": "9:16"
         }
     }
     
     if reference_urls:
-        payload["input"]["reference_image_urls"] = reference_urls
+        # If product/reference images are provided, we must use them as reference_image_urls
+        # and we cannot use first_frame_url. We also append the storyboard image to reference_image_urls
+        # to guide the layout/appearance of the video.
+        payload["input"]["reference_image_urls"] = [storyboard_public_url] + reference_urls
+    else:
+        # If no product images are provided, we use the storyboard as the first frame.
+        payload["input"]["first_frame_url"] = storyboard_public_url
         
     logger.info(f"Triggering Kie AI task for model bytedance/seedance-2-mini...")
     res = requests.post(kie_url, json=payload, headers=headers, timeout=15)
