@@ -90,6 +90,7 @@ class StoryboardRequest(BaseModel):
     shot_4: str
     shot_5: str
     shot_6: str
+    product_image_paths: Optional[List[str]] = None
 
 class VideoRequest(BaseModel):
     storyboard_image_url: str
@@ -159,11 +160,21 @@ async def analyze_campaign(
         logger.info("URL Search Grounding and research completed.")
 
         product_images_analysis = ""
+        saved_image_paths = []
         # 2. If tangible and images are uploaded, analyze them
         if is_tangible and images:
             image_parts = []
+            import uuid
             for img in images:
                 content = await img.read()
+                # Save the image to disk for Nano Banana Pro reference
+                ext = os.path.splitext(img.filename)[1] or ".jpg"
+                filename = f"product_{uuid.uuid4().hex}{ext}"
+                file_path = os.path.join("static/generated", filename)
+                with open(file_path, "wb") as f:
+                    f.write(content)
+                saved_image_paths.append(f"/static/generated/{filename}")
+                
                 image_parts.append(
                     types.Part.from_bytes(data=content, mime_type=img.content_type)
                 )
@@ -214,6 +225,10 @@ async def analyze_campaign(
             "- shot_4: BENEFIT/TRANSFORMATION (~2s)\n"
             "- shot_5: LIFESTYLE/EMOTION (~1.5s)\n"
             "- shot_6: CALL TO ACTION (~1.5s)\n\n"
+            "CRITICAL INSTRUCTIONS FOR VOICEOVER FLOW:\n"
+            "- The voiceover text across all 6 shots must form a continuous, naturally flowing narration.\n"
+            "- Avoid abrupt transitions, disjointed sentences, or sudden pauses. Every shot's voiceover should connect smoothly to the next to build a cohesive narrative.\n"
+            "- Keep all text crisp, clean, engaging, and high-impact. Avoid clutter or over-explaining.\n\n"
             "Generate your response matching the requested schema. Make sure color_palette consists of 3-5 premium color terms, "
             "visual_style is one of (UGC_REALISTIC, CINEMATIC_PREMIUM, PIXAR_3D_STYLIZED, CLEAN_STUDIO, FOOD_APPETITE), "
             "and on_screen_talent, setting, mood_keywords are appropriately filled."
@@ -238,6 +253,7 @@ async def analyze_campaign(
         if product_images_analysis:
             result_json["product_visual_description"] = product_images_analysis
             
+        result_json["product_image_paths"] = saved_image_paths
         return result_json
         
     except Exception as e:
@@ -305,9 +321,31 @@ async def generate_storyboard(
         
         logger.info(f"Generating storyboard with Nano Banana Pro (nano-banana-pro-preview)... Prompt length: {len(storyboard_prompt)}")
         
+        # Prepare contents with reference images if provided
+        contents = [storyboard_prompt]
+        if req.product_image_paths:
+            logger.info(f"Adding {len(req.product_image_paths)} product images as consistency reference to Nano Banana Pro...")
+            for img_path in req.product_image_paths:
+                relative_path = img_path.lstrip("/")
+                if os.path.exists(relative_path):
+                    with open(relative_path, "rb") as f:
+                        img_data = f.read()
+                    ext = os.path.splitext(img_path)[1].lower()
+                    mime_type = "image/jpeg"
+                    if ext == ".png":
+                        mime_type = "image/png"
+                    elif ext == ".gif":
+                        mime_type = "image/gif"
+                    elif ext == ".webp":
+                        mime_type = "image/webp"
+                        
+                    contents.append(
+                        types.Part.from_bytes(data=img_data, mime_type=mime_type)
+                    )
+        
         response = client.models.generate_content(
             model='nano-banana-pro-preview',
-            contents=storyboard_prompt
+            contents=contents
         )
         
         image_bytes = None

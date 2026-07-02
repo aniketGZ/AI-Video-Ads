@@ -387,7 +387,8 @@ async function generateStoryboard() {
     shot_3: video.shot_3,
     shot_4: video.shot_4,
     shot_5: video.shot_5,
-    shot_6: video.shot_6
+    shot_6: video.shot_6,
+    product_image_paths: state.campaignData.product_image_paths || []
   };
   
   const apiKey = document.getElementById("api_key_input").value;
