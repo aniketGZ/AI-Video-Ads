@@ -542,7 +542,7 @@ async def generate_omni_background(
         file_path = os.path.join("static/generated", filename)
         
         with open(file_path, "wb") as f:
-            f.write(base64.b64decode(video_b64))
+            f.write(video_b64)
             
         logger.info(f"Video generated and saved to {file_path}")
         video_jobs[job_id] = {
