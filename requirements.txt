@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+google-genai>=2.10.0
+python-multipart
+requests
+pydantic
+jinja2
+beautifulsoup4

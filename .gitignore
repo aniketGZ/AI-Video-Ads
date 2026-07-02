@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.venv/
+venv/
+ENV/
+
+# Local configuration
+.env
+.env.*
+
+# IDEs
+.vscode/
+.idea/
+
+# Application generated files
+static/generated/*
+!static/generated/.gitkeep
+
+# Temporary tests/scratch files
+scratch/
+scratch_image_*.jpg
+scratch_video.mp4
