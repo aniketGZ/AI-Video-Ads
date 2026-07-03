@@ -325,6 +325,8 @@ async def generate_storyboard(
                 if os.path.exists(relative_path):
                     with open(relative_path, "rb") as f:
                         img_data = f.read()
+                    if isinstance(img_data, str):
+                        img_data = img_data.encode('latin1')
                     ext = os.path.splitext(img_path)[1].lower()
                     mime_type = "image/jpeg"
                     if ext == ".png":
@@ -358,6 +360,8 @@ async def generate_storyboard(
         filename = f"storyboard_{uuid.uuid4().hex}.jpg"
         file_path = os.path.join("static/generated", filename)
         
+        if isinstance(image_bytes, str):
+            image_bytes = image_bytes.encode('latin1')
         with open(file_path, "wb") as f:
             f.write(image_bytes)
             
@@ -387,6 +391,29 @@ def extract_video_url(data: dict) -> Optional[str]:
         if res_urls and isinstance(res_urls, list) and len(res_urls) > 0:
             return res_urls[0]
     return None
+
+def safe_b64decode(data) -> bytes:
+    if isinstance(data, bytes):
+        if b"ftyp" in data[:20]:
+            return data
+        try:
+            return base64.b64decode(data)
+        except Exception:
+            return data
+    elif isinstance(data, str):
+        if data.startswith("data:"):
+            if "," in data:
+                data = data.split(",", 1)[1]
+        try:
+            return base64.b64decode(data)
+        except Exception:
+            return data.encode('latin1')
+    raise TypeError(f"Unsupported video data type: {type(data)}")
+
+def safe_b64encode(data) -> bytes:
+    if isinstance(data, str):
+        data = data.encode('latin1')
+    return base64.b64encode(data)
 
 async def generate_video_seedance(
     storyboard_url: str,
@@ -519,7 +546,7 @@ async def generate_video(
         with open(relative_path, "rb") as img_file:
             img_bytes = img_file.read()
             
-        base64_image = base64.b64encode(img_bytes).decode('utf-8')
+        base64_image = safe_b64encode(img_bytes).decode('utf-8')
         
         # Prepare Omni Flash instructions
         omni_prompt = (
@@ -547,7 +574,7 @@ async def generate_video(
                 if os.path.exists(relative_path):
                     with open(relative_path, "rb") as f:
                         img_data = f.read()
-                    base64_ref = base64.b64encode(img_data).decode('utf-8')
+                    base64_ref = safe_b64encode(img_data).decode('utf-8')
                     ext = os.path.splitext(img_path)[1].lower()
                     mime_type = "image/jpeg"
                     if ext == ".png":
@@ -592,8 +619,9 @@ async def generate_video(
         filename = f"ad_video_{uuid.uuid4().hex}.mp4"
         file_path = os.path.join("static/generated", filename)
         
+        video_data = safe_b64decode(video_b64)
         with open(file_path, "wb") as f:
-            f.write(base64.b64decode(video_b64))
+            f.write(video_data)
             
         logger.info(f"Video generated and saved to {file_path}")
         
