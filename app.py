@@ -94,6 +94,7 @@ class VideoRequest(BaseModel):
     video_prompt: str
     product_image_paths: Optional[List[str]] = None
     generator: str = "omni-flash"
+    aspect_ratio: str = "9:16"
 
 # Helper to get the GenAI client
 def get_client(api_key: Optional[str] = None) -> genai.Client:
@@ -420,7 +421,8 @@ async def generate_video_seedance(
     prompt: str,
     product_image_paths: Optional[List[str]],
     kie_key: str,
-    base_url: str
+    base_url: str,
+    aspect_ratio: str = "9:16"
 ) -> str:
     storyboard_public_url = f"{base_url}{storyboard_url}"
     
@@ -439,7 +441,7 @@ async def generate_video_seedance(
         "model": "bytedance/seedance-2-mini",
         "input": {
             "prompt": prompt,
-            "aspect_ratio": "9:16"
+            "aspect_ratio": aspect_ratio
         }
     }
     
@@ -530,7 +532,8 @@ async def generate_video(
                 prompt=req.video_prompt,
                 product_image_paths=req.product_image_paths,
                 kie_key=kie_key,
-                base_url=base_url
+                base_url=base_url,
+                aspect_ratio=req.aspect_ratio
             )
             return {"video_url": video_url}
             
@@ -549,6 +552,8 @@ async def generate_video(
         base64_image = safe_b64encode(img_bytes).decode('utf-8')
         
         # Prepare Omni Flash instructions
+        is_vertical = req.aspect_ratio == "9:16"
+        ratio_term = "vertical 9:16" if is_vertical else "landscape 16:9"
         omni_prompt = (
             "IMPORTANT: The attached storyboard is a reference board. Treat each numbered panel as an "
             "individual full-screen shot, read left-to-right, top-to-bottom. Do NOT animate the collage or "
@@ -556,7 +561,7 @@ async def generate_video(
             "Preserve the exact product design, label layout, package look-and-feel, and talent from the reference storyboard in every shot. "
             "Also reference the attached product photos to ensure the product appears identical and consistent in the generated video.\n\n"
             f"Ad Motion Guidelines: {req.video_prompt}\n"
-            "Animate this storyboard into a high-quality vertical 9:16 advertising video."
+            f"Animate this storyboard into a high-quality {ratio_term} advertising video."
         )
         
         logger.info("Calling Omni Flash interactions API for video generation...")

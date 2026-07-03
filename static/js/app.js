@@ -291,16 +291,25 @@ function openStudio(videoIndex) {
   const storyboardImg = document.getElementById("storyboard_img");
   const generateStoryboardBtn = document.getElementById("generate_storyboard_btn");
   
-  // Video pane setup
-  const videoBox = document.getElementById("video_preview_box");
-  const videoPlaceholder = document.getElementById("video_placeholder");
-  const videoEl = document.getElementById("ad_video");
+  // Video panes setup
+  const videoPlaceholder_9_16 = document.getElementById("video_placeholder_9_16");
+  const videoEl_9_16 = document.getElementById("ad_video_9_16");
+  const downloadBtn_9_16 = document.getElementById("download_video_btn_9_16");
+  
+  const videoPlaceholder_16_9 = document.getElementById("video_placeholder_16_9");
+  const videoEl_16_9 = document.getElementById("ad_video_16_9");
+  const downloadBtn_16_9 = document.getElementById("download_video_btn_16_9");
+  
   const generateVideoBtn = document.getElementById("generate_video_btn");
-  const downloadBtn = document.getElementById("download_video_btn");
   
   // Reset statuses
   document.getElementById("storyboard_status").style.display = "none";
   document.getElementById("video_status").style.display = "none";
+  
+  const setVideoPlaceholderText = (txt) => {
+    videoPlaceholder_9_16.querySelector("p").textContent = txt;
+    videoPlaceholder_16_9.querySelector("p").textContent = txt;
+  };
   
   if (state.generatedStoryboards[key]) {
     // Already generated storyboard
@@ -311,7 +320,7 @@ function openStudio(videoIndex) {
     generateStoryboardBtn.textContent = "Regenerate Storyboard";
     generateVideoBtn.disabled = false;
     generateVideoBtn.style.opacity = "1";
-    videoPlaceholder.querySelector("p").textContent = "Ready to Animate Video";
+    setVideoPlaceholderText("Ready to Animate Videos");
   } else {
     storyboardPlaceholder.style.display = "block";
     storyboardImg.style.display = "none";
@@ -320,21 +329,38 @@ function openStudio(videoIndex) {
     generateStoryboardBtn.textContent = "Generate Storyboard (Nano Banana Pro)";
     generateVideoBtn.disabled = true;
     generateVideoBtn.style.opacity = "0.5";
-    videoPlaceholder.querySelector("p").textContent = "Generate Storyboard First as Reference";
+    setVideoPlaceholderText("Generate Storyboard First");
   }
   
-  if (state.generatedVideos[key]) {
-    // Already generated video
-    videoPlaceholder.style.display = "none";
-    videoEl.src = state.generatedVideos[key];
-    videoEl.style.display = "block";
-    downloadBtn.href = state.generatedVideos[key];
-    downloadBtn.style.display = "flex";
+  const key_9_16 = `${key}_9_16`;
+  const key_16_9 = `${key}_16_9`;
+  
+  // 9:16 Video Setup
+  if (state.generatedVideos[key_9_16]) {
+    videoPlaceholder_9_16.style.display = "none";
+    videoEl_9_16.src = state.generatedVideos[key_9_16];
+    videoEl_9_16.style.display = "block";
+    downloadBtn_9_16.href = state.generatedVideos[key_9_16];
+    downloadBtn_9_16.style.display = "flex";
   } else {
-    videoPlaceholder.style.display = "block";
-    videoEl.style.display = "none";
-    videoEl.src = "";
-    downloadBtn.style.display = "none";
+    videoPlaceholder_9_16.style.display = "block";
+    videoEl_9_16.style.display = "none";
+    videoEl_9_16.src = "";
+    downloadBtn_9_16.style.display = "none";
+  }
+  
+  // 16:9 Video Setup
+  if (state.generatedVideos[key_16_9]) {
+    videoPlaceholder_16_9.style.display = "none";
+    videoEl_16_9.src = state.generatedVideos[key_16_9];
+    videoEl_16_9.style.display = "block";
+    downloadBtn_16_9.href = state.generatedVideos[key_16_9];
+    downloadBtn_16_9.style.display = "flex";
+  } else {
+    videoPlaceholder_16_9.style.display = "block";
+    videoEl_16_9.style.display = "none";
+    videoEl_16_9.src = "";
+    downloadBtn_16_9.style.display = "none";
   }
   
   // Show overlay modal
@@ -346,10 +372,10 @@ function closeStudio() {
   document.getElementById("studio_overlay").style.display = "none";
   
   // Pause any running preview video
-  const videoEl = document.getElementById("ad_video");
-  if (videoEl) {
-    videoEl.pause();
-  }
+  const videoEl_9_16 = document.getElementById("ad_video_9_16");
+  const videoEl_16_9 = document.getElementById("ad_video_16_9");
+  if (videoEl_9_16) videoEl_9_16.pause();
+  if (videoEl_16_9) videoEl_16_9.pause();
 }
 
 // Generate Storyboard image using Backend
@@ -425,7 +451,8 @@ async function generateStoryboard() {
     animBtn.disabled = false;
     animBtn.style.opacity = "1";
     
-    document.getElementById("video_placeholder").querySelector("p").textContent = "Ready to Animate Video";
+    document.getElementById("video_placeholder_9_16").querySelector("p").textContent = "Ready to Animate Videos";
+    document.getElementById("video_placeholder_16_9").querySelector("p").textContent = "Ready to Animate Videos";
     
     statusEl.className = "generator-status success";
     statusEl.querySelector("span").textContent = "Storyboard Generated Successfully!";
@@ -461,67 +488,99 @@ async function animateVideo() {
   statusEl.className = "generator-status working";
   statusEl.style.display = "flex";
   
-  if (generator === "seedance") {
-    statusEl.querySelector("span").textContent = "Seedance 2 Mini (Kie AI) generating vertical MP4 (10s)...";
-  } else {
-    statusEl.querySelector("span").textContent = "Omni Flash generating vertical MP4 (10s)...";
-  }
+  statusEl.querySelector("span").textContent = `Generating both 9:16 and 16:9 videos using ${generator === "seedance" ? "Seedance 2 Mini" : "Omni Flash"}...`;
   
   const animateBtn = document.getElementById("generate_video_btn");
   animateBtn.disabled = true;
   
-  const reqBody = {
+  const apiKey = document.getElementById("api_key_input").value;
+  const headers = { "Content-Type": "application/json" };
+  if (apiKey) headers["x-api-key"] = apiKey;
+  if (kieKey) headers["x-kie-key"] = kieKey;
+  
+  // Create base request body
+  const baseReq = {
     storyboard_image_url: storyboardUrl,
-    video_prompt: `Create a 10s advertising video from this storyboard grid. ` +
-                  `Hook is: "${video.hook_line}". ` +
-                  `Visual description: ${video.visual_directions}. ` +
-                  `Follow the 4 panels left-to-right, top-to-bottom as reference frames.`,
     product_image_paths: state.campaignData.product_image_paths || [],
     generator: generator
   };
   
-  const apiKey = document.getElementById("api_key_input").value;
-  const headers = { "Content-Type": "application/json" };
-  if (apiKey) {
-    headers["x-api-key"] = apiKey;
-  }
-  if (kieKey) {
-    headers["x-kie-key"] = kieKey;
+  const videoPlaceholder_9_16 = document.getElementById("video_placeholder_9_16");
+  const videoEl_9_16 = document.getElementById("ad_video_9_16");
+  const downloadBtn_9_16 = document.getElementById("download_video_btn_9_16");
+  
+  const videoPlaceholder_16_9 = document.getElementById("video_placeholder_16_9");
+  const videoEl_16_9 = document.getElementById("ad_video_16_9");
+  const downloadBtn_16_9 = document.getElementById("download_video_btn_16_9");
+  
+  // Hide current videos and show placeholders/spinners while loading
+  videoPlaceholder_9_16.style.display = "flex";
+  videoPlaceholder_9_16.querySelector("p").textContent = "Generating 9:16 video...";
+  videoEl_9_16.style.display = "none";
+  downloadBtn_9_16.style.display = "none";
+  
+  videoPlaceholder_16_9.style.display = "flex";
+  videoPlaceholder_16_9.querySelector("p").textContent = "Generating 16:9 video...";
+  videoEl_16_9.style.display = "none";
+  downloadBtn_16_9.style.display = "none";
+
+  async function generateRatio(ratio) {
+    const isVertical = ratio === "9:16";
+    const prompt = isVertical 
+      ? `Create a 10s vertical 9:16 advertising video from this storyboard grid. Hook is: "${video.hook_line}". Visual description: ${video.visual_directions}. Follow the 4 panels left-to-right, top-to-bottom as reference frames.`
+      : `Create a 10s landscape 16:9 advertising video from this storyboard grid. Hook is: "${video.hook_line}". Visual description: ${video.visual_directions}. Follow the 4 panels left-to-right, top-to-bottom as reference frames.`;
+      
+    const res = await fetch("/api/generate-video", {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({
+        ...baseReq,
+        video_prompt: prompt,
+        aspect_ratio: ratio
+      })
+    });
+    
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(`${ratio} generation failed: ${err.detail || "Video animation failed"}`);
+    }
+    
+    return await res.json();
   }
   
   try {
-    const response = await fetch("/api/generate-video", {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify(reqBody)
-    });
+    const [res_9_16, res_16_9] = await Promise.all([
+      generateRatio("9:16"),
+      generateRatio("16:9")
+    ]);
     
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.detail || "Video animation failed");
-    }
+    // Store in state
+    state.generatedVideos[`${key}_9_16`] = res_9_16.video_url;
+    state.generatedVideos[`${key}_16_9`] = res_16_9.video_url;
     
-    const data = await response.json();
-    state.generatedVideos[key] = data.video_url;
+    // Display 9:16
+    videoPlaceholder_9_16.style.display = "none";
+    videoEl_9_16.src = res_9_16.video_url;
+    videoEl_9_16.style.display = "block";
+    downloadBtn_9_16.href = res_9_16.video_url;
+    downloadBtn_9_16.style.display = "flex";
     
-    // Display video
-    document.getElementById("video_placeholder").style.display = "none";
-    const videoEl = document.getElementById("ad_video");
-    videoEl.src = data.video_url;
-    videoEl.style.display = "block";
-    
-    // Show download button
-    const downloadBtn = document.getElementById("download_video_btn");
-    downloadBtn.href = data.video_url;
-    downloadBtn.style.display = "flex";
+    // Display 16:9
+    videoPlaceholder_16_9.style.display = "none";
+    videoEl_16_9.src = res_16_9.video_url;
+    videoEl_16_9.style.display = "block";
+    downloadBtn_16_9.href = res_16_9.video_url;
+    downloadBtn_16_9.style.display = "flex";
     
     statusEl.className = "generator-status success";
-    statusEl.querySelector("span").textContent = "Video Animated Successfully!";
-    
+    statusEl.querySelector("span").textContent = "Both Videos Animated Successfully!";
   } catch (error) {
     console.error(error);
     statusEl.className = "generator-status error";
     statusEl.querySelector("span").textContent = "Error: " + error.message;
+    
+    videoPlaceholder_9_16.querySelector("p").textContent = "Generation failed.";
+    videoPlaceholder_16_9.querySelector("p").textContent = "Generation failed.";
   } finally {
     animateBtn.disabled = false;
   }
@@ -531,8 +590,8 @@ function updateGeneratorModelText() {
   const model = document.getElementById("video_generator_select").value;
   const generateBtn = document.getElementById("generate_video_btn");
   if (model === "seedance") {
-    generateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Animate Video (Seedance 2 Mini)';
+    generateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Animate Videos (Seedance 2 Mini)';
   } else {
-    generateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Animate Video (Omni Flash)';
+    generateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Animate Videos (Omni Flash)';
   }
 }

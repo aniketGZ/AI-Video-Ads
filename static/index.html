@@ -248,14 +248,38 @@
         
         <!-- Right: Animated Video Section -->
         <div class="studio-pane">
-          <h4 class="dna-label" style="font-size: 0.9rem;">2. Animated Video Ad (9:16, 10s)</h4>
+          <h4 class="dna-label" style="font-size: 0.9rem;">2. Animated Video Ads (10s)</h4>
           
-          <div class="preview-box" id="video_preview_box">
-            <div class="preview-placeholder" id="video_placeholder">
-              <i class="fa-solid fa-clapperboard"></i>
-              <p>Generate Storyboard First as Reference</p>
+          <div class="video-previews-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
+            <!-- 9:16 (Vertical) -->
+            <div class="video-preview-wrapper" style="display: flex; flex-direction: column; align-items: center; background: rgba(30, 41, 67, 0.2); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem;">
+              <h5 class="dna-label" style="font-size: 0.8rem; margin-bottom: 0.5rem; color: var(--text-white);">Vertical Ad (9:16)</h5>
+              <div class="preview-box" id="video_preview_box_9_16" style="flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 220px; background: rgba(11, 15, 25, 0.4); border-radius: var(--radius-sm); overflow: hidden; position: relative;">
+                <div class="preview-placeholder" id="video_placeholder_9_16">
+                  <i class="fa-solid fa-clapperboard"></i>
+                  <p style="font-size: 0.75rem; margin-top: 0.5rem;">Generate Storyboard First</p>
+                </div>
+                <video src="" id="ad_video_9_16" class="preview-video" style="display: none; max-width: 100%; max-height: 220px; object-fit: contain;" controls autoplay loop></video>
+              </div>
+              <a href="" id="download_video_btn_9_16" class="btn btn-secondary" style="display: none; justify-content: center; width: 100%; margin-top: 0.5rem; font-size: 0.8rem; padding: 0.4rem 0.6rem;" download>
+                <i class="fa-solid fa-download"></i> Download 9:16
+              </a>
             </div>
-            <video src="" id="ad_video" class="preview-video" style="display: none;" controls autoplay loop></video>
+            
+            <!-- 16:9 (Landscape) -->
+            <div class="video-preview-wrapper" style="display: flex; flex-direction: column; align-items: center; background: rgba(30, 41, 67, 0.2); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem;">
+              <h5 class="dna-label" style="font-size: 0.8rem; margin-bottom: 0.5rem; color: var(--text-white);">Landscape Ad (16:9)</h5>
+              <div class="preview-box" id="video_preview_box_16_9" style="flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 220px; background: rgba(11, 15, 25, 0.4); border-radius: var(--radius-sm); overflow: hidden; position: relative;">
+                <div class="preview-placeholder" id="video_placeholder_16_9">
+                  <i class="fa-solid fa-clapperboard"></i>
+                  <p style="font-size: 0.75rem; margin-top: 0.5rem;">Generate Storyboard First</p>
+                </div>
+                <video src="" id="ad_video_16_9" class="preview-video" style="display: none; max-width: 100%; max-height: 220px; object-fit: contain;" controls autoplay loop></video>
+              </div>
+              <a href="" id="download_video_btn_16_9" class="btn btn-secondary" style="display: none; justify-content: center; width: 100%; margin-top: 0.5rem; font-size: 0.8rem; padding: 0.4rem 0.6rem;" download>
+                <i class="fa-solid fa-download"></i> Download 16:9
+              </a>
+            </div>
           </div>
           
           <div style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%;">
@@ -268,11 +292,8 @@
           
           <div class="pane-actions">
             <button id="generate_video_btn" class="btn" disabled style="opacity: 0.5;" onclick="animateVideo()">
-              <i class="fa-solid fa-play"></i> Animate Video (Omni Flash)
+              <i class="fa-solid fa-play"></i> Animate Videos (Omni Flash)
             </button>
-            <a href="" id="download_video_btn" class="btn btn-secondary" style="display: none; justify-content: center;" download>
-              <i class="fa-solid fa-download"></i> Download Video (1080p MP4)
-            </a>
             <div class="generator-status" id="video_status">
               <div class="mini-spinner"></div>
               <span>Animating storyboard frames using Gemini Omni Flash...</span>
