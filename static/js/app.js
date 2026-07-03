@@ -571,7 +571,7 @@ async function animateVideo() {
     
     let finished = false;
     let pollAttempts = 0;
-    const maxPollAttempts = 120; // 120 attempts * 2 seconds = 240 seconds
+    const maxPollAttempts = 450; // 450 attempts * 2 seconds = 900 seconds (15 minutes)
     
     while (!finished && pollAttempts < maxPollAttempts) {
       pollAttempts++;

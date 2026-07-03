@@ -427,7 +427,7 @@ async def poll_seedance_background(
     video_public_url: Optional[str]
 ):
     try:
-        max_retries = 90  # Poll for up to 180 seconds in the background
+        max_retries = 450  # Poll for up to 15 minutes in the background
         delay = 2
         
         for i in range(max_retries):
@@ -457,7 +457,7 @@ async def poll_seedance_background(
         if not video_public_url:
             video_jobs[job_id] = {
                 "status": "failed",
-                "error": "Kie AI video generation timed out (180 seconds)"
+                "error": "Kie AI video generation timed out (15 minutes)"
             }
             return
             
