@@ -213,6 +213,27 @@ function renderDashboard() {
   document.getElementById("dashboard_container").scrollIntoView({ behavior: 'smooth' });
 }
 
+// Helper to format Voiceover field with dialogue/voiceover badges
+function formatVoiceover(text) {
+  if (!text) return "";
+  
+  // Replace brackets like [Dialogue: "spoken text"] or [Voiceover: "narrated text"]
+  const segmentRegex = /\[(Dialogue|Voiceover):\s*["']?([^\]"']+)["']?\]/gi;
+  if (segmentRegex.test(text)) {
+    segmentRegex.lastIndex = 0; // reset
+    return text.replace(segmentRegex, (match, type, content) => {
+      const isDialogue = type.toLowerCase() === "dialogue";
+      const bg = isDialogue ? "rgba(0, 168, 204, 0.15)" : "rgba(255, 255, 255, 0.05)";
+      const border = isDialogue ? "var(--accent-light)" : "var(--border-color)";
+      const label = isDialogue ? "🗣️ Spoken Dialogue (Lipsync)" : "🎙️ Voiceover Narration (No Lipsync)";
+      const labelColor = isDialogue ? "var(--accent-light)" : "rgba(255, 255, 255, 0.7)";
+      return `<div class="audio-segment" style="margin-bottom: 0.4rem; padding: 0.35rem 0.5rem; background: ${bg}; border-left: 3px solid ${border}; border-radius: 0 4px 4px 0;"><span style="font-weight: 700; font-size: 0.75rem; text-transform: uppercase; color: ${labelColor}; display: block; margin-bottom: 0.1rem;">${label}</span>"${content.trim()}"</div>`;
+    });
+  }
+  
+  return text;
+}
+
 // Select active ad group tab
 function selectAdGroup(index) {
   state.selectedAdGroupIndex = index;
@@ -251,7 +272,7 @@ function selectAdGroup(index) {
           </div>
           <div class="script-field">
             <div class="script-field-title">Voiceover / Audio</div>
-            <div class="script-field-value">${video.voiceover}</div>
+            <div class="script-field-value">${formatVoiceover(video.voiceover)}</div>
           </div>
           <div class="script-field">
             <div class="script-field-title">Visual Directions</div>
