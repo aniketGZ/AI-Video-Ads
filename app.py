@@ -440,7 +440,16 @@ async def poll_seedance_background(
                     job_data = poll_json.get("data", {})
                     status = job_data.get("status", "").lower()
                     logger.info(f"Background Kie AI task {task_id} status: {status}")
-                    if status == "success":
+                    
+                    # Save status check JSON to public path for debugging
+                    try:
+                        import json
+                        with open("static/generated/kie_poll_debug.json", "w") as df:
+                            json.dump(poll_json, df, indent=2)
+                    except Exception as de:
+                        logger.error(f"Failed to write poll debug: {de}")
+                        
+                    if status in ["success", "succeeded", "finished", "completed", "done"]:
                         video_public_url = extract_video_url(job_data)
                         break
                     elif status in ["fail", "failed", "error"]:
@@ -633,7 +642,8 @@ async def generate_video(
                 "input": {
                     "prompt": req.video_prompt,
                     "aspect_ratio": req.aspect_ratio,
-                    "reference_image_urls": reference_urls
+                    "reference_image_urls": reference_urls,
+                    "duration": 10
                 }
             }
             
