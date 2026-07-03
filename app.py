@@ -6,7 +6,7 @@ from typing import List, Optional
 import requests
 from bs4 import BeautifulSoup
 import asyncio
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Header, Request
+from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Header, Request, BackgroundTasks
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -416,135 +416,90 @@ def safe_b64encode(data) -> bytes:
         data = data.encode('latin1')
     return base64.b64encode(data)
 
-async def generate_video_seedance(
-    storyboard_url: str,
-    prompt: str,
-    product_image_paths: Optional[List[str]],
-    kie_key: str,
-    base_url: str,
-    aspect_ratio: str = "9:16"
-) -> str:
-    storyboard_public_url = f"{base_url}{storyboard_url}"
-    
-    reference_urls = []
-    if product_image_paths:
-        for path in product_image_paths:
-            reference_urls.append(f"{base_url}{path}")
-            
-    kie_url = "https://api.kie.ai/api/v1/jobs/createTask"
-    headers = {
-        "Authorization": f"Bearer {kie_key}",
-        "Content-Type": "application/json"
-    }
-    
-    payload = {
-        "model": "bytedance/seedance-2-mini",
-        "input": {
-            "prompt": prompt,
-            "aspect_ratio": aspect_ratio
-        }
-    }
-    
-    if reference_urls:
-        # If product/reference images are provided, we must use them as reference_image_urls
-        # and we cannot use first_frame_url. We also append the storyboard image to reference_image_urls
-        # to guide the layout/appearance of the video.
-        payload["input"]["reference_image_urls"] = [storyboard_public_url] + reference_urls
-    else:
-        # If no product images are provided, we use the storyboard as the first frame.
-        payload["input"]["first_frame_url"] = storyboard_public_url
-        
-    logger.info(f"Triggering Kie AI task for model bytedance/seedance-2-mini...")
-    res = requests.post(kie_url, json=payload, headers=headers, timeout=15)
-    if res.status_code != 200:
-        raise HTTPException(status_code=res.status_code, detail=f"Kie AI error: {res.text}")
-        
-    res_json = res.json()
-    if res_json.get("code") != 200:
-        raise HTTPException(status_code=400, detail=f"Kie AI createTask failed: {res_json.get('msg')}")
-        
-    task_id = res_json.get("data", {}).get("taskId")
-    if not task_id:
-        raise HTTPException(status_code=500, detail="Kie AI response did not contain a taskId")
-        
-    logger.info(f"Kie AI task created successfully. Task ID: {task_id}")
-    
-    max_retries = 45
-    delay = 2
-    video_public_url = None
-    
-    for i in range(max_retries):
-        await asyncio.sleep(delay)
-        poll_url = f"https://api.kie.ai/api/v1/jobs/recordInfo?taskId={task_id}"
-        poll_res = requests.get(poll_url, headers=headers, timeout=10)
-        if poll_res.status_code == 200:
-            poll_json = poll_res.json()
-            if poll_json.get("code") == 200:
-                job_data = poll_json.get("data", {})
-                status = job_data.get("status", "").lower()
-                logger.info(f"Kie AI task {task_id} status: {status}")
-                if status == "success":
-                    video_public_url = extract_video_url(job_data)
-                    break
-                elif status in ["fail", "failed", "error"]:
-                    raise HTTPException(status_code=500, detail=f"Kie AI task failed: {poll_json.get('msg')}")
-            else:
-                logger.error(f"Kie AI recordInfo returned error: {poll_json}")
-        else:
-            logger.error(f"Kie AI recordInfo HTTP error: {poll_res.text}")
-            
-    if not video_public_url:
-        raise HTTPException(status_code=504, detail="Kie AI video generation timed out")
-        
-    logger.info(f"Video generation successful on Kie AI. Download URL: {video_public_url}")
-    
-    video_res = requests.get(video_public_url, timeout=30)
-    video_res.raise_for_status()
-    
-    import uuid
-    filename = f"ad_video_{uuid.uuid4().hex}.mp4"
-    file_path = os.path.join("static/generated", filename)
-    
-    with open(file_path, "wb") as f:
-        f.write(video_res.content)
-        
-    logger.info(f"Downloaded video and saved locally to {file_path}")
-    return f"/static/generated/{filename}"
+# Global dictionary to track asynchronous background video jobs
+video_jobs = {}
 
-@app.post("/api/generate-video")
-async def generate_video(
-    req: VideoRequest,
-    request: Request,
-    x_api_key: Optional[str] = Header(None),
-    x_kie_key: Optional[str] = Header(None)
+async def poll_seedance_background(
+    task_id: str,
+    job_id: str,
+    headers: dict,
+    video_public_url: Optional[str]
 ):
     try:
-        if req.generator == "seedance":
-            kie_key = x_kie_key or os.environ.get("KIE_API_KEY")
-            if not kie_key:
-                raise HTTPException(status_code=400, detail="Kie AI API Key is required for Seedance 2 Mini")
-            base_url = str(request.base_url).rstrip("/")
-            if "127.0.0.1" in base_url or "localhost" in base_url:
-                logger.warning("Localhost detected! Kie AI will not be able to fetch your local reference images.")
+        max_retries = 90  # Poll for up to 180 seconds in the background
+        delay = 2
+        
+        for i in range(max_retries):
+            await asyncio.sleep(delay)
+            poll_url = f"https://api.kie.ai/api/v1/jobs/recordInfo?taskId={task_id}"
+            poll_res = requests.get(poll_url, headers=headers, timeout=10)
+            if poll_res.status_code == 200:
+                poll_json = poll_res.json()
+                if poll_json.get("code") == 200:
+                    job_data = poll_json.get("data", {})
+                    status = job_data.get("status", "").lower()
+                    logger.info(f"Background Kie AI task {task_id} status: {status}")
+                    if status == "success":
+                        video_public_url = extract_video_url(job_data)
+                        break
+                    elif status in ["fail", "failed", "error"]:
+                        video_jobs[job_id] = {
+                            "status": "failed",
+                            "error": f"Kie AI task failed: {poll_json.get('msg')}"
+                        }
+                        return
+                else:
+                    logger.error(f"Kie AI recordInfo returned error: {poll_json}")
+            else:
+                logger.error(f"Kie AI recordInfo HTTP error: {poll_res.text}")
+                
+        if not video_public_url:
+            video_jobs[job_id] = {
+                "status": "failed",
+                "error": "Kie AI video generation timed out (180 seconds)"
+            }
+            return
             
-            video_url = await generate_video_seedance(
-                storyboard_url=req.storyboard_image_url,
-                prompt=req.video_prompt,
-                product_image_paths=req.product_image_paths,
-                kie_key=kie_key,
-                base_url=base_url,
-                aspect_ratio=req.aspect_ratio
-            )
-            return {"video_url": video_url}
+        logger.info(f"Video generation successful on Kie AI. Downloading: {video_public_url}")
+        
+        video_res = requests.get(video_public_url, timeout=45)
+        video_res.raise_for_status()
+        
+        import uuid
+        filename = f"ad_video_{uuid.uuid4().hex}.mp4"
+        file_path = os.path.join("static/generated", filename)
+        
+        with open(file_path, "wb") as f:
+            f.write(video_res.content)
             
-        # Default: omni-flash
-        client = get_client(x_api_key)
+        logger.info(f"Downloaded video and saved locally to {file_path}")
+        video_jobs[job_id] = {
+            "status": "success",
+            "video_url": f"/static/generated/{filename}"
+        }
+    except Exception as e:
+        logger.error(f"Background video polling failed: {e}", exc_info=True)
+        video_jobs[job_id] = {
+            "status": "failed",
+            "error": str(e)
+        }
+
+async def generate_omni_background(
+    job_id: str,
+    storyboard_image_url: str,
+    video_prompt: str,
+    product_image_paths: Optional[List[str]],
+    api_key: Optional[str],
+    aspect_ratio: str = "9:16"
+):
+    try:
+        client = get_client(api_key)
         
         # Resolve storyboard image path
-        # URL is like /static/generated/storyboard_xxxx.jpg
-        relative_path = req.storyboard_image_url.lstrip("/")
+        relative_path = storyboard_image_url.lstrip("/")
         if not os.path.exists(relative_path):
-            raise HTTPException(status_code=404, detail="Storyboard image not found locally")
+            video_jobs[job_id] = {"status": "failed", "error": "Storyboard image not found locally"}
+            return
             
         with open(relative_path, "rb") as img_file:
             img_bytes = img_file.read()
@@ -552,7 +507,7 @@ async def generate_video(
         base64_image = safe_b64encode(img_bytes).decode('utf-8')
         
         # Prepare Omni Flash instructions
-        is_vertical = req.aspect_ratio == "9:16"
+        is_vertical = aspect_ratio == "9:16"
         ratio_term = "vertical 9:16" if is_vertical else "landscape 16:9"
         omni_prompt = (
             "IMPORTANT: The attached storyboard is a reference board. Treat each numbered panel as an "
@@ -560,11 +515,9 @@ async def generate_video(
             "show the grid. Total duration 10 seconds across 4 shots with hard cuts. "
             "Preserve the exact product design, label layout, package look-and-feel, and talent from the reference storyboard in every shot. "
             "Also reference the attached product photos to ensure the product appears identical and consistent in the generated video.\n\n"
-            f"Ad Motion Guidelines: {req.video_prompt}\n"
+            f"Ad Motion Guidelines: {video_prompt}\n"
             f"Animate this storyboard into a high-quality {ratio_term} advertising video."
         )
-        
-        logger.info("Calling Omni Flash interactions API for video generation...")
         
         inputs = []
         
@@ -572,12 +525,12 @@ async def generate_video(
         inputs.append({"type": "image", "data": base64_image, "mime_type": "image/jpeg"})
         
         # 2. Add original uploaded product image references if available
-        if req.product_image_paths:
-            logger.info(f"Adding {len(req.product_image_paths)} uploaded product image references to Omni Flash...")
-            for img_path in req.product_image_paths:
-                relative_path = img_path.lstrip("/")
-                if os.path.exists(relative_path):
-                    with open(relative_path, "rb") as f:
+        if product_image_paths:
+            logger.info(f"Adding {len(product_image_paths)} uploaded product image references to Omni Flash...")
+            for img_path in product_image_paths:
+                rel_path = img_path.lstrip("/")
+                if os.path.exists(rel_path):
+                    with open(rel_path, "rb") as f:
                         img_data = f.read()
                     base64_ref = safe_b64encode(img_data).decode('utf-8')
                     ext = os.path.splitext(img_path)[1].lower()
@@ -594,32 +547,27 @@ async def generate_video(
         # 3. Add text prompt instructions
         inputs.append({"type": "text", "text": omni_prompt})
         
+        logger.info("Calling Omni Flash interactions API in the background...")
         interaction = client.interactions.create(
             model='gemini-omni-flash-preview',
             input=inputs
         )
         
         video_b64 = None
-        mime_type = "video/mp4"
-        
-        # Find video in interaction response
         if hasattr(interaction, 'output_video') and interaction.output_video:
             video_b64 = interaction.output_video.data
-            mime_type = interaction.output_video.mime_type or "video/mp4"
         else:
-            # Fallback scan of steps
             for step in getattr(interaction, 'steps', []):
                 if isinstance(step, dict) and step.get('type') == 'model_output' and step.get('content'):
                     for part in step['content']:
                         if part.get('type') == 'video':
                             video_b64 = part.get('data')
-                            mime_type = part.get('mime_type', 'video/mp4')
                             break
                             
         if not video_b64:
-            raise HTTPException(status_code=500, detail="Omni Flash did not return any video bytes")
+            video_jobs[job_id] = {"status": "failed", "error": "Omni Flash did not return any video bytes"}
+            return
             
-        # Decode and save the video file
         import uuid
         filename = f"ad_video_{uuid.uuid4().hex}.mp4"
         file_path = os.path.join("static/generated", filename)
@@ -629,12 +577,112 @@ async def generate_video(
             f.write(video_data)
             
         logger.info(f"Video generated and saved to {file_path}")
+        video_jobs[job_id] = {
+            "status": "success",
+            "video_url": f"/static/generated/{filename}"
+        }
         
-        return {"video_url": f"/static/generated/{filename}"}
+    except Exception as e:
+        logger.error(f"Omni Flash background generation failed: {e}", exc_info=True)
+        video_jobs[job_id] = {"status": "failed", "error": str(e)}
+
+@app.post("/api/generate-video")
+async def generate_video(
+    req: VideoRequest,
+    request: Request,
+    background_tasks: BackgroundTasks,
+    x_api_key: Optional[str] = Header(None),
+    x_kie_key: Optional[str] = Header(None)
+):
+    try:
+        import uuid
+        job_id = f"job_{uuid.uuid4().hex}"
+        video_jobs[job_id] = {"status": "processing"}
         
+        if req.generator == "seedance":
+            kie_key = x_kie_key or os.environ.get("KIE_API_KEY")
+            if kie_key:
+                kie_key = kie_key.strip()
+            
+            key_len = len(kie_key) if kie_key else 0
+            masked_key = f"{kie_key[:4]}...{kie_key[-4:]}" if key_len > 8 else "too_short"
+            logger.info(f"Using Kie AI API Key: length={key_len}, key={masked_key}")
+            
+            if not kie_key:
+                raise HTTPException(status_code=400, detail="Kie AI API Key is required for Seedance 2 Mini")
+                
+            base_url = str(request.base_url).rstrip("/")
+            if "127.0.0.1" in base_url or "localhost" in base_url:
+                logger.warning("Localhost detected! Kie AI will not be able to fetch your local reference images.")
+            
+            storyboard_public_url = f"{base_url}{req.storyboard_image_url}"
+            reference_urls = [storyboard_public_url]
+            if req.product_image_paths:
+                for path in req.product_image_paths:
+                    reference_urls.append(f"{base_url}{path}")
+                    
+            kie_url = "https://api.kie.ai/api/v1/jobs/createTask"
+            headers = {
+                "Authorization": f"Bearer {kie_key}",
+                "Content-Type": "application/json"
+            }
+            
+            payload = {
+                "model": "bytedance/seedance-2-mini",
+                "input": {
+                    "prompt": req.video_prompt,
+                    "aspect_ratio": req.aspect_ratio,
+                    "reference_image_urls": reference_urls
+                }
+            }
+            
+            logger.info(f"Triggering Kie AI task for model bytedance/seedance-2-mini...")
+            res = requests.post(kie_url, json=payload, headers=headers, timeout=15)
+            if res.status_code != 200:
+                raise HTTPException(status_code=res.status_code, detail=f"Kie AI error: {res.text}")
+                
+            res_json = res.json()
+            if res_json.get("code") != 200:
+                raise HTTPException(status_code=400, detail=f"Kie AI createTask failed: {res_json.get('msg')}")
+                
+            task_id = res_json.get("data", {}).get("taskId")
+            if not task_id:
+                raise HTTPException(status_code=500, detail="Kie AI response did not contain a taskId")
+                
+            logger.info(f"Kie AI task created successfully. Task ID: {task_id}. Dispatching background poller...")
+            
+            background_tasks.add_task(
+                poll_seedance_background,
+                task_id=task_id,
+                job_id=job_id,
+                headers=headers,
+                video_public_url=None
+            )
+            return {"status": "processing", "job_id": job_id}
+            
+        else:
+            # Default: omni-flash
+            background_tasks.add_task(
+                generate_omni_background,
+                job_id=job_id,
+                storyboard_image_url=req.storyboard_image_url,
+                video_prompt=req.video_prompt,
+                product_image_paths=req.product_image_paths,
+                api_key=x_api_key,
+                aspect_ratio=req.aspect_ratio
+            )
+            return {"status": "processing", "job_id": job_id}
+            
     except Exception as e:
         logger.error(f"Video generation failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/video-status/{job_id}")
+async def get_video_status(job_id: str):
+    job = video_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+    return job
 
 # Mount static folder
 app.mount("/static", StaticFiles(directory="static"), name="static")

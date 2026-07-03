@@ -542,10 +542,45 @@ async function animateVideo() {
     
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(`${ratio} generation failed: ${err.detail || "Video animation failed"}`);
+      throw new Error(`${ratio} generation failed to start: ${err.detail || "Video animation failed"}`);
     }
     
-    return await res.json();
+    const triggerRes = await res.json();
+    const jobId = triggerRes.job_id;
+    
+    let finished = false;
+    let pollAttempts = 0;
+    const maxPollAttempts = 120; // 120 attempts * 2 seconds = 240 seconds
+    
+    while (!finished && pollAttempts < maxPollAttempts) {
+      pollAttempts++;
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const statusRes = await fetch(`/api/video-status/${jobId}`);
+      if (!statusRes.ok) {
+        throw new Error(`Failed to check ${ratio} video status`);
+      }
+      
+      const jobData = await statusRes.json();
+      if (jobData.status === "success") {
+        finished = true;
+        return jobData;
+      } else if (jobData.status === "failed") {
+        finished = true;
+        throw new Error(`${ratio} generation failed: ${jobData.error || "Video animation failed on the server"}`);
+      } else {
+        // Still processing
+        if (isVertical) {
+          videoPlaceholder_9_16.querySelector("p").textContent = `Generating 9:16... (attempt ${pollAttempts})`;
+        } else {
+          videoPlaceholder_16_9.querySelector("p").textContent = `Generating 16:9... (attempt ${pollAttempts})`;
+        }
+      }
+    }
+    
+    if (!finished) {
+      throw new Error(`${ratio} video generation timed out`);
+    }
   }
   
   try {
