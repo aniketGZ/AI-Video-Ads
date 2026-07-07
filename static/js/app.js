@@ -155,6 +155,7 @@ function renderDashboard() {
   document.getElementById("dna_product_name").textContent = data.product_name;
   document.getElementById("dna_category").textContent = data.product_category;
   document.getElementById("dna_audience").textContent = data.target_audience_persona;
+  document.getElementById("dna_talent").textContent = data.on_screen_talent;
   document.getElementById("dna_visual_style").textContent = data.visual_style;
   document.getElementById("dna_logo_text").textContent = data.logo_text;
   document.getElementById("dna_description").textContent = data.product_visual_description;

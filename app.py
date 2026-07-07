@@ -229,8 +229,10 @@ async def analyze_campaign(
             "- Keep all text crisp, clean, engaging, and high-impact. Avoid clutter or over-explaining.\n"
             "- IMPORTANT: You MUST specifically format every segment of audio/speech using prefix tags to distinguish between dialogue spoken by an on-screen model vs a voiceover narration. Use `[Dialogue: \"spoken text\"]` (when the on-screen talent speaks directly to the camera with lipsync) or `[Voiceover: \"narrated text\"]` (when the audio is read as off-screen narration without lipsync). Make sure every line in the voiceover field has one of these prefixes.\n\n"
             "Generate your response matching the requested schema. Make sure color_palette consists of 3-5 premium color terms, "
-            "visual_style is one of (UGC_REALISTIC, CINEMATIC_PREMIUM, PIXAR_3D_STYLIZED, CLEAN_STUDIO, FOOD_APPETITE), "
-            "and on_screen_talent, setting, mood_keywords are appropriately filled."
+            "visual_style is one of (UGC_REALISTIC, CINEMATIC_PREMIUM, PIXAR_3D_STYLIZED, CLEAN_STUDIO, FOOD_APPETITE).\n\n"
+            "CRITICAL CHARACTER CASTING INSTRUCTION:\n"
+            "- For `on_screen_talent`: You MUST define a specific, detailed main character/on-screen talent profile based on the website/brand target demographics. Specify a clear demographic profile (specific age range, gender presentation, ethnicity) and physical/styling details (clothing style, hair style, skin tone, general expression) that directly appeal to the target audience (target_audience_persona). Example: 'A friendly South Asian female creator in her mid-20s, dressed in a cozy cream knit sweater, with warm smiling eyes, dark wavy hair, and natural makeup.' Avoid generic or short values like 'UGC creator' or 'young man'.\n\n"
+            "Ensure that on_screen_talent, setting, and mood_keywords are fully and appropriately filled."
         )
         
         # Do NOT include tools here, so response_schema works perfectly
