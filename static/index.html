@@ -3,310 +3,329 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Viral AI Video Ad Generator - Campaign Builder</title>
-  <meta name="description" content="Build high-converting Meta video ad campaigns from any website or app link using Gemini AI and Omni Flash.">
-  
-  <!-- Premium Fonts -->
+  <title>Viral Studio — AI Video Ad Generator</title>
+  <meta name="description" content="Turn any brand link into scroll-stopping Meta video ad campaigns with Gemini AI, Nano Banana Pro storyboards and one-click video generation.">
+
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
-  
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+
   <!-- FontAwesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <!-- Custom Stylesheet -->
+
+  <!-- Stylesheet -->
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
 
-  <div class="container">
-    
-    <!-- Header with logo and API key configuration -->
-    <header>
-      <div class="logo-container">
-        <div class="logo-icon">V</div>
-        <div class="logo-text">
-          <h1>Viral AI Video Ad Generator</h1>
-          <span>Powered by Gemini & Omni Flash</span>
-        </div>
-      </div>
-      <div style="display: flex; gap: 1.5rem; align-items: center; flex-wrap: wrap;">
-        <div class="api-key-container">
-          <label for="api_key_input" class="dna-label" style="margin-bottom: 0; margin-right: 0.5rem;">Gemini Key:</label>
-          <input type="password" id="api_key_input" class="api-key-input" placeholder="Enter Gemini API Key" value="AQ.Ab8RN6JfyEoy2Y2Pux5ClqNjjAXzPPL8mSiOYSkBWoYyifu28g">
-        </div>
-        <div class="api-key-container">
-          <label for="kie_key_input" class="dna-label" style="margin-bottom: 0; margin-right: 0.5rem;">Kie AI Key:</label>
-          <input type="password" id="kie_key_input" class="api-key-input" placeholder="Enter Kie AI Key">
-        </div>
-      </div>
-    </header>
+  <!-- Ambient background -->
+  <div class="aurora" aria-hidden="true">
+    <div class="aurora-blob aurora-1"></div>
+    <div class="aurora-blob aurora-2"></div>
+    <div class="aurora-grid"></div>
+  </div>
 
-    <!-- Main Setup Wizard & Form -->
-    <section class="setup-grid">
-      
-      <!-- Input Panel -->
-      <div class="glass-card" style="padding: 2rem;">
+  <!-- Top Navigation -->
+  <nav class="topbar">
+    <div class="topbar-inner">
+      <div class="logo-container">
+        <div class="logo-icon"><i class="fa-solid fa-bolt"></i></div>
+        <div class="logo-text">
+          <h1>Viral Studio</h1>
+          <span>AI Video Ad Generator</span>
+        </div>
+      </div>
+
+      <div class="topbar-keys">
+        <div class="api-key-container">
+          <i class="fa-solid fa-key key-icon"></i>
+          <input type="password" id="api_key_input" class="api-key-input" placeholder="Gemini API key" autocomplete="off">
+        </div>
+        <div class="api-key-container">
+          <i class="fa-solid fa-key key-icon"></i>
+          <input type="password" id="kie_key_input" class="api-key-input" placeholder="Kie AI key (optional)" autocomplete="off">
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <main class="container">
+
+    <!-- Hero + Command Input -->
+    <section class="hero" id="hero_section">
+      <div class="hero-badge">
+        <span class="pulse-dot"></span>
+        Gemini 2.5 · Nano Banana Pro · Seedance 2
+      </div>
+      <h2 class="hero-title">Turn any link into<br><span class="gradient-text">scroll&#8209;stopping video ads</span></h2>
+      <p class="hero-sub">Paste a landing page, app store link, or product URL. Get a complete Meta campaign — 6 ad angles, 18 scripts, storyboards, and finished 10&#8209;second videos.</p>
+
+      <div class="command-card glass-card">
         <form id="campaign_form" onsubmit="event.preventDefault();">
-          
-          <!-- URL Input -->
-          <div class="form-group">
-            <label for="brand_url">Brand Landing Page / Link</label>
-            <input type="url" id="brand_url" class="input-text" placeholder="https://yourbrand.com, Play Store, or App Store link" required>
+
+          <div class="url-row">
+            <div class="url-field">
+              <i class="fa-solid fa-link url-icon"></i>
+              <input type="url" id="brand_url" class="input-text" placeholder="https://yourbrand.com — or Play Store / App Store link" required>
+            </div>
+            <button type="submit" id="generate_campaign_btn" class="btn btn-primary btn-lg" onclick="startCampaignAnalysis()">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>Generate Campaign</span>
+            </button>
           </div>
-          
-          <!-- Tangible Product Toggle -->
+
+          <!-- Tangible product toggle -->
           <div class="tangible-toggle-container" onclick="toggleTangibleProduct()">
-            <input type="checkbox" id="is_tangible">
-            <div class="checkbox-custom" id="checkbox_ui"></div>
-            <div>
-              <span style="font-weight: 600; font-family: var(--font-display); color: var(--text-white); display: block;">Tangible Product?</span>
-              <span style="font-size: 0.8rem; color: var(--text-muted);">Enable to upload product images for accurate consistency.</span>
+            <input type="checkbox" id="is_tangible" hidden>
+            <div class="switch" id="checkbox_ui"><div class="switch-knob"></div></div>
+            <div class="toggle-copy">
+              <span class="toggle-title">Physical product?</span>
+              <span class="toggle-sub">Upload reference photos so the product stays pixel-consistent across every shot.</span>
             </div>
           </div>
-          
-          <!-- Upload Drag & Drop Zone -->
+
+          <!-- Upload zone -->
           <div class="upload-zone" id="upload_zone" onclick="document.getElementById('product_images').click()">
             <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
-            <h3 style="color: var(--text-white); font-size: 1.1rem; margin-bottom: 0.5rem;">Upload Product Images</h3>
-            <p style="color: var(--text-muted); font-size: 0.85rem;">Drag and drop or click to browse multiple reference photos</p>
+            <h3>Upload product images</h3>
+            <p>Drag &amp; drop or click to browse — multiple angles help consistency</p>
             <input type="file" id="product_images" multiple accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
-            
             <div class="upload-thumbnails" id="upload_thumbnails"></div>
           </div>
-          
-          <!-- Generate Button -->
-          <button type="submit" id="generate_campaign_btn" class="btn" onclick="startCampaignAnalysis()">
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-            Generate Ad Campaign
-          </button>
-          
+
         </form>
       </div>
 
-      <!-- Quick Ideas Panel -->
-      <div class="glass-card quick-ideas">
-        <h3>Sample Brand Links</h3>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">Click one of the ideas below to auto-fill the brand URL field and test the generator.</p>
-        
-        <div style="margin-bottom: 1.5rem;">
-          <h4 class="dna-label">D2C Skincare & Wellness</h4>
-          <span class="quick-link-chip" onclick="quickFill('https://www.preranawellness.com')">Prerana Wellness</span>
-          <span class="quick-link-chip" onclick="quickFill('https://www.forestessentialsindia.com')">Forest Essentials</span>
-        </div>
-        
-        <div style="margin-bottom: 1.5rem;">
-          <h4 class="dna-label">SaaS & Apps</h4>
-          <span class="quick-link-chip" onclick="quickFill('https://play.google.com/store/apps/details?id=com.spotify.music')">Spotify (PlayStore)</span>
-          <span class="quick-link-chip" onclick="quickFill('https://apps.apple.com/us/app/duolingo-language-lessons/id570060128')">Duolingo (AppStore)</span>
-        </div>
-        
-        <div>
-          <h4 class="dna-label">Consumer Tech</h4>
-          <span class="quick-link-chip" onclick="quickFill('https://www.apple.com/iphone-15-pro/')">iPhone 15 Pro</span>
-        </div>
+      <!-- Sample links -->
+      <div class="samples-row">
+        <span class="samples-label">Try it with</span>
+        <span class="quick-link-chip" onclick="quickFill('https://www.preranawellness.com')"><i class="fa-solid fa-leaf"></i> Prerana Wellness</span>
+        <span class="quick-link-chip" onclick="quickFill('https://www.forestessentialsindia.com')"><i class="fa-solid fa-spa"></i> Forest Essentials</span>
+        <span class="quick-link-chip" onclick="quickFill('https://play.google.com/store/apps/details?id=com.spotify.music')"><i class="fa-brands fa-spotify"></i> Spotify</span>
+        <span class="quick-link-chip" onclick="quickFill('https://apps.apple.com/us/app/duolingo-language-lessons/id570060128')"><i class="fa-solid fa-language"></i> Duolingo</span>
+        <span class="quick-link-chip" onclick="quickFill('https://www.apple.com/iphone-15-pro/')"><i class="fa-brands fa-apple"></i> iPhone 15 Pro</span>
       </div>
-      
+
+      <!-- Pipeline steps strip -->
+      <div class="pipeline-strip">
+        <div class="pipeline-step"><div class="pipeline-num">1</div><span>Brand research<br><em>Search grounding</em></span></div>
+        <div class="pipeline-arrow"><i class="fa-solid fa-arrow-right-long"></i></div>
+        <div class="pipeline-step"><div class="pipeline-num">2</div><span>18 ad scripts<br><em>6 angles × 3 styles</em></span></div>
+        <div class="pipeline-arrow"><i class="fa-solid fa-arrow-right-long"></i></div>
+        <div class="pipeline-step"><div class="pipeline-num">3</div><span>Storyboards<br><em>Nano Banana Pro</em></span></div>
+        <div class="pipeline-arrow"><i class="fa-solid fa-arrow-right-long"></i></div>
+        <div class="pipeline-step"><div class="pipeline-num">4</div><span>Finished videos<br><em>9:16 + 16:9</em></span></div>
+      </div>
     </section>
 
-    <!-- Generation Loading Steps -->
-    <div class="glass-card loader-overlay" id="loader_overlay">
+    <!-- Generation Loader -->
+    <div class="loader-overlay glass-card" id="loader_overlay">
       <div class="spinner-glow"></div>
-      <h2 style="color: var(--text-white); font-size: 1.4rem; margin-bottom: 0.5rem; text-align: center;">Analyzing Brand with Gemini Groundsearch</h2>
-      <p style="color: var(--text-muted); text-align: center; margin-bottom: 2rem;">This might take up to 60 seconds as we scan services and write custom scripts.</p>
-      
+      <h2 class="loader-title">Building your campaign</h2>
+      <p class="loader-sub">Gemini is researching the brand and writing custom scripts — usually under 60 seconds.</p>
+
       <div class="loader-steps">
         <div class="loader-step" id="step_scrape">
-          <div class="step-indicator">1</div>
-          <span>Scraping Landing Page & App Details</span>
+          <div class="step-indicator"><i class="fa-solid fa-check step-check"></i><span class="step-num">1</span></div>
+          <span>Scraping landing page &amp; app details</span>
         </div>
         <div class="loader-step" id="step_ground">
-          <div class="step-indicator">2</div>
-          <span>Performing Search Grounding & Demographics Analysis</span>
+          <div class="step-indicator"><i class="fa-solid fa-check step-check"></i><span class="step-num">2</span></div>
+          <span>Search grounding &amp; audience analysis</span>
         </div>
         <div class="loader-step" id="step_adgroups">
-          <div class="step-indicator">3</div>
-          <span>Building Structured Ad Groups (6 angles)</span>
+          <div class="step-indicator"><i class="fa-solid fa-check step-check"></i><span class="step-num">3</span></div>
+          <span>Structuring 6 ad group angles</span>
         </div>
         <div class="loader-step" id="step_scripts">
-          <div class="step-indicator">4</div>
-          <span>Writing Professional Vertical Video Scripts</span>
+          <div class="step-indicator"><i class="fa-solid fa-check step-check"></i><span class="step-num">4</span></div>
+          <span>Writing vertical video scripts</span>
         </div>
       </div>
     </div>
 
-    <!-- Campaign Dashboard Grid -->
+    <!-- Campaign Dashboard -->
     <section class="dashboard-container" id="dashboard_container">
-      
-      <!-- Brand DNA horizontal top panel -->
-      <div class="glass-card brand-dna-card" style="width: 100%; padding: 1.5rem 2rem;">
-        <h2 style="font-size: 1.25rem; margin-bottom: 1rem; border-bottom: 1px solid var(--border-color); padding-bottom: 0.5rem;">Brand Identity DNA</h2>
-        
-        <div class="dna-horizontal-grid">
-          <div class="dna-col">
-            <div class="dna-item">
-              <div class="dna-label">Brand Name</div>
-              <div class="dna-value" id="dna_brand_name">-</div>
-            </div>
-            <div class="dna-item" style="margin-top: 0.75rem;">
-              <div class="dna-label">Product Name</div>
-              <div class="dna-value" id="dna_product_name">-</div>
-            </div>
-            <div class="dna-item" style="margin-top: 0.75rem;">
-              <div class="dna-label">Category</div>
-              <div class="dna-value" id="dna_category">-</div>
-            </div>
+
+      <!-- Brand DNA -->
+      <div class="glass-card brand-dna-card">
+        <div class="card-heading">
+          <div class="card-heading-icon"><i class="fa-solid fa-dna"></i></div>
+          <div>
+            <h2>Brand DNA</h2>
+            <p>Extracted identity that anchors every storyboard and video</p>
           </div>
-          
-          <div class="dna-col">
-            <div class="dna-item">
-              <div class="dna-label">Target Audience</div>
-              <div class="dna-value" id="dna_audience" style="font-size: 0.85rem; line-height: 1.4;">-</div>
-            </div>
-            <div class="dna-item" style="margin-top: 0.75rem;">
-              <div class="dna-label">Visual Style</div>
-              <div class="dna-value" id="dna_visual_style" style="font-weight: 700; color: var(--secondary);">-</div>
-            </div>
+        </div>
+
+        <div class="dna-grid">
+          <div class="dna-item">
+            <div class="dna-label">Brand</div>
+            <div class="dna-value dna-value-lg" id="dna_brand_name">—</div>
           </div>
-          
-          <div class="dna-col">
-            <div class="dna-item">
-              <div class="dna-label">Mood Words</div>
-              <div class="chip-container" id="dna_mood_chips"></div>
-            </div>
-            <div class="dna-item" style="margin-top: 1rem;">
-              <div class="dna-label">Brand Palette</div>
-              <div class="chip-container" id="dna_palette_chips"></div>
-            </div>
-            <div class="dna-item" style="margin-top: 1rem;">
-              <div class="dna-label">Logo Text Anchor</div>
-              <div class="dna-value" id="dna_logo_text" style="font-family: monospace;">-</div>
-            </div>
+          <div class="dna-item">
+            <div class="dna-label">Product</div>
+            <div class="dna-value dna-value-lg" id="dna_product_name">—</div>
           </div>
-          
-          <div class="dna-col">
-            <div class="dna-item">
-              <div class="dna-label">Product description</div>
-              <div class="dna-value" id="dna_description" style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4;">-</div>
-            </div>
+          <div class="dna-item">
+            <div class="dna-label">Category</div>
+            <div class="dna-value" id="dna_category">—</div>
+          </div>
+          <div class="dna-item">
+            <div class="dna-label">Visual style</div>
+            <div class="dna-value dna-style-badge" id="dna_visual_style">—</div>
+          </div>
+          <div class="dna-item dna-span-2">
+            <div class="dna-label">Target audience</div>
+            <div class="dna-value dna-value-soft" id="dna_audience">—</div>
+          </div>
+          <div class="dna-item">
+            <div class="dna-label">Mood</div>
+            <div class="chip-container" id="dna_mood_chips"></div>
+          </div>
+          <div class="dna-item">
+            <div class="dna-label">Palette</div>
+            <div class="chip-container" id="dna_palette_chips"></div>
+          </div>
+          <div class="dna-item">
+            <div class="dna-label">Logo anchor</div>
+            <div class="dna-value dna-mono" id="dna_logo_text">—</div>
+          </div>
+          <div class="dna-item dna-span-3">
+            <div class="dna-label">Product description</div>
+            <div class="dna-value dna-value-soft" id="dna_description">—</div>
           </div>
         </div>
       </div>
 
-      <!-- Ad Groups View & Tab Panel -->
-      <div class="glass-card ad-groups-card" style="width: 100%;">
-        <div class="tabs-header" id="ad_group_tabs"></div>
-        
-        <div class="ad-group-intro">
-          <h3 id="current_ad_group_title">Ad Group Name</h3>
-          <p id="current_ad_group_angle">Marketing angle descriptor</p>
+      <!-- Ad Groups -->
+      <div class="glass-card ad-groups-card">
+        <div class="card-heading">
+          <div class="card-heading-icon"><i class="fa-solid fa-layer-group"></i></div>
+          <div>
+            <h2>Campaign Ad Groups</h2>
+            <p>6 angles · 3 video scripts each — open a script in Creator Studio to produce it</p>
+          </div>
         </div>
-        
+
+        <div class="tabs-header" id="ad_group_tabs"></div>
+
+        <div class="ad-group-intro">
+          <h3 id="current_ad_group_title">Ad Group</h3>
+          <p id="current_ad_group_angle">Marketing angle</p>
+        </div>
+
         <div class="videos-grid" id="scripts_grid"></div>
       </div>
-      
+
     </section>
 
-  </div>
+  </main>
 
-  <!-- Creator Studio Overlay Modal -->
+  <footer class="footer">
+    <span>Viral Studio</span> · Powered by Gemini, Nano Banana Pro &amp; Seedance · Made for performance marketers
+  </footer>
+
+  <!-- Creator Studio Modal -->
   <div class="studio-overlay" id="studio_overlay">
     <div class="glass-card studio-card">
-      
+
       <div class="studio-header">
         <div class="studio-title">
-          <h3 id="studio_video_title">Creator Studio</h3>
-          <p id="studio_video_style">Video Style Details</p>
+          <div class="studio-title-icon"><i class="fa-solid fa-clapperboard"></i></div>
+          <div>
+            <h3 id="studio_video_title">Creator Studio</h3>
+            <p id="studio_video_style">Video style details</p>
+          </div>
         </div>
-        <button class="close-studio" onclick="closeStudio()"><i class="fa-solid fa-xmark"></i></button>
+        <button class="close-studio" onclick="closeStudio()" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
       </div>
-      
+
       <div class="studio-grid">
-        
-        <!-- Left: Storyboard Section -->
+
+        <!-- Left: Storyboard -->
         <div class="studio-pane">
-          <h4 class="dna-label" style="font-size: 0.9rem;">1. Storyboard Reference Poster</h4>
-          
+          <div class="pane-label"><span class="pane-step">1</span> Storyboard reference poster</div>
+
           <div class="preview-box storyboard-pane" id="storyboard_preview_box">
             <div class="preview-placeholder" id="storyboard_placeholder">
               <i class="fa-regular fa-image"></i>
-              <p>No Storyboard Generated Yet</p>
+              <p>No storyboard generated yet</p>
             </div>
-            <img src="" id="storyboard_img" class="preview-img" style="display: none;" alt="Ad Storyboard">
+            <img src="" id="storyboard_img" class="preview-img" style="display: none;" alt="Ad storyboard">
           </div>
-          
+
           <div class="pane-actions">
-            <button id="generate_storyboard_btn" class="btn" onclick="generateStoryboard()">
+            <button id="generate_storyboard_btn" class="btn btn-primary" onclick="generateStoryboard()">
               <i class="fa-solid fa-image"></i> Generate Storyboard (Nano Banana Pro)
             </button>
             <div class="generator-status" id="storyboard_status">
               <div class="mini-spinner"></div>
-              <span>Generating 9:16 storyboard frame layouts...</span>
+              <span>Generating 9:16 storyboard layout…</span>
             </div>
           </div>
         </div>
-        
-        <!-- Right: Animated Video Section -->
+
+        <!-- Right: Videos -->
         <div class="studio-pane">
-          <h4 class="dna-label" style="font-size: 0.9rem;">2. Animated Video Ads (10s)</h4>
-          
-          <div class="video-previews-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; margin-bottom: 1rem;">
-            <!-- 9:16 (Vertical) -->
-            <div class="video-preview-wrapper" style="display: flex; flex-direction: column; align-items: center; background: rgba(30, 41, 67, 0.2); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem;">
-              <h5 class="dna-label" style="font-size: 0.8rem; margin-bottom: 0.5rem; color: var(--text-white);">Vertical Ad (9:16)</h5>
-              <div class="preview-box" id="video_preview_box_9_16" style="flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 220px; background: rgba(11, 15, 25, 0.4); border-radius: var(--radius-sm); overflow: hidden; position: relative;">
+          <div class="pane-label"><span class="pane-step">2</span> Animated video ads · 10s</div>
+
+          <div class="video-previews-grid">
+            <!-- 9:16 -->
+            <div class="video-preview-wrapper">
+              <h5 class="ratio-label"><i class="fa-solid fa-mobile-screen"></i> Vertical 9:16</h5>
+              <div class="preview-box video-box" id="video_preview_box_9_16">
                 <div class="preview-placeholder" id="video_placeholder_9_16">
                   <i class="fa-solid fa-clapperboard"></i>
-                  <p style="font-size: 0.75rem; margin-top: 0.5rem;">Generate Storyboard First</p>
+                  <p>Generate storyboard first</p>
                 </div>
-                <video src="" id="ad_video_9_16" class="preview-video" style="display: none; max-width: 100%; max-height: 220px; object-fit: contain;" controls autoplay loop></video>
+                <video src="" id="ad_video_9_16" class="preview-video" style="display: none;" controls autoplay loop></video>
               </div>
-              <a href="" id="download_video_btn_9_16" class="btn btn-secondary" style="display: none; justify-content: center; width: 100%; margin-top: 0.5rem; font-size: 0.8rem; padding: 0.4rem 0.6rem;" download>
+              <a href="" id="download_video_btn_9_16" class="btn btn-secondary btn-download" style="display: none;" download>
                 <i class="fa-solid fa-download"></i> Download 9:16
               </a>
             </div>
-            
-            <!-- 16:9 (Landscape) -->
-            <div class="video-preview-wrapper" style="display: flex; flex-direction: column; align-items: center; background: rgba(30, 41, 67, 0.2); border: 1px solid var(--border-color); border-radius: var(--radius-md); padding: 0.75rem;">
-              <h5 class="dna-label" style="font-size: 0.8rem; margin-bottom: 0.5rem; color: var(--text-white);">Landscape Ad (16:9)</h5>
-              <div class="preview-box" id="video_preview_box_16_9" style="flex-grow: 1; display: flex; align-items: center; justify-content: center; width: 100%; min-height: 220px; background: rgba(11, 15, 25, 0.4); border-radius: var(--radius-sm); overflow: hidden; position: relative;">
+
+            <!-- 16:9 -->
+            <div class="video-preview-wrapper">
+              <h5 class="ratio-label"><i class="fa-solid fa-tv"></i> Landscape 16:9</h5>
+              <div class="preview-box video-box" id="video_preview_box_16_9">
                 <div class="preview-placeholder" id="video_placeholder_16_9">
                   <i class="fa-solid fa-clapperboard"></i>
-                  <p style="font-size: 0.75rem; margin-top: 0.5rem;">Generate Storyboard First</p>
+                  <p>Generate storyboard first</p>
                 </div>
-                <video src="" id="ad_video_16_9" class="preview-video" style="display: none; max-width: 100%; max-height: 220px; object-fit: contain;" controls autoplay loop></video>
+                <video src="" id="ad_video_16_9" class="preview-video" style="display: none;" controls autoplay loop></video>
               </div>
-              <a href="" id="download_video_btn_16_9" class="btn btn-secondary" style="display: none; justify-content: center; width: 100%; margin-top: 0.5rem; font-size: 0.8rem; padding: 0.4rem 0.6rem;" download>
+              <a href="" id="download_video_btn_16_9" class="btn btn-secondary btn-download" style="display: none;" download>
                 <i class="fa-solid fa-download"></i> Download 16:9
               </a>
             </div>
           </div>
-          
-          <div style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; gap: 0.75rem; width: 100%;">
-            <label for="video_generator_select" class="dna-label" style="margin-bottom: 0; font-size: 0.85rem;">Generator Model:</label>
-            <select id="video_generator_select" style="background: var(--bg-input); border: 1px solid var(--border-color); border-radius: var(--radius-sm); color: var(--text-white); padding: 0.4rem 0.6rem; font-size: 0.85rem; outline: none; cursor: pointer; flex-grow: 1; max-width: 220px;" onchange="updateGeneratorModelText()">
+
+          <div class="generator-row">
+            <label for="video_generator_select" class="dna-label">Generator model</label>
+            <select id="video_generator_select" class="select-input" onchange="updateGeneratorModelText()">
               <option value="omni-flash">Gemini Omni Flash</option>
               <option value="seedance">Seedance 2 Mini (Kie AI)</option>
             </select>
           </div>
-          
+
           <div class="pane-actions">
-            <button id="generate_video_btn" class="btn" disabled style="opacity: 0.5;" onclick="animateVideo()">
+            <button id="generate_video_btn" class="btn btn-primary" disabled style="opacity: 0.5;" onclick="animateVideo()">
               <i class="fa-solid fa-play"></i> Animate Videos (Omni Flash)
             </button>
             <div class="generator-status" id="video_status">
               <div class="mini-spinner"></div>
-              <span>Animating storyboard frames using Gemini Omni Flash...</span>
+              <span>Animating storyboard frames…</span>
             </div>
           </div>
         </div>
-        
+
       </div>
-      
+
     </div>
   </div>
 
-  <!-- Custom Scripts -->
   <script src="/static/js/app.js"></script>
 </body>
 </html>

@@ -213,25 +213,34 @@ function renderDashboard() {
   document.getElementById("dashboard_container").scrollIntoView({ behavior: 'smooth' });
 }
 
+// Escape untrusted text before injecting into HTML
+function escapeHtml(str) {
+  if (str === null || str === undefined) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // Helper to format Voiceover field with dialogue/voiceover badges
 function formatVoiceover(text) {
   if (!text) return "";
-  
+
   // Replace brackets like [Dialogue: "spoken text"] or [Voiceover: "narrated text"]
   const segmentRegex = /\[(Dialogue|Voiceover):\s*["']?([^\]"']+)["']?\]/gi;
   if (segmentRegex.test(text)) {
     segmentRegex.lastIndex = 0; // reset
     return text.replace(segmentRegex, (match, type, content) => {
       const isDialogue = type.toLowerCase() === "dialogue";
-      const bg = isDialogue ? "rgba(0, 168, 204, 0.15)" : "rgba(255, 255, 255, 0.05)";
-      const border = isDialogue ? "var(--accent-light)" : "var(--border-color)";
-      const label = isDialogue ? "🗣️ Spoken Dialogue (Lipsync)" : "🎙️ Voiceover Narration (No Lipsync)";
-      const labelColor = isDialogue ? "var(--accent-light)" : "rgba(255, 255, 255, 0.7)";
-      return `<div class="audio-segment" style="margin-bottom: 0.4rem; padding: 0.35rem 0.5rem; background: ${bg}; border-left: 3px solid ${border}; border-radius: 0 4px 4px 0;"><span style="font-weight: 700; font-size: 0.75rem; text-transform: uppercase; color: ${labelColor}; display: block; margin-bottom: 0.1rem;">${label}</span>"${content.trim()}"</div>`;
+      const cls = isDialogue ? "dialogue" : "voiceover";
+      const label = isDialogue ? "🗣️ Dialogue · Lipsync" : "🎙️ Voiceover · Narration";
+      return `<div class="audio-segment ${cls}"><span class="audio-tag">${label}</span>"${escapeHtml(content.trim())}"</div>`;
     });
   }
-  
-  return text;
+
+  return escapeHtml(text);
 }
 
 // Select active ad group tab
@@ -263,12 +272,12 @@ function selectAdGroup(index) {
     card.innerHTML = `
       <div style="flex-grow: 1;">
         <div class="script-header">
-          <span class="script-type">Video #${vIdx + 1}: ${video.video_style_type}</span>
+          <span class="script-type"><i class="fa-solid fa-film"></i> Video ${vIdx + 1} · ${escapeHtml(video.video_style_type)}</span>
         </div>
         <div class="script-detail-grid">
           <div class="script-field">
             <div class="script-field-title">Script Hook</div>
-            <div class="script-field-value">"${video.hook_line}"</div>
+            <div class="script-field-value">"${escapeHtml(video.hook_line)}"</div>
           </div>
           <div class="script-field">
             <div class="script-field-title">Voiceover / Audio</div>
@@ -276,16 +285,16 @@ function selectAdGroup(index) {
           </div>
           <div class="script-field">
             <div class="script-field-title">Visual Directions</div>
-            <div class="script-field-value">${video.visual_directions}</div>
+            <div class="script-field-value">${escapeHtml(video.visual_directions)}</div>
           </div>
-          <div class="script-field" style="margin-bottom: 1.5rem;">
+          <div class="script-field">
             <div class="script-field-title">Call To Action</div>
-            <div class="script-field-value">"${video.cta_line}"</div>
+            <div class="script-field-value">"${escapeHtml(video.cta_line)}"</div>
           </div>
         </div>
       </div>
-      <button class="btn" style="width: 100%; justify-content: center;" onclick="openStudio(${vIdx})">
-        <i class="fa-solid fa-clapperboard"></i> Creator Studio
+      <button class="btn btn-primary" onclick="openStudio(${vIdx})">
+        <i class="fa-solid fa-clapperboard"></i> Open Creator Studio
       </button>
     `;
     
@@ -343,7 +352,7 @@ function openStudio(videoIndex) {
     generateVideoBtn.style.opacity = "1";
     setVideoPlaceholderText("Ready to Animate Videos");
   } else {
-    storyboardPlaceholder.style.display = "block";
+    storyboardPlaceholder.style.display = "flex";
     storyboardImg.style.display = "none";
     storyboardImg.src = "";
     
@@ -364,7 +373,7 @@ function openStudio(videoIndex) {
     downloadBtn_9_16.href = state.generatedVideos[key_9_16];
     downloadBtn_9_16.style.display = "flex";
   } else {
-    videoPlaceholder_9_16.style.display = "block";
+    videoPlaceholder_9_16.style.display = "flex";
     videoEl_9_16.style.display = "none";
     videoEl_9_16.src = "";
     downloadBtn_9_16.style.display = "none";
@@ -378,7 +387,7 @@ function openStudio(videoIndex) {
     downloadBtn_16_9.href = state.generatedVideos[key_16_9];
     downloadBtn_16_9.style.display = "flex";
   } else {
-    videoPlaceholder_16_9.style.display = "block";
+    videoPlaceholder_16_9.style.display = "flex";
     videoEl_16_9.style.display = "none";
     videoEl_16_9.src = "";
     downloadBtn_16_9.style.display = "none";
@@ -433,8 +442,6 @@ async function generateStoryboard() {
     shot_2: video.shot_2,
     shot_3: video.shot_3,
     shot_4: video.shot_4,
-    shot_5: video.shot_5,
-    shot_6: video.shot_6,
     product_image_paths: state.campaignData.product_image_paths || []
   };
   
