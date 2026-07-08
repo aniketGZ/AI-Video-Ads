@@ -143,7 +143,20 @@ async def analyze_campaign(
             f"Here is some scraped text from the site:\n{scraped_content}\n\n"
             "Analyze the website thoroughly. Identify the brand name, core product name, product category, "
             "detailed list of services or products showcased, target demographics, brand voice/tone, "
-            "potential color palette ideas, and key benefits. Use Google Search grounding to ensure accuracy."
+            "potential color palette ideas, and key benefits. Use Google Search grounding to ensure accuracy.\n\n"
+            "At the very end of your response, you MUST include a line in the exact format:\n"
+            "SELECTED_DEMOGRAPHIC_ETHNICITY: <one of the categories listed below>\n\n"
+            "Choose the single most appropriate target demographic category for this website from this list:\n"
+            "- Han Chinese\n"
+            "- South Asian (Indo-Aryan / Hindustani)\n"
+            "- Bengali\n"
+            "- Arab\n"
+            "- European (Slavic & Western European)\n"
+            "- Latino / Mestizo\n"
+            "- Japanese\n"
+            "- Javanese (Southeast Asian)\n"
+            "- Turkish\n"
+            "- Sub-Saharan African (West African & Bantu)\n"
         )
         
         grounding_config = types.GenerateContentConfig(
@@ -158,6 +171,30 @@ async def analyze_campaign(
         
         research_summary = research_response.text
         logger.info("URL Search Grounding and research completed.")
+
+        # Extract target demographic ethnicity and load corresponding characters from library
+        selected_ethnicity = "European (Slavic & Western European)"  # Fallback
+        import re
+        match = re.search(r"SELECTED_DEMOGRAPHIC_ETHNICITY:\s*(.+)", research_summary, re.IGNORECASE)
+        if match:
+            selected_ethnicity = match.group(1).strip()
+            logger.info(f"Target demographic ethnicity identified: {selected_ethnicity}")
+        else:
+            logger.warning("Could not find SELECTED_DEMOGRAPHIC_ETHNICITY line in research summary. Using fallback.")
+            
+        avatars = get_avatars_by_ethnicity(selected_ethnicity)
+        logger.info(f"Loaded {len(avatars)} candidate avatars matching demographic: {selected_ethnicity}")
+        
+        avatars_txt = ""
+        for av in avatars:
+            avatars_txt += (
+                f"- ID: {av['id']}\n"
+                f"  Name: {av['name']}\n"
+                f"  Gender: {av['gender']}\n"
+                f"  Age: {av['age']}\n"
+                f"  Occupation: {av.get('occupation', '')}\n"
+                f"  Prompt Sheet: {av['prompt']}\n\n"
+            )
 
         product_images_analysis = ""
         saved_image_paths = []
@@ -230,8 +267,10 @@ async def analyze_campaign(
             "- IMPORTANT: You MUST specifically format every segment of audio/speech using prefix tags to distinguish between dialogue spoken by an on-screen model vs a voiceover narration. Use `[Dialogue: \"spoken text\"]` (when the on-screen talent speaks directly to the camera with lipsync) or `[Voiceover: \"narrated text\"]` (when the audio is read as off-screen narration without lipsync). Make sure every line in the voiceover field has one of these prefixes.\n\n"
             "Generate your response matching the requested schema. Make sure color_palette consists of 3-5 premium color terms, "
             "visual_style is one of (UGC_REALISTIC, CINEMATIC_PREMIUM, PIXAR_3D_STYLIZED, CLEAN_STUDIO, FOOD_APPETITE).\n\n"
-            "CRITICAL CHARACTER CASTING INSTRUCTION:\n"
-            "- For `on_screen_talent`: You MUST define a specific, detailed main character/on-screen talent profile based on the website/brand target demographics. Specify a clear demographic profile (specific age range, gender presentation, ethnicity) and physical/styling details (clothing style, hair style, skin tone, general expression) that directly appeal to the target audience (target_audience_persona). Example: 'A friendly South Asian female creator in her mid-20s, dressed in a cozy cream knit sweater, with warm smiling eyes, dark wavy hair, and natural makeup.' Avoid generic or short values like 'UGC creator' or 'young man'.\n\n"
+            f"You MUST select one target demographic avatar from the list of available characters below. "
+            f"For the `on_screen_talent` field in the response schema, copy the EXACT `Prompt Sheet` of the selected character. "
+            f"Do not edit or change the Prompt Sheet text; it must be a verbatim copy so it acts as a consistent character lock in our image/video models.\n\n"
+            f"AVAILABLE TARGET DEMOGRAPHIC AVATARS:\n{avatars_txt}\n\n"
             "Ensure that on_screen_talent, setting, and mood_keywords are fully and appropriately filled."
         )
         
@@ -418,6 +457,39 @@ def safe_b64encode(data) -> bytes:
     if isinstance(data, str):
         data = data.encode('latin1')
     return base64.b64encode(data)
+
+def get_avatars_by_ethnicity(ethnicity_query: str) -> List[dict]:
+    try:
+        library_path = "avatar_character_library.json"
+        if not os.path.exists(library_path):
+            logger.warning("avatar_character_library.json not found in workspace")
+            return []
+        with open(library_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        
+        # Try to find matching ethnicity group
+        query = ethnicity_query.lower()
+        for eth_group in data.get("ethnicities", []):
+            group_name = eth_group.get("ethnicity", "").lower()
+            group_region = eth_group.get("region", "").lower()
+            
+            # Simple substring matching
+            if query in group_name or group_name in query or query in group_region or group_region in query:
+                logger.info(f"Matched library group: {eth_group.get('ethnicity')}")
+                return eth_group.get("avatars", [])
+                
+        # Fallback: if no match, just return European (Slavic & Western European)
+        for eth_group in data.get("ethnicities", []):
+            if "european" in eth_group.get("ethnicity", "").lower():
+                logger.info(f"Fallback to European library group")
+                return eth_group.get("avatars", [])
+                
+        # Last resort fallback: first group
+        if data.get("ethnicities"):
+            return data["ethnicities"][0].get("avatars", [])
+    except Exception as e:
+        logger.error(f"Error reading avatar library: {e}")
+    return []
 
 # Global dictionary to track asynchronous background video jobs
 video_jobs = {}
