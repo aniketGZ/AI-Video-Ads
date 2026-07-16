@@ -665,3 +665,33 @@ function updateGeneratorModelText() {
     generateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Animate Videos (Omni Flash)';
   }
 }
+
+// LocalStorage API Key Persistence
+function initAPIKeysPersistence() {
+  const apiKeyEl = document.getElementById("api_key_input");
+  const kieKeyEl = document.getElementById("kie_key_input");
+  
+  if (apiKeyEl) {
+    const savedApiKey = localStorage.getItem("gemini_api_key");
+    if (savedApiKey) apiKeyEl.value = savedApiKey;
+    
+    apiKeyEl.addEventListener("input", (e) => {
+      localStorage.setItem("gemini_api_key", e.target.value.trim());
+    });
+  }
+  
+  if (kieKeyEl) {
+    const savedKieKey = localStorage.getItem("kie_api_key");
+    if (savedKieKey) kieKeyEl.value = savedKieKey;
+    
+    kieKeyEl.addEventListener("input", (e) => {
+      localStorage.setItem("kie_api_key", e.target.value.trim());
+    });
+  }
+}
+
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initAPIKeysPersistence);
+} else {
+  initAPIKeysPersistence();
+}
