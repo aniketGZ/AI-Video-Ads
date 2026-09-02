@@ -31,7 +31,7 @@ app.add_middleware(
 # Ensure generated directory exists
 os.makedirs("static/generated", exist_ok=True)
 
-DEFAULT_API_KEY = "AQ.Ab8RN6JfyEoy2Y2Pux5ClqNjjAXzPPL8mSiOYSkBWoYyifu28g"
+DEFAULT_API_KEY = ""
 
 # Define Pydantic structures for schema validation
 class VideoAdScript(BaseModel):
