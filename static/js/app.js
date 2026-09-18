@@ -834,57 +834,57 @@ function appendPromptKeyword(keyword) {
   textarea.focus();
 }
 
-// Handle Reference Images Upload (up to 3)
-function handleStudioRefImages(e) {
-  const files = Array.from(e.target.files);
-  if (!files.length) return;
+// Reference Image Slots Handling (3 slots: Character, Product, Style)
+let activeSlotIndex = 0;
+
+function triggerRefUpload(index) {
+  activeSlotIndex = index;
+  const input = document.getElementById("studio_ref_input_hidden");
+  if (input) input.click();
+}
+
+function handleSingleSlotUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
   
-  const remainingSlots = 3 - studioState.referenceImages.length;
-  if (remainingSlots <= 0) {
-    alert("Maximum 3 reference images allowed for Gemini Omni Flash 1.1.");
-    return;
+  studioState.referenceImages[activeSlotIndex] = file;
+  
+  const imgEl = document.getElementById(`slot_img_${activeSlotIndex}`);
+  const emptyEl = document.getElementById(`slot_empty_${activeSlotIndex}`);
+  const delBtn = document.getElementById(`slot_del_${activeSlotIndex}`);
+  
+  if (imgEl) {
+    imgEl.src = URL.createObjectURL(file);
+    imgEl.style.display = "block";
   }
+  if (emptyEl) emptyEl.style.display = "none";
+  if (delBtn) delBtn.style.display = "flex";
   
-  const toAdd = files.slice(0, remainingSlots);
-  studioState.referenceImages = studioState.referenceImages.concat(toAdd);
-  renderStudioRefThumbnails();
+  updateRefCountBadge();
+  e.target.value = "";
 }
 
-function renderStudioRefThumbnails() {
-  const container = document.getElementById("studio_ref_thumbnails");
+function removeSlotRef(index) {
+  studioState.referenceImages[index] = null;
+  
+  const imgEl = document.getElementById(`slot_img_${index}`);
+  const emptyEl = document.getElementById(`slot_empty_${index}`);
+  const delBtn = document.getElementById(`slot_del_${index}`);
+  
+  if (imgEl) {
+    imgEl.src = "";
+    imgEl.style.display = "none";
+  }
+  if (emptyEl) emptyEl.style.display = "flex";
+  if (delBtn) delBtn.style.display = "none";
+  
+  updateRefCountBadge();
+}
+
+function updateRefCountBadge() {
+  const count = studioState.referenceImages.filter(Boolean).length;
   const badge = document.getElementById("ref_count_badge");
-  if (!container) return;
-  
-  container.innerHTML = "";
-  if (badge) badge.textContent = `${studioState.referenceImages.length} / 3 selected`;
-  
-  studioState.referenceImages.forEach((file, index) => {
-    const item = document.createElement("div");
-    item.className = "ref-thumb-item";
-    
-    const img = document.createElement("img");
-    img.src = URL.createObjectURL(file);
-    img.alt = `Ref ${index + 1}`;
-    
-    const removeBtn = document.createElement("button");
-    removeBtn.className = "ref-thumb-remove";
-    removeBtn.type = "button";
-    removeBtn.innerHTML = '<i class="fa-solid fa-xmark"></i>';
-    removeBtn.title = "Remove image";
-    removeBtn.onclick = (e) => {
-      e.stopPropagation();
-      removeStudioRefImage(index);
-    };
-    
-    item.appendChild(img);
-    item.appendChild(removeBtn);
-    container.appendChild(item);
-  });
-}
-
-function removeStudioRefImage(index) {
-  studioState.referenceImages.splice(index, 1);
-  renderStudioRefThumbnails();
+  if (badge) badge.textContent = `${count} / 3`;
 }
 
 // Handle Keyframe Uploads (First & Last frame)
@@ -895,19 +895,19 @@ function handleKeyframeUpload(e, position) {
   if (position === "first") {
     studioState.firstFrame = file;
     const preview = document.getElementById("preview_first_frame");
-    const emptyState = document.getElementById("empty_first_frame");
+    const emptyState = document.getElementById("keyframe_body_first");
     const clearBtn = document.getElementById("clear_first_frame_btn");
     if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = "block"; }
     if (emptyState) emptyState.style.display = "none";
-    if (clearBtn) clearBtn.style.display = "block";
+    if (clearBtn) clearBtn.style.display = "flex";
   } else {
     studioState.lastFrame = file;
     const preview = document.getElementById("preview_last_frame");
-    const emptyState = document.getElementById("empty_last_frame");
+    const emptyState = document.getElementById("keyframe_body_last");
     const clearBtn = document.getElementById("clear_last_frame_btn");
     if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = "block"; }
     if (emptyState) emptyState.style.display = "none";
-    if (clearBtn) clearBtn.style.display = "block";
+    if (clearBtn) clearBtn.style.display = "flex";
   }
 }
 
@@ -915,7 +915,7 @@ function clearKeyframe(position) {
   if (position === "first") {
     studioState.firstFrame = null;
     const preview = document.getElementById("preview_first_frame");
-    const emptyState = document.getElementById("empty_first_frame");
+    const emptyState = document.getElementById("keyframe_body_first");
     const clearBtn = document.getElementById("clear_first_frame_btn");
     const input = document.getElementById("studio_first_frame_input");
     if (preview) { preview.src = ""; preview.style.display = "none"; }
@@ -925,7 +925,7 @@ function clearKeyframe(position) {
   } else {
     studioState.lastFrame = null;
     const preview = document.getElementById("preview_last_frame");
-    const emptyState = document.getElementById("empty_last_frame");
+    const emptyState = document.getElementById("keyframe_body_last");
     const clearBtn = document.getElementById("clear_last_frame_btn");
     const input = document.getElementById("studio_last_frame_input");
     if (preview) { preview.src = ""; preview.style.display = "none"; }
@@ -959,7 +959,7 @@ function clearSourceVideo() {
   
   if (videoPlayer) videoPlayer.src = "";
   if (previewContainer) previewContainer.style.display = "none";
-  if (emptyState) emptyState.style.display = "block";
+  if (emptyState) emptyState.style.display = "flex";
   if (input) input.value = "";
 }
 

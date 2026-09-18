@@ -15,7 +15,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
   <!-- Stylesheet -->
-  <link rel="stylesheet" href="/static/css/style.css?v=1.0.1">
+  <link rel="stylesheet" href="css/style.css?v=2.0.1">
 </head>
 <body>
 
@@ -67,13 +67,19 @@
 
     <!-- ==================== FLOW 1: AI VIDEO STUDIO (PRIMARY GOOGLE FLOW) ==================== -->
     <section id="view_video_studio" class="studio-workspace-section active">
-      <div class="studio-headline-block">
-        <div class="hero-badge">
-          <span class="pulse-dot"></span>
-          Google Flow · Gemini Omni Flash 1.1 Video Studio
+      <!-- Studio Subheader Bar -->
+      <div class="studio-toolbar-strip">
+        <div class="studio-status-wrap">
+          <div class="studio-pill-status">
+            <span class="pulse-dot"></span>
+            <strong>Omni Flash 1.1</strong> · Multimodal Video Engine
+          </div>
+          <span class="studio-tagline">Prompt-to-video, multi-reference consistency, keyframe transition &amp; video-to-video editing</span>
         </div>
-        <h2 class="studio-main-title">Next-Gen Multimodal <span class="gradient-text">AI Video Generator</span></h2>
-        <p class="studio-main-sub">Generate cinematic 720p, 1080p, or 4K videos with up to 3 reference images, first &amp; end frame interpolation, and video-to-video editing.</p>
+        <div class="studio-engine-pills">
+          <span class="engine-badge"><i class="fa-solid fa-sparkles"></i> 4K / 1080p / 720p</span>
+          <span class="engine-badge"><i class="fa-solid fa-layer-group"></i> Up to 3 Image Refs</span>
+        </div>
       </div>
 
       <div class="studio-grid-layout">
@@ -87,7 +93,7 @@
             </button>
             <button type="button" class="mode-tab-btn" data-mode="first_last_frame" onclick="setStudioMode('first_last_frame')">
               <i class="fa-solid fa-arrows-left-right-to-line"></i>
-              <span>First &amp; End Frame</span>
+              <span>Start &amp; End Frame</span>
             </button>
             <button type="button" class="mode-tab-btn" data-mode="edit_video" onclick="setStudioMode('edit_video')">
               <i class="fa-solid fa-film"></i>
@@ -98,53 +104,76 @@
           <!-- Mode 1: Reference Images Upload Area -->
           <div class="studio-mode-pane active" id="pane_prompt_images">
             <div class="field-label-row">
-              <label class="field-label"><i class="fa-solid fa-images"></i> Reference Images (up to 3)</label>
-              <span class="field-hint" id="ref_count_badge">0 / 3 selected</span>
+              <label class="field-label"><i class="fa-solid fa-images"></i> Consistency References <span class="field-subtext">(Character, Product, Style)</span></label>
+              <span class="field-hint" id="ref_count_badge">0 / 3</span>
             </div>
-            <div class="studio-dropzone" id="dropzone_reference" onclick="document.getElementById('studio_ref_input').click()">
-              <i class="fa-solid fa-cloud-arrow-up drop-icon"></i>
-              <h4>Drop consistency reference images</h4>
-              <p>Upload characters, products, or styles (PNG, JPG, WEBP)</p>
-              <input type="file" id="studio_ref_input" multiple accept="image/*" style="display: none;" onchange="handleStudioRefImages(event)">
+            
+            <div class="ref-slots-row">
+              <!-- Slot 1 -->
+              <div class="ref-slot" id="ref_slot_0" onclick="triggerRefUpload(0)">
+                <div class="slot-empty" id="slot_empty_0">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>Ref 1</span>
+                </div>
+                <img id="slot_img_0" class="slot-img" style="display:none;" alt="Ref 1">
+                <button type="button" class="slot-del-btn" id="slot_del_0" style="display:none;" onclick="event.stopPropagation(); removeSlotRef(0)"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+
+              <!-- Slot 2 -->
+              <div class="ref-slot" id="ref_slot_1" onclick="triggerRefUpload(1)">
+                <div class="slot-empty" id="slot_empty_1">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>Ref 2</span>
+                </div>
+                <img id="slot_img_1" class="slot-img" style="display:none;" alt="Ref 2">
+                <button type="button" class="slot-del-btn" id="slot_del_1" style="display:none;" onclick="event.stopPropagation(); removeSlotRef(1)"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+
+              <!-- Slot 3 -->
+              <div class="ref-slot" id="ref_slot_2" onclick="triggerRefUpload(2)">
+                <div class="slot-empty" id="slot_empty_2">
+                  <i class="fa-solid fa-plus"></i>
+                  <span>Ref 3</span>
+                </div>
+                <img id="slot_img_2" class="slot-img" style="display:none;" alt="Ref 3">
+                <button type="button" class="slot-del-btn" id="slot_del_2" style="display:none;" onclick="event.stopPropagation(); removeSlotRef(2)"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+
+              <input type="file" id="studio_ref_input_hidden" accept="image/*" style="display: none;" onchange="handleSingleSlotUpload(event)">
             </div>
-            <div class="thumb-grid" id="studio_ref_thumbnails"></div>
           </div>
 
           <!-- Mode 2: First & End Frame Upload Area -->
           <div class="studio-mode-pane" id="pane_first_last_frame" style="display: none;">
             <div class="field-label-row">
               <label class="field-label"><i class="fa-solid fa-arrows-split-up-and-left"></i> Keyframe Transition Framing</label>
-              <span class="field-hint">Omni Flash interpolates motion between both</span>
+              <span class="field-hint">Interpolates motion smoothly between frames</span>
             </div>
-            <div class="keyframes-grid">
-              <div class="keyframe-card">
-                <div class="keyframe-header">
-                  <span class="keyframe-badge">Start Frame (t=0s)</span>
-                  <button type="button" class="btn-clear-frame" id="clear_first_frame_btn" style="display:none;" onclick="clearKeyframe('first')"><i class="fa-solid fa-xmark"></i></button>
+            <div class="keyframes-compact-row">
+              <div class="keyframe-compact-card" onclick="document.getElementById('studio_first_frame_input').click()">
+                <div class="keyframe-top-tag">Start Frame (0s)</div>
+                <div class="keyframe-compact-body" id="keyframe_body_first">
+                  <i class="fa-regular fa-image"></i>
+                  <span>Select start image</span>
                 </div>
-                <div class="keyframe-dropzone" id="dropzone_first_frame" onclick="document.getElementById('studio_first_frame_input').click()">
-                  <div class="empty-frame-state" id="empty_first_frame">
-                    <i class="fa-regular fa-image"></i>
-                    <span>Select Start Image</span>
-                  </div>
-                  <img id="preview_first_frame" class="keyframe-preview-img" alt="First frame preview" style="display: none;">
-                  <input type="file" id="studio_first_frame_input" accept="image/*" style="display: none;" onchange="handleKeyframeUpload(event, 'first')">
-                </div>
+                <img id="preview_first_frame" class="keyframe-img-preview" style="display:none;" alt="Start frame">
+                <button type="button" class="keyframe-remove-btn" id="clear_first_frame_btn" style="display:none;" onclick="event.stopPropagation(); clearKeyframe('first')"><i class="fa-solid fa-xmark"></i></button>
+                <input type="file" id="studio_first_frame_input" accept="image/*" style="display:none;" onchange="handleKeyframeUpload(event, 'first')">
               </div>
 
-              <div class="keyframe-card">
-                <div class="keyframe-header">
-                  <span class="keyframe-badge">End Frame (t=end)</span>
-                  <button type="button" class="btn-clear-frame" id="clear_last_frame_btn" style="display:none;" onclick="clearKeyframe('last')"><i class="fa-solid fa-xmark"></i></button>
+              <div class="keyframe-arrow-divider">
+                <i class="fa-solid fa-arrow-right-long"></i>
+              </div>
+
+              <div class="keyframe-compact-card" onclick="document.getElementById('studio_last_frame_input').click()">
+                <div class="keyframe-top-tag">End Frame (Final)</div>
+                <div class="keyframe-compact-body" id="keyframe_body_last">
+                  <i class="fa-regular fa-image"></i>
+                  <span>Select end image</span>
                 </div>
-                <div class="keyframe-dropzone" id="dropzone_last_frame" onclick="document.getElementById('studio_last_frame_input').click()">
-                  <div class="empty-frame-state" id="empty_last_frame">
-                    <i class="fa-regular fa-image"></i>
-                    <span>Select End Image</span>
-                  </div>
-                  <img id="preview_last_frame" class="keyframe-preview-img" alt="Last frame preview" style="display: none;">
-                  <input type="file" id="studio_last_frame_input" accept="image/*" style="display: none;" onchange="handleKeyframeUpload(event, 'last')">
-                </div>
+                <img id="preview_last_frame" class="keyframe-img-preview" style="display:none;" alt="End frame">
+                <button type="button" class="keyframe-remove-btn" id="clear_last_frame_btn" style="display:none;" onclick="event.stopPropagation(); clearKeyframe('last')"><i class="fa-solid fa-xmark"></i></button>
+                <input type="file" id="studio_last_frame_input" accept="image/*" style="display:none;" onchange="handleKeyframeUpload(event, 'last')">
               </div>
             </div>
           </div>
@@ -155,17 +184,19 @@
               <label class="field-label"><i class="fa-solid fa-video"></i> Source Video to Edit</label>
               <span class="field-hint">MP4, WebM, MOV</span>
             </div>
-            <div class="studio-dropzone video-dropzone" id="dropzone_source_video" onclick="document.getElementById('studio_video_input').click()">
-              <div id="video_empty_state">
-                <i class="fa-solid fa-file-video drop-icon"></i>
-                <h4>Upload source video to modify</h4>
-                <p>Drag &amp; drop video file to transform styling, background, or action</p>
+            <div class="video-compact-box" onclick="document.getElementById('studio_video_input').click()">
+              <div id="video_empty_state" class="video-empty-compact">
+                <i class="fa-solid fa-film"></i>
+                <div>
+                  <strong>Upload source video to modify</strong>
+                  <span>Click or drag &amp; drop video clip</span>
+                </div>
               </div>
-              <div id="video_preview_container" style="display: none;" class="source-video-preview">
+              <div id="video_preview_container" style="display:none;" class="video-preview-compact">
                 <video id="preview_source_video" controls muted></video>
-                <button type="button" class="btn btn-secondary btn-sm" onclick="event.stopPropagation(); clearSourceVideo()"><i class="fa-solid fa-trash"></i> Remove Video</button>
+                <button type="button" class="btn-del-video" onclick="event.stopPropagation(); clearSourceVideo()"><i class="fa-solid fa-trash"></i> Remove</button>
               </div>
-              <input type="file" id="studio_video_input" accept="video/*" style="display: none;" onchange="handleSourceVideoUpload(event)">
+              <input type="file" id="studio_video_input" accept="video/*" style="display:none;" onchange="handleSourceVideoUpload(event)">
             </div>
           </div>
 
@@ -176,77 +207,72 @@
                 <i class="fa-solid fa-feather-pointed"></i> <span id="prompt_label_text">Scene Prompt &amp; Motion Directions</span>
               </label>
             </div>
+            
+            <textarea id="studio_prompt" class="studio-textarea" rows="3" placeholder="Describe the scene action, camera motion, atmosphere, and styling in detail..."></textarea>
+
             <!-- Camera / Motion preset chips -->
             <div class="camera-preset-chips">
-              <span class="preset-label">Direct camera:</span>
+              <span class="preset-label"><i class="fa-solid fa-video"></i> Camera:</span>
               <button type="button" class="chip-preset" onclick="appendPromptKeyword('Slow cinematic push-in tracking shot, shallow depth of field')">🎥 Push In</button>
               <button type="button" class="chip-preset" onclick="appendPromptKeyword('360 degree smooth orbit camera movement around subject')">🔄 Orbit</button>
-              <button type="button" class="chip-preset" onclick="appendPromptKeyword('Sweeping aerial drone shot with dramatic golden hour lighting')">🚁 Drone</button>
-              <button type="button" class="chip-preset" onclick="appendPromptKeyword('Macro close-up focus pull with smooth motion blur')">🔍 Macro</button>
-              <button type="button" class="chip-preset" onclick="appendPromptKeyword('Handheld natural UGC camera motion with subtle micro-drift')">🤳 Handheld</button>
+              <button type="button" class="chip-preset" onclick="appendPromptKeyword('Sweeping aerial drone shot with golden hour lighting')">🚁 Drone</button>
+              <button type="button" class="chip-preset" onclick="appendPromptKeyword('Macro close-up focus pull, crisp texture detail')">🔍 Macro</button>
+              <button type="button" class="chip-preset" onclick="appendPromptKeyword('Natural handheld UGC camera motion with subtle micro-drift')">🤳 Handheld</button>
             </div>
-            <textarea id="studio_prompt" class="studio-textarea" rows="4" placeholder="Describe the scene, lighting, action, and style in rich detail..."></textarea>
+          </div>
+
+          <!-- Format & Engine Controls -->
+          <div class="studio-specs-compact">
+            <!-- Aspect Ratio -->
+            <div class="spec-row">
+              <span class="spec-inline-label"><i class="fa-solid fa-crop-simple"></i> Ratio:</span>
+              <div class="pill-group" id="aspect_ratio_selector">
+                <button type="button" class="pill-btn active" data-ratio="9:16" onclick="setStudioAspectRatio('9:16')">
+                  <i class="fa-solid fa-mobile-screen"></i> 9:16 <span class="pill-sub">Vertical</span>
+                </button>
+                <button type="button" class="pill-btn" data-ratio="16:9" onclick="setStudioAspectRatio('16:9')">
+                  <i class="fa-solid fa-tv"></i> 16:9 <span class="pill-sub">Wide</span>
+                </button>
+                <button type="button" class="pill-btn" data-ratio="1:1" onclick="setStudioAspectRatio('1:1')">
+                  <i class="fa-regular fa-square"></i> 1:1 <span class="pill-sub">Square</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Resolution & Duration in one balanced row -->
+            <div class="spec-dual-row">
+              <div class="spec-dual-col">
+                <span class="spec-inline-label"><i class="fa-solid fa-wand-magic"></i> Resolution:</span>
+                <div class="pill-group" id="resolution_selector">
+                  <button type="button" class="pill-btn active" data-res="720p" onclick="setStudioResolution('720p')">720p</button>
+                  <button type="button" class="pill-btn" data-res="1080p" onclick="setStudioResolution('1080p')">1080p</button>
+                  <button type="button" class="pill-btn" data-res="4K" onclick="setStudioResolution('4K')">4K</button>
+                </div>
+              </div>
+
+              <div class="spec-dual-col">
+                <span class="spec-inline-label"><i class="fa-solid fa-clock"></i> Duration:</span>
+                <div class="pill-group" id="duration_selector">
+                  <button type="button" class="pill-btn" data-dur="4" onclick="setStudioDuration(4)">4s</button>
+                  <button type="button" class="pill-btn active" data-dur="6" onclick="setStudioDuration(6)">6s</button>
+                  <button type="button" class="pill-btn" data-dur="8" onclick="setStudioDuration(8)">8s</button>
+                  <button type="button" class="pill-btn" data-dur="10" onclick="setStudioDuration(10)">10s</button>
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Collapsible Negative Prompt -->
           <details class="negative-prompt-details">
             <summary><i class="fa-solid fa-ban"></i> Negative Prompt (Optional)</summary>
-            <textarea id="studio_negative_prompt" class="studio-textarea-sm" rows="2" placeholder="watermark, blurry, distortion, warped limbs, cartoonish, low resolution..."></textarea>
+            <textarea id="studio_negative_prompt" class="studio-textarea-sm" rows="2" placeholder="watermark, blur, jerky motion, distorted hands, cartoonish, low resolution..."></textarea>
           </details>
 
-          <!-- Format & Engine Controls -->
-          <div class="specs-grid">
-            <!-- Aspect Ratio -->
-            <div class="spec-control-item">
-              <label class="spec-label"><i class="fa-solid fa-crop-simple"></i> Aspect Ratio</label>
-              <div class="pill-selector" id="aspect_ratio_selector">
-                <button type="button" class="pill-btn" data-ratio="16:9" onclick="setStudioAspectRatio('16:9')">
-                  <i class="fa-solid fa-tv"></i> 16:9 Landscape
-                </button>
-                <button type="button" class="pill-btn active" data-ratio="9:16" onclick="setStudioAspectRatio('9:16')">
-                  <i class="fa-solid fa-mobile-screen"></i> 9:16 Vertical
-                </button>
-                <button type="button" class="pill-btn" data-ratio="1:1" onclick="setStudioAspectRatio('1:1')">
-                  <i class="fa-regular fa-square"></i> 1:1 Square
-                </button>
-              </div>
-            </div>
-
-            <!-- Resolution -->
-            <div class="spec-control-item">
-              <label class="spec-label"><i class="fa-solid fa-wand-magic"></i> Resolution</label>
-              <div class="pill-selector" id="resolution_selector">
-                <button type="button" class="pill-btn active" data-res="720p" onclick="setStudioResolution('720p')">
-                  720p <span class="pill-sub">Fast</span>
-                </button>
-                <button type="button" class="pill-btn" data-res="1080p" onclick="setStudioResolution('1080p')">
-                  1080p <span class="pill-sub">FHD</span>
-                </button>
-                <button type="button" class="pill-btn" data-res="4K" onclick="setStudioResolution('4K')">
-                  4K <span class="pill-sub">UHD</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Duration -->
-            <div class="spec-control-item">
-              <label class="spec-label"><i class="fa-solid fa-clock"></i> Duration</label>
-              <div class="pill-selector" id="duration_selector">
-                <button type="button" class="pill-btn" data-dur="4" onclick="setStudioDuration(4)">4s</button>
-                <button type="button" class="pill-btn active" data-dur="6" onclick="setStudioDuration(6)">6s</button>
-                <button type="button" class="pill-btn" data-dur="8" onclick="setStudioDuration(8)">8s</button>
-                <button type="button" class="pill-btn" data-dur="10" onclick="setStudioDuration(10)">10s</button>
-              </div>
-            </div>
-          </div>
-
           <!-- Generate CTA Button -->
-          <div class="studio-action-row">
-            <button type="button" id="studio_generate_btn" class="btn btn-primary btn-xl studio-submit-btn" onclick="submitStudioVideo()">
-              <i class="fa-solid fa-sparkles"></i>
-              <span>Generate with Omni Flash 1.1</span>
-            </button>
-          </div>
+          <button type="button" id="studio_generate_btn" class="btn btn-primary btn-xl studio-submit-btn" onclick="submitStudioVideo()">
+            <i class="fa-solid fa-play"></i>
+            <span>Generate Video with Omni Flash 1.1</span>
+          </button>
         </div>
 
         <!-- Right: Studio Playback Canvas & History Reel -->
@@ -255,7 +281,7 @@
           <div class="glass-card studio-player-card">
             <div class="player-card-header">
               <div class="player-title-info">
-                <h3>Studio Player</h3>
+                <h3><i class="fa-solid fa-clapperboard"></i> Studio Player</h3>
                 <div class="player-meta-badges">
                   <span class="meta-tag" id="player_res_badge">9:16 Vertical · 720p</span>
                   <span class="meta-tag" id="player_dur_badge">6s</span>
@@ -276,14 +302,14 @@
                 <div class="glow-orb"></div>
                 <div class="flow-icon-wrap"><i class="fa-solid fa-play"></i></div>
                 <h4>Ready to generate</h4>
-                <p>Select your mode, enter prompts or upload reference images, then click Generate.</p>
+                <p>Configure prompt, references, and format, then click Generate to render with Omni Flash 1.1.</p>
               </div>
 
               <!-- Loading State Overlay -->
               <div class="player-loading-state" id="player_loading_state" style="display: none;">
                 <div class="spinner-glow"></div>
-                <h4 id="studio_loading_title">Generating with Omni Flash 1.1</h4>
-                <p id="studio_loading_sub">Synthesizing frames and motion vectors...</p>
+                <h4 id="studio_loading_title">Synthesizing with Omni Flash 1.1</h4>
+                <p id="studio_loading_sub">Rendering frames and interpolating motion...</p>
                 <div class="loading-progress-bar"><div class="loading-progress-fill" id="studio_progress_bar"></div></div>
               </div>
 
@@ -299,7 +325,7 @@
               <span class="history-counter" id="history_count">0 videos</span>
             </div>
             <div class="history-reel" id="studio_history_reel">
-              <div class="history-empty" id="history_empty_msg">Generated videos in this session will appear here for instant replay and comparison.</div>
+              <div class="history-empty" id="history_empty_msg">Generated clips in this session will appear here for instant replay and comparison.</div>
             </div>
           </div>
         </div>
@@ -584,6 +610,6 @@
     </div>
   </div>
 
-  <script src="/static/js/app.js?v=1.0.1"></script>
+  <script src="js/app.js?v=2.0.1"></script>
 </body>
 </html>

@@ -1027,8 +1027,10 @@ async def get_video_status(job_id: str):
         raise HTTPException(status_code=404, detail="Job not found")
     return job
 
-# Mount static folder
+# Mount static folders
 app.mount("/static", StaticFiles(directory="static"), name="static")
+app.mount("/css", StaticFiles(directory="static/css"), name="css")
+app.mount("/js", StaticFiles(directory="static/js"), name="js")
 
 # Serve index.html at root
 @app.get("/")
