@@ -762,6 +762,264 @@ async def generate_video(
         logger.error(f"Video generation failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+async def generate_studio_video_background(
+    job_id: str,
+    mode: str,
+    prompt: str,
+    negative_prompt: Optional[str],
+    aspect_ratio: str,
+    resolution: str,
+    duration: int,
+    reference_image_paths: List[str],
+    first_frame_path: Optional[str],
+    last_frame_path: Optional[str],
+    source_video_path: Optional[str],
+    api_key: Optional[str]
+):
+    try:
+        client = get_client(api_key)
+        
+        # Build prompt instructions based on mode
+        orientation_label = "horizontal landscape (16:9)" if aspect_ratio == "16:9" else ("vertical portrait (9:16)" if aspect_ratio == "9:16" else "square (1:1)")
+        
+        system_instructions = (
+            f"Generate an ultra-high quality AI video in {orientation_label}, target resolution: {resolution}, duration: {duration} seconds.\n"
+        )
+        
+        if mode == "first_last_frame":
+            studio_prompt = (
+                f"{system_instructions}\n"
+                "MODE: FIRST FRAME & LAST FRAME INTERPOLATION.\n"
+                "The first attached image represents the EXACT START FRAME (t=0.0s).\n"
+                f"The second attached image represents the EXACT LAST FRAME (t={duration}.0s).\n"
+                "Render a fluid, continuous cinematic sequence transitioning seamlessly from the start frame composition to the end frame composition.\n"
+                f"Action and motion directions: {prompt}\n"
+            )
+        elif mode == "edit_video":
+            studio_prompt = (
+                f"{system_instructions}\n"
+                "MODE: VIDEO-TO-VIDEO EDITING / RE-RENDERING.\n"
+                "The attached video is the source reference video.\n"
+                "Modify and transform the source video following these edit instructions while preserving camera motion, core composition, and subject timing:\n"
+                f"Edit Instructions: {prompt}\n"
+            )
+        else: # prompt_images
+            ref_clause = f"Reference the {len(reference_image_paths)} attached reference images to maintain strict character identity, asset appearance, lighting, and style consistency.\n" if reference_image_paths else ""
+            studio_prompt = (
+                f"{system_instructions}\n"
+                "MODE: TEXT & REFERENCE IMAGES TO VIDEO.\n"
+                f"{ref_clause}"
+                f"Scene Description and Action: {prompt}\n"
+            )
+            
+        if negative_prompt and negative_prompt.strip():
+            studio_prompt += f"NEGATIVE PROMPT (strictly avoid): {negative_prompt.strip()}\n"
+
+        inputs = []
+        
+        # 1. First & Last Frame Mode
+        if mode == "first_last_frame":
+            for frame_path in [first_frame_path, last_frame_path]:
+                if frame_path and os.path.exists(frame_path):
+                    with open(frame_path, "rb") as f:
+                        img_bytes = f.read()
+                    b64 = safe_b64encode(img_bytes).decode('utf-8')
+                    ext = os.path.splitext(frame_path)[1].lower()
+                    mime = "image/png" if ext == ".png" else ("image/webp" if ext == ".webp" else "image/jpeg")
+                    inputs.append({"type": "image", "data": b64, "mime_type": mime})
+                    
+        # 2. Edit Video Mode
+        elif mode == "edit_video" and source_video_path and os.path.exists(source_video_path):
+            with open(source_video_path, "rb") as f:
+                vid_bytes = f.read()
+            b64 = safe_b64encode(vid_bytes).decode('utf-8')
+            ext = os.path.splitext(source_video_path)[1].lower()
+            mime = "video/quicktime" if ext in [".mov", ".qt"] else ("video/webm" if ext == ".webm" else "video/mp4")
+            inputs.append({"type": "video", "data": b64, "mime_type": mime})
+            
+        # 3. Reference images
+        elif reference_image_paths:
+            for img_path in reference_image_paths:
+                if img_path and os.path.exists(img_path):
+                    with open(img_path, "rb") as f:
+                        img_bytes = f.read()
+                    b64 = safe_b64encode(img_bytes).decode('utf-8')
+                    ext = os.path.splitext(img_path)[1].lower()
+                    mime = "image/png" if ext == ".png" else ("image/webp" if ext == ".webp" else "image/jpeg")
+                    inputs.append({"type": "image", "data": b64, "mime_type": mime})
+                    
+        inputs.append({"type": "text", "text": studio_prompt})
+        
+        logger.info(f"Dispatching Studio Omni Flash video job {job_id} (mode={mode}, res={resolution}, ratio={aspect_ratio}, dur={duration}s)...")
+        
+        video_b64 = None
+        # Attempt primary generation using client.interactions.create
+        try:
+            interaction = client.interactions.create(
+                model='gemini-omni-flash-preview',
+                input=inputs
+            )
+            if hasattr(interaction, 'output_video') and interaction.output_video:
+                video_b64 = interaction.output_video.data
+            else:
+                for step in getattr(interaction, 'steps', []):
+                    if isinstance(step, dict) and step.get('type') == 'model_output' and step.get('content'):
+                        for part in step['content']:
+                            if part.get('type') == 'video':
+                                video_b64 = part.get('data')
+                                break
+        except Exception as api_err:
+            logger.warning(f"Interactions API attempt failed: {api_err}. Trying generate_videos fallback...")
+            try:
+                config_args = {
+                    "aspect_ratio": aspect_ratio,
+                    "resolution": resolution,
+                    "duration_seconds": duration,
+                }
+                if negative_prompt:
+                    config_args["negative_prompt"] = negative_prompt
+                    
+                first_img = None
+                if mode == "first_last_frame" and first_frame_path and os.path.exists(first_frame_path):
+                    with open(first_frame_path, "rb") as f:
+                        first_img = types.Image(image_bytes=f.read())
+                elif reference_image_paths and os.path.exists(reference_image_paths[0]):
+                    with open(reference_image_paths[0], "rb") as f:
+                        first_img = types.Image(image_bytes=f.read())
+                        
+                if mode == "first_last_frame" and last_frame_path and os.path.exists(last_frame_path):
+                    with open(last_frame_path, "rb") as f:
+                        config_args["last_frame"] = types.Image(image_bytes=f.read())
+                        
+                gen_config = types.GenerateVideosConfig(**config_args)
+                op = client.models.generate_videos(
+                    model="gemini-omni-flash-preview",
+                    prompt=prompt,
+                    image=first_img,
+                    config=gen_config
+                )
+                import time
+                while not op.done:
+                    time.sleep(5)
+                    op = client.operations.get(op)
+                if op.response and op.response.generated_videos:
+                    video_bytes = op.response.generated_videos[0].video.video_bytes
+                    video_b64 = safe_b64encode(video_bytes).decode('utf-8')
+            except Exception as gen_err:
+                logger.error(f"Fallback generate_videos also failed: {gen_err}")
+                raise api_err
+                
+        if not video_b64:
+            video_jobs[job_id] = {"status": "failed", "error": "Omni Flash 1.1 did not return any video output"}
+            return
+            
+        import uuid
+        filename = f"studio_video_{uuid.uuid4().hex}.mp4"
+        file_path = os.path.join("static/generated", filename)
+        
+        video_data = safe_b64decode(video_b64)
+        with open(file_path, "wb") as f:
+            f.write(video_data)
+            
+        logger.info(f"Studio video successfully generated and saved to {file_path}")
+        video_jobs[job_id] = {
+            "status": "success",
+            "video_url": f"/static/generated/{filename}",
+            "mode": mode,
+            "resolution": resolution,
+            "aspect_ratio": aspect_ratio,
+            "duration": duration,
+            "prompt": prompt
+        }
+    except Exception as e:
+        logger.error(f"Studio background generation failed: {e}", exc_info=True)
+        video_jobs[job_id] = {"status": "failed", "error": str(e)}
+
+@app.post("/api/studio/generate-video")
+async def studio_generate_video(
+    background_tasks: BackgroundTasks,
+    mode: str = Form("prompt_images"),
+    prompt: str = Form(...),
+    negative_prompt: Optional[str] = Form(None),
+    aspect_ratio: str = Form("16:9"),
+    resolution: str = Form("720p"),
+    duration: int = Form(6),
+    reference_images: Optional[List[UploadFile]] = File(None),
+    first_frame: Optional[UploadFile] = File(None),
+    last_frame: Optional[UploadFile] = File(None),
+    source_video: Optional[UploadFile] = File(None),
+    x_api_key: Optional[str] = Header(None)
+):
+    try:
+        import uuid
+        job_id = f"job_studio_{uuid.uuid4().hex}"
+        video_jobs[job_id] = {"status": "processing"}
+        
+        # Save reference images if present
+        saved_ref_paths = []
+        if reference_images:
+            for img in reference_images:
+                if img and img.filename:
+                    ext = os.path.splitext(img.filename)[1] or ".jpg"
+                    fname = f"ref_{uuid.uuid4().hex}{ext}"
+                    fpath = os.path.join("static/generated", fname)
+                    content = await img.read()
+                    with open(fpath, "wb") as f:
+                        f.write(content)
+                    saved_ref_paths.append(fpath)
+                    
+        # Save first and last frame if present
+        saved_first_frame = None
+        if first_frame and first_frame.filename:
+            ext = os.path.splitext(first_frame.filename)[1] or ".jpg"
+            fname = f"frame_start_{uuid.uuid4().hex}{ext}"
+            fpath = os.path.join("static/generated", fname)
+            content = await first_frame.read()
+            with open(fpath, "wb") as f:
+                f.write(content)
+            saved_first_frame = fpath
+            
+        saved_last_frame = None
+        if last_frame and last_frame.filename:
+            ext = os.path.splitext(last_frame.filename)[1] or ".jpg"
+            fname = f"frame_end_{uuid.uuid4().hex}{ext}"
+            fpath = os.path.join("static/generated", fname)
+            content = await last_frame.read()
+            with open(fpath, "wb") as f:
+                f.write(content)
+            saved_last_frame = fpath
+            
+        saved_source_video = None
+        if source_video and source_video.filename:
+            ext = os.path.splitext(source_video.filename)[1] or ".mp4"
+            fname = f"source_vid_{uuid.uuid4().hex}{ext}"
+            fpath = os.path.join("static/generated", fname)
+            content = await source_video.read()
+            with open(fpath, "wb") as f:
+                f.write(content)
+            saved_source_video = fpath
+            
+        background_tasks.add_task(
+            generate_studio_video_background,
+            job_id=job_id,
+            mode=mode,
+            prompt=prompt,
+            negative_prompt=negative_prompt,
+            aspect_ratio=aspect_ratio,
+            resolution=resolution,
+            duration=duration,
+            reference_image_paths=saved_ref_paths,
+            first_frame_path=saved_first_frame,
+            last_frame_path=saved_last_frame,
+            source_video_path=saved_source_video,
+            api_key=x_api_key
+        )
+        
+        return {"status": "processing", "job_id": job_id}
+    except Exception as e:
+        logger.error(f"Studio video dispatch failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/video-status/{job_id}")
 async def get_video_status(job_id: str):
     job = video_jobs.get(job_id)
