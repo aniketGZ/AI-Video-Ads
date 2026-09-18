@@ -164,7 +164,7 @@ async def analyze_campaign(
         )
         
         research_response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             contents=grounding_research_prompt,
             config=grounding_config
         )
@@ -224,7 +224,7 @@ async def analyze_campaign(
                     "text on the label, contents color (e.g. blue gel with beads), and best looking hero angles."
                 )
                 image_analysis_response = client.models.generate_content(
-                    model="gemini-2.5-flash",
+                    model="gemini-3.6-flash",
                     contents=[image_prompt] + image_parts
                 )
                 product_images_analysis = image_analysis_response.text
@@ -281,7 +281,7 @@ async def analyze_campaign(
         )
         
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model="gemini-3.6-flash",
             contents=campaign_prompt,
             config=schema_config
         )
