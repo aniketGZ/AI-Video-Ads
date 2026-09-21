@@ -1032,11 +1032,25 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/css", StaticFiles(directory="static/css"), name="css")
 app.mount("/js", StaticFiles(directory="static/js"), name="js")
 
-# Serve index.html at root
-@app.get("/")
-async def read_index():
-    from fastapi.responses import FileResponse
+# Serve index.html at root (supports both GET and HEAD for cloud health checks)
+@app.api_route("/", methods=["GET", "HEAD"])
+async def read_index(request: Request):
+    from fastapi.responses import FileResponse, Response
+    if request.method == "HEAD":
+        return Response(status_code=200)
     return FileResponse("static/index.html")
+
+# Dedicated health check endpoint for Render/cloud deployment monitors
+@app.api_route("/healthz", methods=["GET", "HEAD"])
+@app.api_route("/health", methods=["GET", "HEAD"])
+async def health_check():
+    return {"status": "ok"}
+
+# Favicon handler to prevent 404 spam
+@app.get("/favicon.ico")
+async def favicon():
+    from fastapi.responses import Response
+    return Response(status_code=204)
 
 if __name__ == "__main__":
     import uvicorn
