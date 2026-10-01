@@ -1335,14 +1335,37 @@ async function generateMoneyPrinterVideo() {
     const { job_id } = await res.json();
     let finished = false;
     let pollAttempts = 0;
-    const maxPolls = 300;
+    let consecutiveErrors = 0;
+    const maxPolls = 60;
 
     while (!finished && pollAttempts < maxPolls) {
       pollAttempts++;
       await new Promise(r => setTimeout(r, 2000));
 
-      const statusRes = await fetch(`/api/video-status/${job_id}`);
-      if (!statusRes.ok) continue;
+      let statusRes;
+      try {
+        statusRes = await fetch(`/api/video-status/${job_id}`);
+      } catch (netErr) {
+        consecutiveErrors++;
+        if (consecutiveErrors > 4) {
+          throw new Error("Network connection lost. Please check your connection.");
+        }
+        continue;
+      }
+
+      if (!statusRes.ok) {
+        consecutiveErrors++;
+        if (consecutiveErrors > 3) {
+          let msg = "Job interrupted on server (server may have restarted). Please click Generate again.";
+          try {
+            const errData = await statusRes.json();
+            if (errData.detail) msg = errData.detail;
+          } catch(e) {}
+          throw new Error(msg);
+        }
+        continue;
+      }
+      consecutiveErrors = 0;
 
       const jobData = await statusRes.json();
       if (jobData.status === "success") {
@@ -1381,7 +1404,7 @@ async function generateMoneyPrinterVideo() {
     }
 
     if (!finished) {
-      throw new Error("Video generation timed out. Please try again.");
+      throw new Error("Video generation took too long. Please try again.");
     }
   } catch (err) {
     console.error(err);

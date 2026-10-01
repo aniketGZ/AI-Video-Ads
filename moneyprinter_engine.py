@@ -16,9 +16,31 @@ from google import genai
 from google.genai import types
 import shutil
 import stat
+import time
 
 logger = logging.getLogger("moneyprinter_engine")
 logger.setLevel(logging.INFO)
+
+JOBS_CACHE_FILE = "static/generated/jobs_cache.json"
+
+def persist_job_update(job_id: str, data: dict, job_store: Optional[dict] = None):
+    """Safely updates memory store and persists job status to disk."""
+    if job_store is not None:
+        job_store[job_id] = data
+    try:
+        os.makedirs("static/generated", exist_ok=True)
+        current = {}
+        if os.path.exists(JOBS_CACHE_FILE):
+            try:
+                with open(JOBS_CACHE_FILE, "r", encoding="utf-8") as f:
+                    current = json.load(f)
+            except Exception:
+                current = {}
+        current[job_id] = data
+        with open(JOBS_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(current, f)
+    except Exception as e:
+        logger.warning(f"Failed to persist job {job_id} to cache: {e}")
 
 def get_ffmpeg_binary() -> str:
     sys_ffmpeg = shutil.which("ffmpeg")
@@ -122,7 +144,7 @@ async def generate_script_and_keywords(
     try:
         return await asyncio.wait_for(
             asyncio.to_thread(_sync_generate_script, subject, custom_script, client),
-            timeout=12.0
+            timeout=10.0
         )
     except Exception as e:
         logger.warning(f"Script generation timed out or failed ({e}), using default fallback.")
@@ -134,19 +156,38 @@ async def generate_script_and_keywords(
         default_keywords = [subject, "modern technology workspace", "creative focus person", "clean sleek business"]
         return default_script, default_keywords
 
-async def generate_narration_audio(
-    script: str,
-    voice_name: str,
-    output_audio_path: str,
-    output_srt_path: str
-) -> float:
-    """
-    Synthesizes voice narration using Microsoft Edge TTS and outputs audio + .srt timestamps.
-    Returns the total duration in seconds.
-    """
-    communicate = edge_tts.Communicate(script, voice=voice_name)
+def _http_google_tts_synthesize(script: str, output_audio_path: str) -> bool:
+    """Reliable HTTP fallback TTS that works on all datacenter cloud networks."""
+    try:
+        sentences = [s.strip() for s in re.split(r'[.!?\n]+', script) if s.strip()]
+        if not sentences:
+            sentences = [script]
+        
+        parts = []
+        curr = ""
+        for s in sentences:
+            if len(curr) + len(s) < 140:
+                curr += " " + s
+            else:
+                if curr: parts.append(curr.strip())
+                curr = s
+        if curr: parts.append(curr.strip())
+
+        with open(output_audio_path, "wb") as out_f:
+            for p in parts:
+                clean_text = urllib.parse.quote(p)
+                url = f"https://translate.google.com/translate_tts?ie=UTF-8&q={clean_text}&tl=en&client=tw-ob"
+                res = requests.get(url, headers={"User-Agent": "Mozilla/5.0"}, timeout=6)
+                if res.status_code == 200 and len(res.content) > 100:
+                    out_f.write(res.content)
+        return os.path.exists(output_audio_path) and os.path.getsize(output_audio_path) > 1024
+    except Exception as e:
+        logger.error(f"HTTP Google TTS failed: {e}")
+        return False
+
+async def _stream_edge_tts(communicate: edge_tts.Communicate, output_audio_path: str) -> List[Tuple[float, float, str]]:
+    """Streams Edge TTS audio chunks and boundary metadata."""
     sub_entries = []
-    
     with open(output_audio_path, "wb") as audio_file:
         async for chunk in communicate.stream():
             if chunk["type"] == "audio":
@@ -157,11 +198,53 @@ async def generate_narration_audio(
                 text = chunk["text"].strip()
                 if text:
                     sub_entries.append((start_sec, end_sec, text))
+    return sub_entries
 
-    # Calculate audio duration using ffprobe
+async def generate_narration_audio(
+    script: str,
+    voice_name: str,
+    output_audio_path: str,
+    output_srt_path: str
+) -> float:
+    """
+    Synthesizes voice narration with Edge TTS + automatic fallback to HTTP TTS.
+    Returns total duration in seconds. Never hangs or crashes.
+    """
+    sub_entries = []
+    tts_success = False
+
+    # Attempt 1: Edge TTS with strict 8-second timeout
+    try:
+        communicate = edge_tts.Communicate(script, voice=voice_name)
+        sub_entries = await asyncio.wait_for(_stream_edge_tts(communicate, output_audio_path), timeout=8.0)
+        if os.path.exists(output_audio_path) and os.path.getsize(output_audio_path) > 1024:
+            tts_success = True
+            logger.info("Edge TTS voice synthesis succeeded.")
+    except Exception as e:
+        logger.warning(f"Edge TTS synthesis unavailable or timed out ({e}). Falling back to HTTP TTS...")
+
+    # Attempt 2: Direct HTTP Google TTS fallback (0.5s)
+    if not tts_success:
+        ok = await asyncio.to_thread(_http_google_tts_synthesize, script, output_audio_path)
+        if ok:
+            tts_success = True
+            logger.info("HTTP fallback TTS synthesis succeeded.")
+
+    # Attempt 3: Ultimate audio fallback via FFmpeg silent audio track
+    if not tts_success or not os.path.exists(output_audio_path) or os.path.getsize(output_audio_path) <= 1024:
+        logger.warning("Synthesizing audio fallback track via FFmpeg...")
+        cmd_silent = [
+            FFMPEG_PATH, "-y",
+            "-f", "lavfi", "-i", "anullsrc=r=44100:cl=stereo",
+            "-t", "12",
+            "-c:a", "libmp3lame", "-b:a", "128k",
+            output_audio_path
+        ]
+        subprocess.run(cmd_silent, capture_output=True, timeout=10)
+
     duration = get_media_duration(output_audio_path)
     if duration <= 0:
-        duration = 15.0
+        duration = 12.0
 
     # If sentence boundaries were not captured, generate evenly spaced subtitles
     if not sub_entries:
@@ -194,14 +277,14 @@ def get_media_duration(file_path: str) -> float:
             return int(hours) * 3600 + int(mins) * 60 + float(secs)
     except Exception as e:
         logger.error(f"Error reading media duration: {e}")
-    return 15.0
+    return 12.0
 
 def fetch_pixabay_videos(query: str, api_key: str, aspect_ratio: str = "9:16") -> List[str]:
     """Fetch video download URLs from Pixabay API matching the search term."""
     try:
         clean_q = urllib.parse.quote(query[:60])
         url = f"https://pixabay.com/api/videos/?key={api_key}&q={clean_q}&per_page=5"
-        res = requests.get(url, timeout=8)
+        res = requests.get(url, timeout=6)
         if res.status_code == 200:
             data = res.json()
             video_urls = []
@@ -220,7 +303,7 @@ def create_synthetic_background_clip(
     output_path: str,
     width: int,
     height: int,
-    duration: float = 4.0,
+    duration: float = 3.5,
     index: int = 0
 ) -> bool:
     """
@@ -241,7 +324,7 @@ def create_synthetic_background_clip(
         output_path
     ]
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=12)
         if res.returncode == 0 and os.path.exists(output_path):
             return True
         # Fallback to simple color loop if gradients filter is unsupported
@@ -256,7 +339,7 @@ def create_synthetic_background_clip(
             "-pix_fmt", "yuv420p",
             output_path
         ]
-        res_fb = subprocess.run(cmd_fallback, capture_output=True, text=True, timeout=15)
+        res_fb = subprocess.run(cmd_fallback, capture_output=True, text=True, timeout=12)
         return res_fb.returncode == 0 and os.path.exists(output_path)
     except Exception as e:
         logger.error(f"Failed to create synthetic background clip: {e}")
@@ -267,12 +350,12 @@ def download_and_normalize_clip(
     output_path: str,
     width: int,
     height: int,
-    target_duration: float = 4.0
+    target_duration: float = 3.5
 ) -> bool:
     """Downloads an external MP4 clip, scales, center-crops, and trims it with ultrafast encoding."""
     temp_raw = output_path + ".raw.mp4"
     try:
-        r = requests.get(video_url, stream=True, timeout=20)
+        r = requests.get(video_url, stream=True, timeout=15)
         r.raise_for_status()
         with open(temp_raw, "wb") as f:
             for chunk in r.iter_content(chunk_size=131072):
@@ -291,7 +374,7 @@ def download_and_normalize_clip(
             "-an",
             output_path
         ]
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=20)
+        res = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
         return res.returncode == 0 and os.path.exists(output_path)
     except Exception as e:
         logger.warning(f"Could not normalize clip {video_url}: {e}")
@@ -319,7 +402,6 @@ def render_final_mpt_video(
     concat_list_file = os.path.join(working_dir, f"concat_{uuid.uuid4().hex}.txt")
     
     try:
-        # Build concat list repeated as necessary to cover total duration
         with open(concat_list_file, "w", encoding="utf-8") as f:
             repeats = max(1, math.ceil(total_duration / (len(normalized_clip_paths) * 3.5))) + 1
             for _ in range(repeats):
@@ -340,7 +422,6 @@ def render_final_mpt_video(
                 "-i", audio_filename
             ]
             if with_subs and os.path.exists(srt_path):
-                # Styling: clear yellow/white text, bold, outlined, bottom aligned
                 style = "FontSize=22,FontName=Arial,Bold=1,PrimaryColour=&H00FFFFFF,OutlineColour=&H00000000,BorderStyle=1,Outline=2.5,Alignment=2,MarginV=50"
                 cmd.extend(["-vf", f"subtitles={srt_filename}:force_style='{style}'"])
 
@@ -354,7 +435,7 @@ def render_final_mpt_video(
                 "-shortest",
                 out_filename
             ])
-            res = subprocess.run(cmd, cwd=working_dir, capture_output=True, text=True, timeout=60)
+            res = subprocess.run(cmd, cwd=working_dir, capture_output=True, text=True, timeout=45)
             if res.returncode == 0 and os.path.exists(output_video_path):
                 return True
             logger.warning(f"FFmpeg render (with_subs={with_subs}) failed: {res.stderr}")
@@ -391,35 +472,46 @@ async def execute_moneyprinter_job(
     job_store: dict
 ):
     """
-    Main asynchronous job execution pipeline with non-blocking threads and live progress updates.
+    Main asynchronous job execution pipeline with non-blocking threads, persistent state, and live progress updates.
     """
     try:
-        job_store[job_id] = {
+        persist_job_update(job_id, {
             "status": "processing",
             "progress_step": "1/4",
-            "progress_msg": "Analyzing topic & crafting viral narration script..."
-        }
+            "progress_msg": "Analyzing topic & crafting viral narration script...",
+            "created_at": time.time()
+        }, job_store)
 
         # Step 1: Script & Keywords
         script, keywords = await generate_script_and_keywords(subject, custom_script, client)
-        job_store[job_id]["script"] = script
-        job_store[job_id]["keywords"] = keywords
-        logger.info(f"[{job_id}] Script generated ({len(script)} chars): {script[:60]}... Keywords: {keywords}")
+        logger.info(f"[{job_id}] Script ready ({len(script)} chars): {script[:60]}... Keywords: {keywords}")
 
-        # Step 2: Voiceover Narration (Edge TTS)
-        job_store[job_id]["progress_step"] = "2/4"
-        job_store[job_id]["progress_msg"] = f"Synthesizing voiceover narration with {voice_name}..."
+        # Step 2: Voiceover Narration
+        persist_job_update(job_id, {
+            "status": "processing",
+            "progress_step": "2/4",
+            "progress_msg": f"Synthesizing voiceover narration...",
+            "script": script,
+            "keywords": keywords,
+            "created_at": time.time()
+        }, job_store)
 
         os.makedirs("static/generated", exist_ok=True)
         audio_path = os.path.join("static/generated", f"mpt_audio_{job_id}.mp3")
         srt_path = os.path.join("static/generated", f"mpt_sub_{job_id}.srt")
         
         duration = await generate_narration_audio(script, voice_name, audio_path, srt_path)
-        logger.info(f"[{job_id}] Audio narration generated: {duration:.1f}s")
+        logger.info(f"[{job_id}] Audio narration ready: {duration:.1f}s")
 
-        # Step 3: Fetching Footage (720p HD: 720x1280 or 1280x720 for ultrafast rendering)
-        job_store[job_id]["progress_step"] = "3/4"
-        job_store[job_id]["progress_msg"] = "Preparing HD B-roll visual clips..."
+        # Step 3: Fetching Footage (720p HD: 720x1280 or 1280x720)
+        persist_job_update(job_id, {
+            "status": "processing",
+            "progress_step": "3/4",
+            "progress_msg": "Preparing HD B-roll visual clips...",
+            "script": script,
+            "keywords": keywords,
+            "created_at": time.time()
+        }, job_store)
 
         if aspect_ratio == "16:9":
             target_w, target_h = 1280, 720
@@ -427,7 +519,7 @@ async def execute_moneyprinter_job(
             target_w, target_h = 720, 1280
 
         normalized_clips = []
-        clip_duration = 3.5 # Fast cuts for high engagement
+        clip_duration = 3.5
         total_needed = min(4, max(3, len(keywords)))
         
         for idx in range(total_needed):
@@ -435,7 +527,14 @@ async def execute_moneyprinter_job(
             clip_path = os.path.join("static/generated", f"clip_{job_id}_{idx}.mp4")
             found = False
             
-            job_store[job_id]["progress_msg"] = f"Preparing HD B-roll scene ({idx + 1}/{total_needed}): {kw}..."
+            persist_job_update(job_id, {
+                "status": "processing",
+                "progress_step": "3/4",
+                "progress_msg": f"Preparing HD B-roll scene ({idx + 1}/{total_needed})...",
+                "script": script,
+                "keywords": keywords,
+                "created_at": time.time()
+            }, job_store)
 
             # Try fetching from Pixabay if key provided
             if pixabay_key:
@@ -457,14 +556,19 @@ async def execute_moneyprinter_job(
                     normalized_clips.append(clip_path)
 
         if not normalized_clips:
-            # Emergency fallback: at least one clip
             fallback_clip = os.path.join("static/generated", f"clip_{job_id}_main.mp4")
             await asyncio.to_thread(create_synthetic_background_clip, fallback_clip, target_w, target_h, duration, 0)
             normalized_clips.append(fallback_clip)
 
         # Step 4: Final Assembly & Subtitles
-        job_store[job_id]["progress_step"] = "4/4"
-        job_store[job_id]["progress_msg"] = "Assembling B-roll cuts, voiceover, and burning subtitles..."
+        persist_job_update(job_id, {
+            "status": "processing",
+            "progress_step": "4/4",
+            "progress_msg": "Assembling B-roll cuts, voiceover, and burning subtitles...",
+            "script": script,
+            "keywords": keywords,
+            "created_at": time.time()
+        }, job_store)
 
         final_video_name = f"mpt_final_{job_id}.mp4"
         final_video_path = os.path.join("static/generated", final_video_name)
@@ -490,18 +594,18 @@ async def execute_moneyprinter_job(
             except Exception:
                 pass
 
-        job_store[job_id] = {
+        persist_job_update(job_id, {
             "status": "success",
             "video_url": f"/static/generated/{final_video_name}",
             "script": script,
             "duration": round(duration, 1),
             "keywords": keywords
-        }
+        }, job_store)
         logger.info(f"[{job_id}] Video generation complete! URL: /static/generated/{final_video_name}")
 
     except Exception as e:
         logger.error(f"[{job_id}] Execution failed: {e}", exc_info=True)
-        job_store[job_id] = {
+        persist_job_update(job_id, {
             "status": "failed",
             "error": str(e)
-        }
+        }, job_store)

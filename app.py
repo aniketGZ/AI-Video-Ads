@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from google import genai
 from google.genai import types
-from moneyprinter_engine import execute_moneyprinter_job
+from moneyprinter_engine import execute_moneyprinter_job, persist_job_update, JOBS_CACHE_FILE
 
 class MoneyPrinterRequest(BaseModel):
     subject: str
@@ -809,12 +809,14 @@ async def generate_moneyprinter_standalone(
 ):
     try:
         import uuid
+        import time
         job_id = f"mpt_{uuid.uuid4().hex}"
-        video_jobs[job_id] = {
+        persist_job_update(job_id, {
             "status": "processing",
             "progress_step": "1/4",
-            "progress_msg": "Starting MoneyPrinter Turbo pipeline..."
-        }
+            "progress_msg": "Starting MoneyPrinter Turbo pipeline...",
+            "created_at": time.time()
+        }, video_jobs)
         
         client = get_client(x_api_key)
         pix_key = req.pixabay_key or os.environ.get("PIXABAY_API_KEY")
@@ -1098,16 +1100,31 @@ async def studio_generate_video(
 
 @app.get("/api/video-status/{job_id}")
 async def get_video_status(job_id: str):
+    import time
     job = video_jobs.get(job_id)
+    if not job and os.path.exists(JOBS_CACHE_FILE):
+        try:
+            with open(JOBS_CACHE_FILE, "r", encoding="utf-8") as f:
+                disk_cache = json.load(f)
+                if job_id in disk_cache:
+                    job = disk_cache[job_id]
+                    video_jobs[job_id] = job
+        except Exception:
+            pass
+
     if not job:
-        # Prevent 404 race condition during task initialization
-        if job_id and (job_id.startswith("mpt_") or job_id.startswith("job_")):
-            return {
-                "status": "processing",
-                "progress_step": "1/4",
-                "progress_msg": "Initializing video generation..."
-            }
-        raise HTTPException(status_code=404, detail="Job not found")
+        raise HTTPException(
+            status_code=404,
+            detail="Job not found. The server may have restarted or deployed. Please click Generate to start."
+        )
+
+    # Automatically fail any job stuck in processing for over 150 seconds
+    created_at = job.get("created_at")
+    if job.get("status") == "processing" and created_at and (time.time() - created_at > 150):
+        job["status"] = "failed"
+        job["error"] = "Task exceeded maximum allowed time. Please try generating again."
+        persist_job_update(job_id, job, video_jobs)
+
     return job
 
 # Mount static folders
