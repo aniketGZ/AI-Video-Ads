@@ -109,9 +109,15 @@ class VideoRequest(BaseModel):
     hook_line: Optional[str] = None
 
 # Helper to get the GenAI client
-def get_client(api_key: Optional[str] = None) -> genai.Client:
+def get_client(api_key: Optional[str] = None) -> Optional[genai.Client]:
     key = api_key or os.environ.get("GEMINI_API_KEY") or DEFAULT_API_KEY
-    return genai.Client(api_key=key)
+    if not key or not str(key).strip():
+        return None
+    try:
+        return genai.Client(api_key=str(key).strip())
+    except Exception as e:
+        logger.warning(f"Could not initialize GenAI client: {e}")
+        return None
 
 # Basic web scraper helper
 def scrape_url(url: str) -> str:
@@ -804,6 +810,12 @@ async def generate_moneyprinter_standalone(
     try:
         import uuid
         job_id = f"mpt_{uuid.uuid4().hex}"
+        video_jobs[job_id] = {
+            "status": "processing",
+            "progress_step": "1/4",
+            "progress_msg": "Starting MoneyPrinter Turbo pipeline..."
+        }
+        
         client = get_client(x_api_key)
         pix_key = req.pixabay_key or os.environ.get("PIXABAY_API_KEY")
         
@@ -1088,6 +1100,13 @@ async def studio_generate_video(
 async def get_video_status(job_id: str):
     job = video_jobs.get(job_id)
     if not job:
+        # Prevent 404 race condition during task initialization
+        if job_id and (job_id.startswith("mpt_") or job_id.startswith("job_")):
+            return {
+                "status": "processing",
+                "progress_step": "1/4",
+                "progress_msg": "Initializing video generation..."
+            }
         raise HTTPException(status_code=404, detail="Job not found")
     return job
 

@@ -18,7 +18,27 @@ from google.genai import types
 logger = logging.getLogger("moneyprinter_engine")
 logger.setLevel(logging.INFO)
 
-FFMPEG_PATH = imageio_ffmpeg.get_ffmpeg_exe()
+import shutil
+import stat
+
+def get_ffmpeg_binary() -> str:
+    sys_ffmpeg = shutil.which("ffmpeg")
+    if sys_ffmpeg:
+        return sys_ffmpeg
+    try:
+        bin_path = imageio_ffmpeg.get_ffmpeg_exe()
+        if bin_path and os.path.exists(bin_path):
+            try:
+                st = os.stat(bin_path)
+                os.chmod(bin_path, st.st_mode | stat.S_IEXEC)
+            except Exception:
+                pass
+            return bin_path
+    except Exception as e:
+        logger.error(f"Error resolving FFmpeg executable: {e}")
+    return "ffmpeg"
+
+FFMPEG_PATH = get_ffmpeg_binary()
 
 def format_srt_time(seconds: float) -> str:
     """Format seconds into HH:MM:SS,mmm for SRT subtitles."""
@@ -32,11 +52,18 @@ def format_srt_time(seconds: float) -> str:
 async def generate_script_and_keywords(
     subject: str,
     custom_script: Optional[str],
-    client: genai.Client
+    client: Optional[genai.Client]
 ) -> Tuple[str, List[str]]:
     """
     Uses Gemini to generate/refine script and extract 4-6 visual search terms.
     """
+    default_script = custom_script.strip() if custom_script and custom_script.strip() else f"Here is what you need to know about {subject}. Take action today and upgrade your results."
+    default_keywords = [subject, "modern technology workspace", "focused creative person", "clean office desk"]
+
+    if client is None:
+        logger.info("No Gemini client provided, using default script template.")
+        return default_script, default_keywords
+
     if custom_script and custom_script.strip():
         prompt = (
             f"You are a professional video ad director.\n"
@@ -57,24 +84,25 @@ async def generate_script_and_keywords(
             "{\"script\": \"<script text for narration>\", \"keywords\": [\"keyword 1\", \"keyword 2\", \"keyword 3\", \"keyword 4\"]}"
         )
 
-    try:
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-                temperature=0.7
+    for model_name in ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-1.5-flash"]:
+        try:
+            response = client.models.generate_content(
+                model=model_name,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json",
+                    temperature=0.7
+                )
             )
-        )
-        data = json.loads(response.text)
-        script = data.get("script", custom_script or subject)
-        keywords = data.get("keywords", ["modern business technology", "lifestyle productive work", "urban city skyline", "happy person smiling"])
-        return script, keywords
-    except Exception as e:
-        logger.warning(f"Gemini script generation fallback: {e}")
-        script = custom_script.strip() if custom_script and custom_script.strip() else f"Here is what you need to know about {subject}. Take action today and upgrade your results."
-        keywords = ["modern technology workspace", "focused creative person", "clean office desk", "success celebration outdoor"]
-        return script, keywords
+            data = json.loads(response.text)
+            script = data.get("script", default_script)
+            keywords = data.get("keywords", default_keywords)
+            return script, keywords
+        except Exception as e:
+            logger.warning(f"Gemini {model_name} failed: {e}")
+            continue
+
+    return default_script, default_keywords
 
 async def generate_narration_audio(
     script: str,
