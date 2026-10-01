@@ -513,9 +513,15 @@ async function animateVideo() {
   
   const generator = document.getElementById("video_generator_select").value;
   const kieKey = document.getElementById("kie_key_input").value;
+  const mptServiceUrl = document.getElementById("mpt_service_url_input") ? document.getElementById("mpt_service_url_input").value.trim() : "";
   
   if (generator === "seedance" && !kieKey) {
     alert("Please enter a Kie AI API Key in the header to use Seedance 2 Mini.");
+    return;
+  }
+  
+  if (generator === "moneyprinter" && !mptServiceUrl) {
+    alert("Please enter your MoneyPrinter Service Link (e.g. https://your-service.onrender.com) in the top bar.");
     return;
   }
   
@@ -523,7 +529,8 @@ async function animateVideo() {
   statusEl.className = "generator-status working";
   statusEl.style.display = "flex";
   
-  statusEl.querySelector("span").textContent = `Generating both 9:16 and 16:9 videos using ${generator === "seedance" ? "Seedance 2 Mini" : "Omni Flash"}...`;
+  const engineName = generator === "seedance" ? "Seedance 2 Mini" : (generator === "moneyprinter" ? "MoneyPrinter Turbo" : "Omni Flash");
+  statusEl.querySelector("span").textContent = `Generating both 9:16 and 16:9 videos using ${engineName}...`;
   
   const animateBtn = document.getElementById("generate_video_btn");
   animateBtn.disabled = true;
@@ -537,7 +544,10 @@ async function animateVideo() {
   const baseReq = {
     storyboard_image_url: storyboardUrl,
     product_image_paths: state.campaignData.product_image_paths || [],
-    generator: generator
+    generator: generator,
+    mpt_service_url: mptServiceUrl,
+    hook_line: video.hook_line || "",
+    voice_script: video.voiceover || ""
   };
   
   const videoPlaceholder_9_16 = document.getElementById("video_placeholder_9_16");
@@ -661,6 +671,8 @@ function updateGeneratorModelText() {
   const generateBtn = document.getElementById("generate_video_btn");
   if (model === "seedance") {
     generateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Animate Videos (Seedance 2 Mini)';
+  } else if (model === "moneyprinter") {
+    generateBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Videos (MoneyPrinter Turbo)';
   } else {
     generateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Animate Videos (Omni Flash)';
   }
@@ -670,6 +682,7 @@ function updateGeneratorModelText() {
 function initAPIKeysPersistence() {
   const apiKeyEl = document.getElementById("api_key_input");
   const kieKeyEl = document.getElementById("kie_key_input");
+  const mptKeyEl = document.getElementById("mpt_service_url_input");
   
   if (apiKeyEl) {
     const savedApiKey = localStorage.getItem("gemini_api_key");
@@ -688,6 +701,32 @@ function initAPIKeysPersistence() {
       localStorage.setItem("kie_api_key", e.target.value.trim());
     });
   }
+
+  const pixKeyEl = document.getElementById("pixabay_key_input");
+  const mptPixKey = document.getElementById("mpt_pixabay_key");
+
+  if (pixKeyEl) {
+    const savedPixKey = localStorage.getItem("pixabay_api_key");
+    if (savedPixKey) {
+      pixKeyEl.value = savedPixKey;
+      if (mptPixKey) mptPixKey.value = savedPixKey;
+    }
+
+    pixKeyEl.addEventListener("input", (e) => {
+      localStorage.setItem("pixabay_api_key", e.target.value.trim());
+      if (mptPixKey) mptPixKey.value = e.target.value.trim();
+    });
+  }
+
+  if (mptPixKey) {
+    const savedPixKey = localStorage.getItem("pixabay_api_key");
+    if (savedPixKey) mptPixKey.value = savedPixKey;
+
+    mptPixKey.addEventListener("input", (e) => {
+      localStorage.setItem("pixabay_api_key", e.target.value.trim());
+      if (pixKeyEl) pixKeyEl.value = e.target.value.trim();
+    });
+  }
 }
 
 if (document.readyState === "loading") {
@@ -704,22 +743,26 @@ if (document.readyState === "loading") {
    GOOGLE FLOW — AI VIDEO STUDIO JAVASCRIPT CONTROLLER
    ============================================================ */
 
-// Main View Switcher (Video Studio vs Ad Campaign)
+// Main View Switcher (Video Studio vs Ad Campaign vs MoneyPrinter Turbo)
 function switchMainView(view) {
   const studioTab = document.getElementById("nav_tab_studio");
   const campaignTab = document.getElementById("nav_tab_campaign");
+  const mptTab = document.getElementById("nav_tab_moneyprinter");
   const studioView = document.getElementById("view_video_studio");
   const campaignView = document.getElementById("view_ad_campaign");
+  const mptView = document.getElementById("view_moneyprinter");
+  
+  [studioTab, campaignTab, mptTab].forEach(t => t && t.classList.remove("active"));
+  [studioView, campaignView, mptView].forEach(v => v && (v.style.display = "none"));
   
   if (view === "studio") {
     if (studioTab) studioTab.classList.add("active");
-    if (campaignTab) campaignTab.classList.remove("active");
     if (studioView) studioView.style.display = "block";
-    if (campaignView) campaignView.style.display = "none";
+  } else if (view === "moneyprinter") {
+    if (mptTab) mptTab.classList.add("active");
+    if (mptView) mptView.style.display = "block";
   } else {
     if (campaignTab) campaignTab.classList.add("active");
-    if (studioTab) studioTab.classList.remove("active");
-    if (studioView) studioView.style.display = "none";
     if (campaignView) campaignView.style.display = "block";
   }
 }
@@ -1219,4 +1262,135 @@ function renderStudioHistory() {
     reel.appendChild(card);
   });
 }
+
+/* ============================================================
+   FLOW 3: MONEYPRINTER TURBO JAVASCRIPT CONTROLLER
+   ============================================================ */
+
+async function generateMoneyPrinterVideo() {
+  const subjectInput = document.getElementById("mpt_subject_input");
+  const subject = subjectInput ? subjectInput.value.trim() : "";
+  if (!subject) {
+    alert("Please enter a Video Topic or Ad Angle.");
+    if (subjectInput) subjectInput.focus();
+    return;
+  }
+
+  const customScript = document.getElementById("mpt_custom_script_input") ? document.getElementById("mpt_custom_script_input").value.trim() : "";
+  const aspectSelect = document.getElementById("mpt_aspect_select");
+  const aspectRatio = aspectSelect ? aspectSelect.value : "9:16";
+  const voiceSelect = document.getElementById("mpt_voice_select");
+  const voiceName = voiceSelect ? voiceSelect.value : "en-US-ChristopherNeural";
+  const burnSubtitles = document.getElementById("mpt_subtitles_toggle") ? document.getElementById("mpt_subtitles_toggle").checked : true;
+  
+  const pixabayKey = (document.getElementById("mpt_pixabay_key") ? document.getElementById("mpt_pixabay_key").value.trim() : "") ||
+                     (document.getElementById("pixabay_key_input") ? document.getElementById("pixabay_key_input").value.trim() : "");
+                     
+  const apiKey = document.getElementById("api_key_input") ? document.getElementById("api_key_input").value.trim() : "";
+
+  const generateBtn = document.getElementById("mpt_generate_btn");
+  const statusEl = document.getElementById("mpt_status");
+  const statusText = document.getElementById("mpt_status_text");
+  
+  const videoPlaceholder = document.getElementById("mpt_video_placeholder");
+  const videoEl = document.getElementById("mpt_ad_video");
+  const downloadBtn = document.getElementById("mpt_download_btn");
+  const detailsCard = document.getElementById("mpt_details_card");
+  const scriptPreview = document.getElementById("mpt_script_preview");
+  const keywordsWrap = document.getElementById("mpt_keywords_wrap");
+
+  generateBtn.disabled = true;
+  statusEl.className = "generator-status working";
+  statusEl.style.display = "flex";
+  statusText.textContent = "1/4: Analyzing topic & generating viral script...";
+
+  videoPlaceholder.style.display = "flex";
+  videoPlaceholder.querySelector("p").textContent = "Generating your video...";
+  videoEl.style.display = "none";
+  downloadBtn.style.display = "none";
+  if (detailsCard) detailsCard.style.display = "none";
+
+  const headers = { "Content-Type": "application/json" };
+  if (apiKey) headers["x-api-key"] = apiKey;
+
+  try {
+    const res = await fetch("/api/moneyprinter/generate", {
+      method: "POST",
+      headers: headers,
+      body: JSON.stringify({
+        subject: subject,
+        custom_script: customScript,
+        aspect_ratio: aspectRatio,
+        voice_name: voiceName,
+        pixabay_key: pixabayKey,
+        burn_subtitles: burnSubtitles
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || "Failed to start MoneyPrinter generation");
+    }
+
+    const { job_id } = await res.json();
+    let finished = false;
+    let pollAttempts = 0;
+    const maxPolls = 300;
+
+    while (!finished && pollAttempts < maxPolls) {
+      pollAttempts++;
+      await new Promise(r => setTimeout(r, 2000));
+
+      const statusRes = await fetch(`/api/video-status/${job_id}`);
+      if (!statusRes.ok) continue;
+
+      const jobData = await statusRes.json();
+      if (jobData.status === "success") {
+        finished = true;
+        
+        // Show video
+        videoPlaceholder.style.display = "none";
+        videoEl.src = jobData.video_url;
+        videoEl.style.display = "block";
+        downloadBtn.href = jobData.video_url;
+        downloadBtn.style.display = "flex";
+
+        // Show details
+        if (detailsCard && jobData.script) {
+          detailsCard.style.display = "block";
+          if (scriptPreview) scriptPreview.textContent = jobData.script;
+          if (keywordsWrap && jobData.keywords) {
+            keywordsWrap.innerHTML = jobData.keywords.map(kw => 
+              `<span class="engine-badge" style="background: rgba(139,92,246,0.15); border-color: rgba(139,92,246,0.3); color: var(--accent-light);"><i class="fa-solid fa-tag"></i> ${kw}</span>`
+            ).join("");
+          }
+        }
+
+        statusEl.className = "generator-status success";
+        statusText.textContent = "Video generated successfully!";
+        return;
+      } else if (jobData.status === "failed") {
+        finished = true;
+        throw new Error(jobData.error || "Video rendering failed on the server.");
+      } else {
+        // Progress update
+        if (jobData.progress_msg) {
+          statusText.textContent = `${jobData.progress_step || ""} ${jobData.progress_msg}`;
+        }
+      }
+    }
+
+    if (!finished) {
+      throw new Error("Video generation timed out. Please try again.");
+    }
+  } catch (err) {
+    console.error(err);
+    statusEl.className = "generator-status error";
+    statusText.textContent = "Error: " + err.message;
+    videoPlaceholder.querySelector("p").textContent = "Generation failed.";
+  } finally {
+    generateBtn.disabled = false;
+  }
+}
+
 

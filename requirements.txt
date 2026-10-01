@@ -6,3 +6,5 @@ requests
 pydantic
 jinja2
 beautifulsoup4
+edge-tts
+imageio-ffmpeg

@@ -48,6 +48,11 @@
           <i class="fa-solid fa-bullhorn"></i>
           <span>Ad Campaign Studio</span>
         </button>
+        <button type="button" id="nav_tab_moneyprinter" class="nav-tab-btn" onclick="switchMainView('moneyprinter')">
+          <i class="fa-solid fa-bolt"></i>
+          <span>MoneyPrinter Turbo</span>
+          <span class="nav-badge-pill" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);">Stock AI Ads</span>
+        </button>
       </div>
 
       <div class="topbar-keys">
@@ -58,6 +63,10 @@
         <div class="api-key-container">
           <i class="fa-solid fa-key key-icon"></i>
           <input type="password" id="kie_key_input" class="api-key-input" placeholder="Kie AI key (optional)" autocomplete="off">
+        </div>
+        <div class="api-key-container">
+          <i class="fa-solid fa-film key-icon"></i>
+          <input type="password" id="pixabay_key_input" class="api-key-input" placeholder="Pixabay key (optional)" autocomplete="off" title="Optional: Free Pixabay key for live HD B-roll stock footage">
         </div>
       </div>
     </div>
@@ -504,6 +513,113 @@
     </section>
     </div><!-- End #view_ad_campaign -->
 
+    <!-- ==================== FLOW 3: MONEYPRINTER TURBO (STOCK B-ROLL AI ADS) ==================== -->
+    <section id="view_moneyprinter" class="studio-workspace-section" style="display: none; margin-top: 24px;">
+      <!-- MoneyPrinter Toolbar Strip -->
+      <div class="studio-toolbar-strip">
+        <div class="studio-status-wrap">
+          <div class="studio-pill-status" style="border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.1);">
+            <span class="pulse-dot" style="background: #10b981;"></span>
+            <strong>MoneyPrinter Turbo Engine</strong> · Auto Stock Video Generator
+          </div>
+          <span class="studio-tagline">1-Click topic to viral short: auto scriptwriting, Edge TTS voiceover, HD stock footage matching &amp; animated subtitles</span>
+        </div>
+        <div class="studio-engine-pills">
+          <span class="engine-badge"><i class="fa-solid fa-microphone"></i> Edge TTS (Free)</span>
+          <span class="engine-badge"><i class="fa-solid fa-film"></i> Pixabay HD B-Roll</span>
+          <span class="engine-badge"><i class="fa-solid fa-closed-captioning"></i> Auto Subtitles</span>
+        </div>
+      </div>
+
+      <div class="studio-grid-layout" style="margin-top: 20px;">
+        <!-- Left: Controls & Inputs -->
+        <div class="glass-card studio-control-panel">
+          <h3 class="panel-section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Video Concept</h3>
+
+          <div class="form-group" style="margin-top: 14px;">
+            <label class="dna-label" for="mpt_subject_input">Video Topic or Ad Angle <span style="color: var(--accent); font-weight: 700;">*</span></label>
+            <input type="text" id="mpt_subject_input" class="text-input" placeholder="e.g. 5 psychological hacks to study without burnout" style="width: 100%;">
+            <p class="field-hint" style="color: var(--text-muted); font-size: 0.78rem; margin-top: 4px;">Enter any hook, ad idea, product benefit, or trending topic.</p>
+          </div>
+
+          <div class="form-group" style="margin-top: 16px;">
+            <label class="dna-label" for="mpt_custom_script_input">Custom Script (Optional)</label>
+            <textarea id="mpt_custom_script_input" class="text-area-input" rows="4" placeholder="Leave blank to let Gemini write an engaging viral script automatically, or paste your custom voiceover script here..."></textarea>
+            <p class="field-hint" style="color: var(--text-muted); font-size: 0.78rem; margin-top: 4px;">If provided, Gemini extracts scene keywords to match footage.</p>
+          </div>
+
+          <div class="generator-row" style="margin-top: 16px;">
+            <label class="dna-label" for="mpt_aspect_select">Format / Aspect Ratio</label>
+            <select id="mpt_aspect_select" class="select-input">
+              <option value="9:16">📱 Vertical 9:16 (Shorts / Reels / TikTok)</option>
+              <option value="16:9">🖥️ Landscape 16:9 (YouTube / Web)</option>
+            </select>
+          </div>
+
+          <div class="generator-row" style="margin-top: 14px;">
+            <label class="dna-label" for="mpt_voice_select">Narration Voice (Edge TTS)</label>
+            <select id="mpt_voice_select" class="select-input">
+              <option value="en-US-ChristopherNeural">Christopher (Male - Deep &amp; Authoritative)</option>
+              <option value="en-US-JennyNeural">Jenny (Female - Natural &amp; Warm)</option>
+              <option value="en-US-GuyNeural">Guy (Male - Casual &amp; Friendly)</option>
+              <option value="en-US-AriaNeural">Aria (Female - Clear &amp; Energetic)</option>
+              <option value="en-GB-RyanNeural">Ryan (UK Male - Polished British)</option>
+              <option value="en-IN-NeerjaNeural">Neerja (Indian English - Female)</option>
+              <option value="en-IN-PrabhatNeural">Prabhat (Indian English - Male)</option>
+              <option value="hi-IN-MadhurNeural">Madhur (Hindi - Male)</option>
+              <option value="hi-IN-SwaraNeural">Swara (Hindi - Female)</option>
+            </select>
+          </div>
+
+          <div style="display: flex; gap: 16px; margin-top: 16px;">
+            <label style="display: flex; align-items: center; gap: 8px; color: var(--text-body); font-size: 0.85rem; cursor: pointer;">
+              <input type="checkbox" id="mpt_subtitles_toggle" checked style="accent-color: var(--accent);">
+              <span>Burn-in Subtitles</span>
+            </label>
+          </div>
+
+          <div class="pane-actions" style="margin-top: 24px;">
+            <button id="mpt_generate_btn" class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="generateMoneyPrinterVideo()">
+              <i class="fa-solid fa-bolt"></i> Generate MoneyPrinter Video
+            </button>
+            <div class="generator-status" id="mpt_status" style="display: none; margin-top: 12px;">
+              <div class="mini-spinner"></div>
+              <span id="mpt_status_text">Starting MoneyPrinter Turbo pipeline…</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Preview Box & Details -->
+        <div class="glass-card studio-preview-panel">
+          <h3 class="panel-section-title"><i class="fa-solid fa-play"></i> Generated Video</h3>
+          
+          <div class="video-preview-wrapper" style="width: 100%; max-width: 480px; margin: 0 auto;">
+            <div class="preview-box video-box" id="mpt_video_preview_box" style="min-height: 480px;">
+              <div class="preview-placeholder" id="mpt_video_placeholder">
+                <i class="fa-solid fa-film" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 12px;"></i>
+                <p>Enter a topic and click Generate</p>
+                <span style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">Your rendered video with narration &amp; stock B-roll will appear here</span>
+              </div>
+              <video src="" id="mpt_ad_video" class="preview-video" style="display: none; width: 100%; height: 100%; max-height: 520px; border-radius: var(--radius-sm);" controls autoplay loop></video>
+            </div>
+            
+            <a href="" id="mpt_download_btn" class="btn btn-primary btn-download" style="display: none; width: 100%; justify-content: center; margin-top: 14px;" download>
+              <i class="fa-solid fa-download"></i> Download Video (.mp4)
+            </a>
+          </div>
+
+          <!-- Script & Keyword Inspector -->
+          <div id="mpt_details_card" class="glass-card" style="display: none; margin-top: 20px; padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+            <h4 style="font-size: 0.9rem; font-weight: 600; color: var(--text-white); margin-bottom: 8px;">
+              <i class="fa-solid fa-align-left" style="color: var(--accent);"></i> Script &amp; Visual Plan
+            </h4>
+            <p id="mpt_script_preview" style="font-size: 0.85rem; color: var(--text-body); line-height: 1.5; margin-bottom: 10px;"></p>
+            <div id="mpt_keywords_wrap" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <footer class="footer">
@@ -591,6 +707,7 @@
             <select id="video_generator_select" class="select-input" onchange="updateGeneratorModelText()">
               <option value="omni-flash">Gemini Omni Flash</option>
               <option value="seedance">Seedance 2 Mini (Kie AI)</option>
+              <option value="moneyprinter">MoneyPrinter Turbo (Stock B-Roll & Subtitles)</option>
             </select>
           </div>
 

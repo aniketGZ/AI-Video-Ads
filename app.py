@@ -12,6 +12,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from google import genai
 from google.genai import types
+from moneyprinter_engine import execute_moneyprinter_job
+
+class MoneyPrinterRequest(BaseModel):
+    subject: str
+    custom_script: Optional[str] = None
+    aspect_ratio: str = "9:16"
+    voice_name: str = "en-US-ChristopherNeural"
+    pixabay_key: Optional[str] = None
+    burn_subtitles: bool = True
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -95,6 +104,9 @@ class VideoRequest(BaseModel):
     product_image_paths: Optional[List[str]] = None
     generator: str = "omni-flash"
     aspect_ratio: str = "9:16"
+    mpt_service_url: Optional[str] = None
+    voice_script: Optional[str] = None
+    hook_line: Optional[str] = None
 
 # Helper to get the GenAI client
 def get_client(api_key: Optional[str] = None) -> genai.Client:
@@ -745,6 +757,27 @@ async def generate_video(
             )
             return {"status": "processing", "job_id": job_id}
             
+        elif req.generator in ["moneyprinter", "mpt"]:
+            client = get_client(x_api_key)
+            subject = req.hook_line or req.video_prompt[:60]
+            script = req.voice_script or req.video_prompt
+            pix_key = os.environ.get("PIXABAY_API_KEY")
+            
+            logger.info(f"Triggering in-process MoneyPrinterTurbo generator for job {job_id}...")
+            background_tasks.add_task(
+                execute_moneyprinter_job,
+                job_id=job_id,
+                subject=subject,
+                custom_script=script,
+                aspect_ratio=req.aspect_ratio,
+                voice_name="en-US-ChristopherNeural",
+                pixabay_key=pix_key,
+                burn_subtitles=True,
+                client=client,
+                job_store=video_jobs
+            )
+            return {"status": "processing", "job_id": job_id}
+            
         else:
             # Default: omni-flash
             background_tasks.add_task(
@@ -761,6 +794,37 @@ async def generate_video(
     except Exception as e:
         logger.error(f"Video generation failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/moneyprinter/generate")
+async def generate_moneyprinter_standalone(
+    req: MoneyPrinterRequest,
+    background_tasks: BackgroundTasks,
+    x_api_key: Optional[str] = Header(None)
+):
+    try:
+        import uuid
+        job_id = f"mpt_{uuid.uuid4().hex}"
+        client = get_client(x_api_key)
+        pix_key = req.pixabay_key or os.environ.get("PIXABAY_API_KEY")
+        
+        logger.info(f"Starting standalone MoneyPrinterTurbo task {job_id} for subject: '{req.subject}'")
+        background_tasks.add_task(
+            execute_moneyprinter_job,
+            job_id=job_id,
+            subject=req.subject,
+            custom_script=req.custom_script,
+            aspect_ratio=req.aspect_ratio,
+            voice_name=req.voice_name,
+            pixabay_key=pix_key,
+            burn_subtitles=req.burn_subtitles,
+            client=client,
+            job_store=video_jobs
+        )
+        return {"status": "processing", "job_id": job_id}
+    except Exception as e:
+        logger.error(f"Failed to start MoneyPrinter task: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 async def generate_studio_video_background(
     job_id: str,
