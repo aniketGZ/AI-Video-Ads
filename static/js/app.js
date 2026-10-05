@@ -2919,7 +2919,11 @@ const metaAdState = {
   customProductFile: null,
   platform: "ig",
   currentAd: null,
-  history: []
+  currentViewMode: "composite",
+  history: [],
+  suiteBlueprints: [],
+  suiteRendered: {},
+  suiteCardModes: {}
 };
 
 function initMetaAdStudio() {
@@ -2968,11 +2972,19 @@ function initMetaAdStudio() {
   if (previewDomain) previewDomain.textContent = `WWW.${brandName.toUpperCase().replace(/[^A-Z0-9]/g, "") || "BRAND"}.COM`;
   if (previewHeadline) previewHeadline.textContent = `Elevate Your Routine · ${data.product_name || "Shop Now"}`;
   if (previewPrimary && !metaAdState.currentAd) {
-    previewPrimary.textContent = `Click "Generate Meta Creative & Ad Copy" to produce high-converting copy and photorealistic imagery tailored for ${data.target_audience_persona ? data.target_audience_persona.split(".")[0] : "your target audience"}.`;
+    previewPrimary.textContent = `Click "Generate Meta Creative & Ad Copy" or render from the 5-Creative Suite above tailored for ${data.target_audience_persona ? data.target_audience_persona.split(".")[0] : "your target audience"}.`;
   }
 
   // 5. Load past meta ads history
   loadMetaAdsHistory();
+
+  // 6. Initialize 5-Creative Meta Direct-Response Suite
+  if (data.meta_creative_blueprints && data.meta_creative_blueprints.length > 0) {
+    metaAdState.suiteBlueprints = data.meta_creative_blueprints;
+  } else {
+    metaAdState.suiteBlueprints = generateClientMetaBlueprints(data);
+  }
+  renderMetaFrameworksDeck();
 }
 
 function updateMetaAngleHint(index) {
@@ -3206,8 +3218,10 @@ async function generateMetaCreative() {
   }
 }
 
-function applyMetaAdToMockup(ad) {
+function applyMetaAdToMockup(ad, mode) {
   if (!ad) return;
+  metaAdState.currentAd = ad;
+  if (mode) metaAdState.currentViewMode = mode;
 
   const previewImg = document.getElementById("meta_preview_image");
   const mediaPlaceholder = document.getElementById("meta_media_placeholder");
@@ -3217,9 +3231,14 @@ function applyMetaAdToMockup(ad) {
   const brandTitle = document.getElementById("meta_preview_brand");
   const avatar = document.getElementById("meta_preview_avatar");
   const domain = document.getElementById("meta_preview_domain");
+  const toggleBtn = document.getElementById("toggle_composite_view_btn");
+  const toggleLabel = document.getElementById("toggle_composite_label");
+
+  const useComposite = (metaAdState.currentViewMode === "composite" && ad.composite_image_url);
+  const displayUrl = useComposite ? ad.composite_image_url : (ad.raw_image_url || ad.image_url);
 
   if (previewImg) {
-    previewImg.src = ad.image_url;
+    previewImg.src = displayUrl;
     previewImg.style.display = "block";
   }
   if (mediaPlaceholder) mediaPlaceholder.style.display = "none";
@@ -3229,11 +3248,23 @@ function applyMetaAdToMockup(ad) {
   if (ctaBtn) ctaBtn.textContent = ad.cta || "Shop Now";
   if (brandTitle && ad.brand_name) brandTitle.textContent = ad.brand_name;
   if (avatar && ad.brand_name) avatar.textContent = ad.brand_name.charAt(0).toUpperCase() || "B";
-  if (domain && ad.brand_name) domain.textContent = `WWW.${ad.brand_name.toUpperCase().replace(/[^A-Z0-9]/g, "")}.COM`;
+  if (domain && ad.brand_name) domain.textContent = `WWW.${ad.brand_name.toUpperCase().replace(/[^A-Z0-9]/g, "") || "BRAND"}.COM`;
 
   if (ad.aspect_ratio) {
     setMetaRatio(ad.aspect_ratio);
   }
+
+  if (toggleBtn && toggleLabel) {
+    toggleBtn.classList.toggle("active", useComposite);
+    toggleLabel.textContent = useComposite ? "Direct Ad" : "Clean Photo";
+  }
+}
+
+function toggleMetaCompositeView() {
+  const ad = metaAdState.currentAd;
+  if (!ad) return;
+  metaAdState.currentViewMode = (metaAdState.currentViewMode === "composite") ? "raw" : "composite";
+  applyMetaAdToMockup(ad, metaAdState.currentViewMode);
 }
 
 function copyCurrentMetaCopy() {
@@ -3261,9 +3292,452 @@ function downloadCurrentMetaImage() {
     alert("Please generate a creative first.");
     return;
   }
+  const isComposite = (metaAdState.currentViewMode === "composite" && ad.composite_image_url);
+  const url = isComposite ? ad.composite_image_url : (ad.raw_image_url || ad.image_url);
   const link = document.createElement("a");
-  link.href = ad.image_url;
-  link.download = ad.filename || `meta_ad_${Date.now()}.png`;
+  link.href = url;
+  const safeBrand = (ad.brand_name || "meta").toLowerCase().replace(/[^a-z0-9]/g, "_");
+  link.download = `${safeBrand}_meta_ad_${ad.creative_id || Date.now()}_${metaAdState.currentViewMode}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+/* ============================================================
+   META CREATIVE SUITE: 5 PROVEN DIRECT-RESPONSE FRAMEWORKS
+   ============================================================ */
+
+function generateClientMetaBlueprints(data) {
+  const brand = data.brand_name || "Brand";
+  const product = data.product_name || "Product";
+  const cat = data.product_category || "Lifestyle";
+  const persona = data.target_audience_persona || "Daily high performers";
+  const benefits = data.key_benefits || ["Instant visible results", "100% clean formula", "Zero compromises"];
+  const b1 = benefits[0] || "Instant visible results";
+  const b2 = benefits[1] || "100% clean formula";
+  const b3 = benefits[2] || "Zero harmful fillers";
+
+  return [
+    {
+      creative_id: 1,
+      framework_key: "problem_solution",
+      framework_name: "Problem-Solution Contrast Hero",
+      target_emotion: "Pain Relief & Urgent Hope",
+      target_audience_resonance: `Directly calls out everyday friction faced by ${persona} and reveals ${product} as the radiant antidote.`,
+      hook_badge: "TIRED OF THE USUAL COMPROMISE?",
+      headline: `Say Goodbye to Mediocre ${cat}`,
+      subheadline: `Engineered by ${brand} to deliver ${b1.toLowerCase()} from day one.`,
+      primary_text: `Tired of products that promise everything but deliver nothing?\n\nMeet ${product} by ${brand}. Designed specifically for ${persona} who refuse to settle.\n\n✓ ${b1}\n✓ ${b2}\n✓ ${b3}\n\nExperience the difference today. Tap below to claim yours.`,
+      cta: "Shop Now",
+      callout_points: [b1, b2, b3],
+      comparison_theirs: "Slow results & cheap fillers",
+      comparison_ours: `${b1} with ${b2}`,
+      testimonial_quote: `I was skeptical until I tried ${product}. The results blew me away.`,
+      testimonial_author: "Alex K. · Verified Customer",
+      visual_prompt: `Dramatic high-contrast commercial product photography of ${product} by ${brand}. Hero angle placed centrally on a dark textured obsidian pedestal, radiant golden rim lighting, soft diffuse studio spotlight, crisp metallic reflections, 8K ultra-sharp detail, high stopping-power commercial layout.`,
+      layout_style: "PROBLEM_SOLUTION_SPLIT"
+    },
+    {
+      creative_id: 2,
+      framework_key: "feature_callout",
+      framework_name: "Deconstructed Feature Callout Matrix",
+      target_emotion: "Intellectual Conviction & Quality Validation",
+      target_audience_resonance: `Appeals to analytical shoppers in ${persona} by highlighting exact proprietary engineering and ingredients.`,
+      hook_badge: "PRECISION ENGINEERED FORMULA",
+      headline: `What Makes ${product} Superior`,
+      subheadline: `A deconstructed breakdown of why ${brand} outperforms the rest.`,
+      primary_text: `What actually goes into ${product}?\n\nWe stripped away all unnecessary fluff to engineer pure performance.\n\n🔬 ${b1}\n⚡ ${b2}\n🛡️ ${b3}\n\nSee the full specs and discover why thousands are switching.`,
+      cta: "Order Today",
+      callout_points: [b1, b2, b3],
+      comparison_theirs: "Diluted formula with chemical fillers",
+      comparison_ours: "100% active, pure bioavailable ingredients",
+      testimonial_quote: "The ingredient transparency and engineering quality are unmatched.",
+      testimonial_author: "Dr. Marcus T. · Specialist",
+      visual_prompt: `Clean minimalist luxury studio product photography of ${product} by ${brand}. Floating weightlessly in negative space, soft ambient studio gradient background, subtle architectural shadows, precision macro details of packaging and textures, Apple-style direct-response ad composition.`,
+      layout_style: "CALLOUT_POINTERS"
+    },
+    {
+      creative_id: 3,
+      framework_key: "social_proof",
+      framework_name: "5-Star Social Proof & Verified Trust",
+      target_emotion: "FOMO & Unshakable Trust",
+      target_audience_resonance: `Eliminates buyer hesitation for ${persona} through authentic social validation and stellar customer ratings.`,
+      hook_badge: "★★★★★ 4.9/5 (15,000+ REVIEWS)",
+      headline: `“I Wish I Had Found ${product} Sooner”`,
+      subheadline: "Over 98% of verified customers reported noticeable improvements.",
+      primary_text: `Over 15,000+ customers can't be wrong.\n\n“I rarely write reviews, but ${product} completely changed my daily routine. Within a week, the difference was unmistakable.”\n\n⭐ Rated 4.9/5 across thousands of reviews.\n⭐ 30-Day 100% Money-Back Guarantee.\n\nJoin the community today.`,
+      cta: "Claim Yours",
+      callout_points: ["4.9/5 Average Rating", "15,000+ Verified Customers", "30-Day Risk-Free Guarantee"],
+      comparison_theirs: "Unverified claims with zero customer backing",
+      comparison_ours: "15,000+ ecstatic reviews & 30-day money-back guarantee",
+      testimonial_quote: `Within 3 days of using ${product}, I was completely hooked. Essential purchase.`,
+      testimonial_author: "Sarah M. · Verified Buyer",
+      visual_prompt: `Warm editorial lifestyle product photography of ${product} by ${brand}. Placed gracefully on an elegant marble countertop, soft warm morning window light, shallow depth of field with blurred aspirational interior, authentic social proof aesthetic, crisp reflections, commercial direct-response quality.`,
+      layout_style: "TESTIMONIAL_HERO"
+    },
+    {
+      creative_id: 4,
+      framework_key: "us_vs_them",
+      framework_name: "Us vs. Them Comparison Matrix",
+      target_emotion: "Competitive Clarity & Switching Urgency",
+      target_audience_resonance: `Clearly illustrates why traditional options fail ${persona} and why upgrading to ${brand} is the obvious choice.`,
+      hook_badge: "WHY THOUSANDS ARE SWITCHING",
+      headline: `Traditional ${cat} vs. ${brand}`,
+      subheadline: `See the side-by-side proof before making your next purchase.`,
+      primary_text: `Still relying on traditional ${cat.toLowerCase()}?\n\nHere is what happens when you upgrade to ${product}:\n\n❌ Traditional Brands: Slow absorption, artificial fillers, inflated retail markup.\n✅ ${brand}: ${b1}, ${b2}, direct-to-consumer savings.\n\nMake the smart switch risk-free today.`,
+      cta: "Switch & Save",
+      callout_points: [`Ours: ${b1}`, `Ours: ${b2}`, "30-Day Trial"],
+      comparison_theirs: "Artificial fillers, sluggish results, overpriced markup",
+      comparison_ours: `${b1}, ${b2}, direct-to-consumer value`,
+      testimonial_quote: "After seeing the comparison, switching was a no-brainer.",
+      testimonial_author: "David L. · Verified Customer",
+      visual_prompt: `Split-perspective commercial studio shot of ${product} by ${brand}. Elevated on a clean minimalist geometric pedestal with radiant modern lighting, clean background contrast, high-end editorial product presentation, vivid clarity, 8K commercial resolution.`,
+      layout_style: "US_VS_THEM_GRID"
+    },
+    {
+      creative_id: 5,
+      framework_key: "lifestyle_hero",
+      framework_name: "Aspirational Lifestyle Transformation",
+      target_emotion: "Desire & Identity Elevation",
+      target_audience_resonance: `Embodies the aspirational end-state of ${persona}, establishing ${product} as an indispensable lifestyle staple.`,
+      hook_badge: "YOUR NEW DAILY STANDARD",
+      headline: `Elevate Your Daily Ritual with ${product}`,
+      subheadline: `Crafted for high performers who demand perfection.`,
+      primary_text: `Every morning brings a choice: settle for ordinary or elevate your standard.\n\n{product} by ${brand} was created for ${persona} who want ${b1.toLowerCase()} without compromise.\n\n✨ Premium materials\n✨ Effortless integration\n✨ Unrivaled satisfaction\n\nExperience the transformation.`,
+      cta: "Experience Now",
+      callout_points: ["Premium Experience", "Effortless Integration", "Uncompromised Quality"],
+      comparison_theirs: "Clunky, outdated daily routines",
+      comparison_ours: "Seamless luxury performance designed for modern life",
+      testimonial_quote: `${product} elevated my entire routine. I feel the difference every single day.`,
+      testimonial_author: "Elena V. · Creative Director",
+      visual_prompt: `Cinematic aspirational lifestyle photography featuring ${product} by ${brand}. Sunlit modern architectural space matching ${persona}, golden-hour ambient rays, natural soft bokeh, premium textures, high-end Vogue/GQ editorial aesthetics, ultra-photorealistic commercial composition.`,
+      layout_style: "LIFESTYLE_IN_ACTION"
+    }
+  ];
+}
+
+function renderMetaFrameworksDeck() {
+  const container = document.getElementById("meta_frameworks_deck");
+  if (!container) return;
+
+  const blueprints = metaAdState.suiteBlueprints || [];
+  if (blueprints.length === 0) {
+    container.innerHTML = `<div style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 30px;">Analyze brand URL above to generate 5-Creative Direct-Response Suite.</div>`;
+    return;
+  }
+
+  const iconMap = {
+    problem_solution: "fa-solid fa-triangle-exclamation",
+    feature_callout: "fa-solid fa-microchip",
+    social_proof: "fa-solid fa-star",
+    us_vs_them: "fa-solid fa-arrows-split-up-and-left",
+    lifestyle_hero: "fa-solid fa-gem"
+  };
+
+  container.innerHTML = blueprints.map((bp, idx) => {
+    const cid = bp.creative_id || (idx + 1);
+    const fkey = bp.framework_key || "problem_solution";
+    const icon = iconMap[fkey] || "fa-solid fa-sparkles";
+    const rendered = metaAdState.suiteRendered[cid];
+    const mode = metaAdState.suiteCardModes[cid] || "composite";
+    const displayImg = rendered ? (mode === "composite" ? rendered.composite_image_url : (rendered.raw_image_url || rendered.image_url)) : "";
+
+    const bulletsHtml = (bp.callout_points || []).slice(0, 3).map(b => `<span class="bp-bullet"><i class="fa-solid fa-check"></i> ${escapeHtml(b)}</span>`).join("");
+
+    return `
+      <div class="meta-suite-card ${rendered ? 'is-rendered' : ''}" id="suite_card_${cid}" data-creative-id="${cid}">
+        <div class="suite-card-top">
+          <div class="suite-card-header">
+            <span class="suite-framework-tag tag-${fkey}">
+              <i class="${icon}"></i> #${cid} · ${escapeHtml(bp.framework_name || 'Framework')}
+            </span>
+            <span class="suite-emotion-pill" title="Core Conversion Emotion">${escapeHtml(bp.target_emotion || 'Desire')}</span>
+          </div>
+          <div class="suite-resonance-text">
+            <i class="fa-solid fa-bullseye"></i> <strong>Why it converts:</strong> ${escapeHtml(bp.target_audience_resonance || '')}
+          </div>
+        </div>
+
+        <div class="suite-media-preview-wrap">
+          <div class="suite-media-frame ratio-4-5" id="suite_media_frame_${cid}">
+            <!-- Blueprint Placeholder -->
+            <div class="suite-placeholder" id="suite_placeholder_${cid}" style="${rendered ? 'display: none;' : 'display: flex;'}">
+              <div class="suite-placeholder-blueprint">
+                <span class="blueprint-badge">${escapeHtml(bp.hook_badge || 'DIRECT OFFER')}</span>
+                <h4 class="blueprint-headline">${escapeHtml(bp.headline || '')}</h4>
+                <div class="blueprint-bullets">${bulletsHtml}</div>
+                <div class="blueprint-cta">${escapeHtml(bp.cta || 'Shop Now')} ➔</div>
+              </div>
+            </div>
+
+            <!-- Rendered Image -->
+            <img id="suite_img_${cid}" src="${displayImg}" alt="${escapeHtml(bp.headline || '')}" class="suite-rendered-img" style="${rendered ? 'display: block;' : 'display: none;'}" />
+
+            <!-- Loader Overlay -->
+            <div class="suite-loader" id="suite_loader_${cid}" style="display: none;">
+              <div class="spinner"></div>
+              <span id="suite_loader_text_${cid}">Synthesizing Creative #${cid}...</span>
+            </div>
+          </div>
+
+          <!-- View Mode Toggle Bar (Once Rendered) -->
+          <div class="suite-view-toggle-bar" id="suite_toggle_bar_${cid}" style="${rendered ? 'display: flex;' : 'display: none;'}">
+            <button type="button" class="suite-toggle-pill ${mode === 'composite' ? 'active' : ''}" onclick="setSuiteCardView(${cid}, 'composite')">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Direct Ad
+            </button>
+            <button type="button" class="suite-toggle-pill ${mode === 'raw' ? 'active' : ''}" onclick="setSuiteCardView(${cid}, 'raw')">
+              <i class="fa-solid fa-camera"></i> Clean Photo
+            </button>
+          </div>
+        </div>
+
+        <div class="suite-card-body">
+          <div class="suite-copy-block">
+            <div class="suite-headline-row">
+              <span class="suite-headline-label">Headline:</span>
+              <strong class="suite-headline-text">${escapeHtml(bp.headline || '')}</strong>
+            </div>
+            <div class="suite-primary-text-preview" id="suite_primary_${cid}" title="Click to copy full text" onclick="copySuiteCopy(${cid})">
+              ${escapeHtml(bp.primary_text || '').replace(/\n/g, '<br/>')}
+            </div>
+          </div>
+        </div>
+
+        <div class="suite-card-footer">
+          <button type="button" class="btn btn-primary btn-sm suite-render-btn" id="btn_render_suite_${cid}" onclick="renderSingleMetaCreative(${cid})">
+            <i class="fa-solid fa-play"></i> ${rendered ? 'Re-render #' + cid : 'Render Creative #' + cid}
+          </button>
+          <div class="suite-action-btns">
+            <button type="button" class="btn btn-secondary btn-sm" onclick="loadSuiteCreativeToMockup(${cid})" title="Load into Live Feed Mockup">
+              <i class="fa-solid fa-eye"></i> Preview
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="copySuiteCopy(${cid})" title="Copy Primary Text & Headline">
+              <i class="fa-regular fa-copy"></i> Copy
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="downloadSuiteCreative(${cid})" title="Download Ad PNG">
+              <i class="fa-solid fa-download"></i>
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function renderSingleMetaCreative(cid) {
+  const data = state.campaignData;
+  if (!data) {
+    alert("Please analyze a Brand URL first.");
+    return;
+  }
+  const blueprints = metaAdState.suiteBlueprints || [];
+  const bp = blueprints.find(b => b.creative_id === cid) || blueprints[cid - 1];
+  if (!bp) return;
+
+  const btn = document.getElementById(`btn_render_suite_${cid}`);
+  const loader = document.getElementById(`suite_loader_${cid}`);
+  const loaderText = document.getElementById(`suite_loader_text_${cid}`);
+  const placeholder = document.getElementById(`suite_placeholder_${cid}`);
+  const imgEl = document.getElementById(`suite_img_${cid}`);
+  const toggleBar = document.getElementById(`suite_toggle_bar_${cid}`);
+
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = `<div class="spinner" style="width:14px;height:14px;border-width:2px;display:inline-block;margin-right:6px;"></div> Rendering...`;
+  }
+  if (placeholder) placeholder.style.display = "none";
+  if (imgEl) imgEl.style.display = "none";
+  if (loader) loader.style.display = "flex";
+  if (loaderText) loaderText.textContent = `Rendering with ${metaAdState.engine === 'qwen' ? 'Qwen GPU' : 'Nano Banana'}...`;
+
+  const apiKey = document.getElementById("api_key_input").value;
+  const imageKey = localStorage.getItem("self_hosted_image_key") || "";
+
+  const formData = new FormData();
+  formData.append("blueprint_json", JSON.stringify(bp));
+  formData.append("brand_name", data.brand_name || "");
+  formData.append("product_name", data.product_name || "");
+  formData.append("product_category", data.product_category || "");
+  formData.append("target_audience_persona", data.target_audience_persona || "");
+  formData.append("aspect_ratio", metaAdState.aspectRatio);
+  formData.append("engine", metaAdState.engine);
+
+  if (metaAdState.customProductFile) {
+    formData.append("product_image", metaAdState.customProductFile);
+  } else if (metaAdState.selectedProductPath) {
+    formData.append("product_image_path", metaAdState.selectedProductPath);
+  }
+
+  const customDir = (document.getElementById("meta_custom_directive") ? document.getElementById("meta_custom_directive").value.trim() : "");
+  if (customDir) formData.append("custom_directive", customDir);
+
+  const headers = {};
+  if (apiKey) headers["x-api-key"] = apiKey;
+  if (imageKey) headers["x-image-api-key"] = imageKey;
+
+  try {
+    const res = await fetch("/api/campaign/meta-creative-suite/render-one", {
+      method: "POST",
+      headers: headers,
+      body: formData
+    });
+
+    if (!res.ok) {
+      let msg = "Generation failed";
+      try {
+        const err = await res.json();
+        if (err.detail) msg = err.detail;
+      } catch (e) {}
+      throw new Error(msg);
+    }
+
+    const result = await res.json();
+    metaAdState.suiteRendered[cid] = result;
+    metaAdState.suiteCardModes[cid] = "composite";
+    metaAdState.history.unshift(result);
+
+    // Update Card UI
+    if (imgEl) {
+      imgEl.src = result.composite_image_url || result.image_url;
+      imgEl.style.display = "block";
+    }
+    if (toggleBar) toggleBar.style.display = "flex";
+    const cardEl = document.getElementById(`suite_card_${cid}`);
+    if (cardEl) cardEl.classList.add("is-rendered");
+
+    // Also load into live feed mockup!
+    applyMetaAdToMockup(result, "composite");
+    renderMetaGallery();
+
+  } catch (err) {
+    console.error(`Error rendering creative #${cid}:`, err);
+    alert(`Creative #${cid} generation failed: ${err.message}`);
+    if (placeholder && !metaAdState.suiteRendered[cid]) {
+      placeholder.style.display = "flex";
+    }
+  } finally {
+    if (loader) loader.style.display = "none";
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = `<i class="fa-solid fa-rotate-right"></i> Re-render #${cid}`;
+    }
+  }
+}
+
+async function renderAllMetaCreatives() {
+  const data = state.campaignData;
+  if (!data) {
+    alert("Please analyze a Brand URL first.");
+    return;
+  }
+  const blueprints = metaAdState.suiteBlueprints || [];
+  if (blueprints.length === 0) return;
+
+  const batchBtn = document.getElementById("btn_render_all_creatives");
+  if (batchBtn) {
+    batchBtn.disabled = true;
+    batchBtn.innerHTML = `<div class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;margin-right:8px;"></div> Rendering Suite (0/${blueprints.length})...`;
+  }
+
+  let completed = 0;
+  for (let i = 0; i < blueprints.length; i++) {
+    const cid = blueprints[i].creative_id || (i + 1);
+    if (batchBtn) {
+      batchBtn.innerHTML = `<div class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;margin-right:8px;"></div> Rendering Creative ${i + 1}/${blueprints.length}...`;
+    }
+    try {
+      await renderSingleMetaCreative(cid);
+      completed++;
+    } catch (e) {
+      console.warn(`Batch render failed for #${cid}:`, e);
+    }
+  }
+
+  if (batchBtn) {
+    batchBtn.disabled = false;
+    batchBtn.innerHTML = `<i class="fa-solid fa-check"></i> Rendered (${completed}/${blueprints.length}) Creatives!`;
+    setTimeout(() => {
+      batchBtn.innerHTML = `<i class="fa-solid fa-bolt"></i> Re-render All 5 Creatives`;
+    }, 4000);
+  }
+
+  // Load Creative #1 into mockup
+  if (metaAdState.suiteRendered[1]) {
+    applyMetaAdToMockup(metaAdState.suiteRendered[1], "composite");
+  }
+}
+
+function setSuiteCardView(cid, mode) {
+  metaAdState.suiteCardModes[cid] = mode;
+  const rendered = metaAdState.suiteRendered[cid];
+  if (!rendered) return;
+
+  const imgEl = document.getElementById(`suite_img_${cid}`);
+  if (imgEl) {
+    imgEl.src = (mode === "composite") ? (rendered.composite_image_url || rendered.image_url) : (rendered.raw_image_url || rendered.image_url);
+  }
+
+  const toggleBar = document.getElementById(`suite_toggle_bar_${cid}`);
+  if (toggleBar) {
+    const pills = toggleBar.querySelectorAll(".suite-toggle-pill");
+    if (pills[0]) pills[0].classList.toggle("active", mode === "composite");
+    if (pills[1]) pills[1].classList.toggle("active", mode === "raw");
+  }
+}
+
+function loadSuiteCreativeToMockup(cid) {
+  const rendered = metaAdState.suiteRendered[cid];
+  if (rendered) {
+    applyMetaAdToMockup(rendered, metaAdState.suiteCardModes[cid] || "composite");
+  } else {
+    const blueprints = metaAdState.suiteBlueprints || [];
+    const bp = blueprints.find(b => b.creative_id === cid) || blueprints[cid - 1];
+    if (bp) {
+      const mockAd = {
+        primary_text: bp.primary_text,
+        headline: bp.headline,
+        cta: bp.cta,
+        brand_name: state.campaignData ? state.campaignData.brand_name : "Brand",
+        aspect_ratio: metaAdState.aspectRatio,
+        image_url: ""
+      };
+      applyMetaAdToMockup(mockAd);
+    }
+  }
+
+  const mockupCard = document.getElementById("meta_feed_card");
+  if (mockupCard) {
+    mockupCard.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
+}
+
+function copySuiteCopy(cid) {
+  const rendered = metaAdState.suiteRendered[cid];
+  const blueprints = metaAdState.suiteBlueprints || [];
+  const bp = blueprints.find(b => b.creative_id === cid) || blueprints[cid - 1];
+  const item = rendered || bp;
+  if (!item) return;
+
+  const copy = `${item.primary_text}\n\nHeadline: ${item.headline}\nCTA: ${item.cta}`;
+  navigator.clipboard.writeText(copy).then(() => {
+    alert(`Creative #${cid} Copy copied to clipboard!\n\nReady to paste directly into Meta Ads Manager.`);
+  }).catch(() => {
+    prompt("Copy ad copy:", copy);
+  });
+}
+
+function downloadSuiteCreative(cid) {
+  const rendered = metaAdState.suiteRendered[cid];
+  if (!rendered) {
+    alert(`Please render Creative #${cid} first before downloading.`);
+    return;
+  }
+  const mode = metaAdState.suiteCardModes[cid] || "composite";
+  const url = (mode === "composite") ? (rendered.composite_image_url || rendered.image_url) : (rendered.raw_image_url || rendered.image_url);
+  const link = document.createElement("a");
+  link.href = url;
+  const brandName = (state.campaignData && state.campaignData.brand_name ? state.campaignData.brand_name : "meta").toLowerCase().replace(/[^a-z0-9]/g, "_");
+  link.download = `${brandName}_creative_${cid}_${mode}.png`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

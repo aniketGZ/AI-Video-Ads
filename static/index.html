@@ -1263,6 +1263,31 @@
           </div>
         </div>
 
+        <!-- ==================== 5-CREATIVE DIRECT-RESPONSE META SUITE ==================== -->
+        <div class="meta-suite-section" id="meta_suite_section">
+          <div class="meta-suite-banner">
+            <div class="meta-suite-banner-left">
+              <div class="meta-suite-pill-badge">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> URL-Grounded Direct-Response Strategy
+              </div>
+              <h3 class="meta-suite-title">5 High-Converting Meta Creative Frameworks</h3>
+              <p class="meta-suite-subtitle" id="meta_suite_subtitle">
+                Synthesized from brand URL analysis to communicate &amp; resonate with your target audience across 5 proven conversion drivers: Problem-Solution, Feature Callouts, 5-Star Social Proof, Us vs. Them Comparison, and Lifestyle Transformation.
+              </p>
+            </div>
+            <div class="meta-suite-banner-right">
+              <button type="button" class="btn btn-primary meta-suite-batch-btn" id="btn_render_all_creatives" onclick="renderAllMetaCreatives()">
+                <i class="fa-solid fa-bolt"></i> Render All 5 Creatives (Batch Suite)
+              </button>
+            </div>
+          </div>
+
+          <!-- Suite Cards Deck Grid -->
+          <div class="meta-frameworks-deck" id="meta_frameworks_deck">
+            <!-- Dynamically populated from URL analysis blueprints or initial templates -->
+          </div>
+        </div>
+
         <div class="meta-studio-layout">
           <!-- Left Column: Controls & Angle Customizer -->
           <div class="meta-controls-col">
@@ -1383,6 +1408,9 @@
                   </button>
                 </div>
                 <div class="mockup-actions">
+                  <button type="button" class="mockup-tab meta-view-toggle-pill" id="toggle_composite_view_btn" onclick="toggleMetaCompositeView()" title="Toggle between Direct-Response Ad with typography & branding vs Clean Photo">
+                    <i class="fa-solid fa-layer-group"></i> <span id="toggle_composite_label">Direct Ad</span>
+                  </button>
                   <button class="icon-action-btn" title="Copy Ad Copy" onclick="copyCurrentMetaCopy()">
                     <i class="fa-regular fa-copy"></i>
                   </button>

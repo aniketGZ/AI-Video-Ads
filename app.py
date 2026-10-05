@@ -28,6 +28,11 @@ from self_hosted_engine import (
     generate_image_async,
     generate_video_async,
 )
+from meta_creative_engine import (
+    generate_meta_creative_blueprints,
+    render_meta_ad_composite,
+    generate_single_meta_creative,
+)
 
 # Load configuration from .env file
 load_dotenv()
@@ -340,6 +345,17 @@ async def analyze_campaign(
             result_json["product_visual_description"] = product_images_analysis
             
         result_json["product_image_paths"] = saved_image_paths
+
+        # Generate 5 High-Converting Meta Direct-Response Creative Blueprints
+        try:
+            logger.info("Synthesizing 5 high-converting Meta Direct Response Creative Blueprints from URL analysis...")
+            result_json["meta_creative_blueprints"] = generate_meta_creative_blueprints(
+                result_json, client=client
+            )
+        except Exception as meta_bp_err:
+            logger.warning(f"Error generating meta blueprints, using robust templates: {meta_bp_err}")
+            result_json["meta_creative_blueprints"] = generate_meta_creative_blueprints(result_json, client=None)
+
         return result_json
         
     except Exception as e:
@@ -536,9 +552,40 @@ async def generate_meta_image_ad(
             f.write(image_bytes)
 
         logger.info(f"[Meta Ad Studio] Successfully generated Meta Image Ad: {out_path}")
+
+        # 6. Render high-converting Direct Response composite ad
+        composite_filename = f"meta_ad_composite_{uuid.uuid4().hex}.png"
+        composite_path = os.path.join("static/generated", composite_filename)
+        final_image_url = f"/static/generated/{out_filename}"
+        try:
+            single_blueprint = {
+                "creative_id": 1,
+                "framework_key": "problem_solution",
+                "framework_name": angle_name,
+                "hook_badge": "VERIFIED SOLUTION",
+                "headline": headline,
+                "subheadline": f"Engineered by {brand_name} for daily high performance.",
+                "primary_text": primary_text,
+                "cta": cta,
+                "callout_points": [headline, "100% Quality Guaranteed", "Fast Expedited Shipping"],
+            }
+            render_meta_ad_composite(
+                base_image_path=out_path,
+                blueprint=single_blueprint,
+                brand_name=brand_name,
+                product_name=product_name,
+                output_path=composite_path,
+                aspect_ratio=aspect_ratio
+            )
+            final_image_url = f"/static/generated/{composite_filename}"
+        except Exception as comp_err:
+            logger.warning(f"Composite overlay generation fallback: {comp_err}")
+
         return {
             "status": "success",
             "image_url": f"/static/generated/{out_filename}",
+            "raw_image_url": f"/static/generated/{out_filename}",
+            "composite_image_url": final_image_url,
             "filename": out_filename,
             "primary_text": primary_text,
             "headline": headline,
@@ -558,6 +605,123 @@ async def generate_meta_image_ad(
         raise
     except Exception as e:
         logger.error(f"[Meta Ad Studio] Generation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/campaign/meta-creative-suite/blueprints")
+async def get_meta_creative_blueprints_endpoint(
+    request: Request,
+    x_api_key: Optional[str] = Header(None)
+):
+    try:
+        body = await request.json()
+        client = get_client(x_api_key)
+        blueprints = generate_meta_creative_blueprints(body, client=client)
+        return {"status": "success", "blueprints": blueprints}
+    except Exception as e:
+        logger.error(f"Generate blueprints failed: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/campaign/meta-creative-suite/render-one")
+async def render_meta_creative_suite_one(
+    blueprint_json: str = Form(...),
+    brand_name: str = Form(...),
+    product_name: str = Form(...),
+    product_category: str = Form(""),
+    target_audience_persona: str = Form(""),
+    aspect_ratio: str = Form("4:5"),
+    engine: str = Form("qwen"),
+    product_image_path: Optional[str] = Form(None),
+    product_image: Optional[UploadFile] = File(None),
+    custom_directive: Optional[str] = Form(None),
+    steps: int = Form(35),
+    x_api_key: Optional[str] = Header(None),
+    x_image_api_key: Optional[str] = Header(None)
+):
+    try:
+        blueprint = json.loads(blueprint_json)
+        client = get_client(x_api_key)
+        
+        product_bytes = None
+        mime_type = "image/png"
+        if product_image and product_image.filename:
+            product_bytes = await product_image.read()
+            ext = os.path.splitext(product_image.filename)[1].lower() or ".png"
+            mime_type = "image/jpeg" if ext in [".jpg", ".jpeg"] else ("image/webp" if ext == ".webp" else "image/png")
+
+        res = await generate_single_meta_creative(
+            blueprint=blueprint,
+            brand_name=brand_name,
+            product_name=product_name,
+            product_category=product_category,
+            target_audience_persona=target_audience_persona,
+            aspect_ratio=aspect_ratio,
+            engine=engine,
+            product_image_path=product_image_path,
+            product_bytes=product_bytes,
+            mime_type=mime_type,
+            custom_directive=custom_directive,
+            steps=steps,
+            client=client,
+            api_key=x_api_key,
+            image_api_key=x_image_api_key
+        )
+        return res
+    except Exception as e:
+        logger.error(f"Render one meta creative failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/campaign/meta-creative-suite/render-all")
+async def render_meta_creative_suite_all(
+    blueprints_json: str = Form(...),
+    brand_name: str = Form(...),
+    product_name: str = Form(...),
+    product_category: str = Form(""),
+    target_audience_persona: str = Form(""),
+    aspect_ratio: str = Form("4:5"),
+    engine: str = Form("qwen"),
+    product_image_path: Optional[str] = Form(None),
+    product_image: Optional[UploadFile] = File(None),
+    steps: int = Form(35),
+    x_api_key: Optional[str] = Header(None),
+    x_image_api_key: Optional[str] = Header(None)
+):
+    try:
+        blueprints = json.loads(blueprints_json)
+        client = get_client(x_api_key)
+        
+        product_bytes = None
+        mime_type = "image/png"
+        if product_image and product_image.filename:
+            product_bytes = await product_image.read()
+            ext = os.path.splitext(product_image.filename)[1].lower() or ".png"
+            mime_type = "image/jpeg" if ext in [".jpg", ".jpeg"] else ("image/webp" if ext == ".webp" else "image/png")
+
+        results = []
+        for bp in blueprints:
+            try:
+                res = await generate_single_meta_creative(
+                    blueprint=bp,
+                    brand_name=brand_name,
+                    product_name=product_name,
+                    product_category=product_category,
+                    target_audience_persona=target_audience_persona,
+                    aspect_ratio=aspect_ratio,
+                    engine=engine,
+                    product_image_path=product_image_path,
+                    product_bytes=product_bytes,
+                    mime_type=mime_type,
+                    steps=steps,
+                    client=client,
+                    api_key=x_api_key,
+                    image_api_key=x_image_api_key
+                )
+                results.append(res)
+            except Exception as item_err:
+                logger.warning(f"Error rendering creative #{bp.get('creative_id')}: {item_err}")
+
+        return {"status": "success", "creatives": results}
+    except Exception as e:
+        logger.error(f"Render all meta creatives failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/campaign/meta-ads")
