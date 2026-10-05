@@ -39,10 +39,15 @@
 
       <!-- Flow Navigation Switcher -->
       <div class="nav-switcher">
-        <button type="button" id="nav_tab_studio" class="nav-tab-btn active" onclick="switchMainView('studio')">
+        <button type="button" id="nav_tab_minimax" class="nav-tab-btn active" onclick="switchMainView('minimax')">
+          <i class="fa-solid fa-film"></i>
+          <span>MiniMax Video</span>
+          <span class="nav-badge-pill" style="background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.3);">H3 + Audio</span>
+        </button>
+        <button type="button" id="nav_tab_omniflash" class="nav-tab-btn" onclick="switchMainView('omniflash')">
           <i class="fa-solid fa-wand-magic-sparkles"></i>
-          <span>Video Studio</span>
-          <span class="nav-badge-pill">Omni Flash 1.1</span>
+          <span>Omni Flash Video</span>
+          <span class="nav-badge-pill" style="background: rgba(139, 92, 246, 0.2); color: #a78bfa; border: 1px solid rgba(139, 92, 246, 0.3);">Gemini 1.1</span>
         </button>
         <button type="button" id="nav_tab_image" class="nav-tab-btn" onclick="switchMainView('image')">
           <i class="fa-solid fa-image"></i>
@@ -83,8 +88,254 @@
 
   <main class="container">
 
-    <!-- ==================== FLOW 1: AI VIDEO STUDIO (PRIMARY GOOGLE FLOW) ==================== -->
-    <section id="view_video_studio" class="studio-workspace-section active">
+    <!-- ==================== FLOW 1: MINIMAX-H3 VIDEO STUDIO (SELF-HOSTED GPU) ==================== -->
+    <section id="view_minimax_studio" class="studio-workspace-section active">
+      <!-- MiniMax Subheader Bar -->
+      <div class="studio-toolbar-strip">
+        <div class="studio-status-wrap">
+          <div class="studio-pill-status" style="border-color: rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.1);">
+            <span class="pulse-dot" style="background: #3b82f6;"></span>
+            <strong>MiniMax-H3</strong> · Self-Hosted GPU Video &amp; Audio Engine
+          </div>
+          <span class="studio-tagline">High-definition AI video synthesis with synchronized stereo audio directly on GCP GPU</span>
+        </div>
+        <div class="studio-engine-pills">
+          <span class="engine-badge" style="color: #60a5fa; border-color: rgba(59, 130, 246, 0.35);"><i class="fa-solid fa-volume-high"></i> Synchronized Audio</span>
+          <span class="engine-badge"><i class="fa-solid fa-sliders"></i> 480p / 768p / 1344p</span>
+          <span class="engine-badge"><i class="fa-solid fa-stopwatch"></i> 4s – 15s Duration</span>
+        </div>
+      </div>
+
+      <div class="studio-grid-layout">
+        <!-- Left: MiniMax Controls & Inputs -->
+        <div class="glass-card studio-control-panel">
+          <!-- Generation Mode Selector Tabs -->
+          <div class="mode-tabs-container">
+            <button type="button" class="mode-tab-btn active" id="btn_mm_mode_t2va" onclick="setMinimaxMode('t2va')">
+              <i class="fa-solid fa-font"></i>
+              <span>Text-to-Video</span>
+            </button>
+            <button type="button" class="mode-tab-btn" id="btn_mm_mode_single" onclick="setMinimaxMode('fl2va_single')">
+              <i class="fa-solid fa-image"></i>
+              <span>Image-to-Video</span>
+            </button>
+            <button type="button" class="mode-tab-btn" id="btn_mm_mode_dual" onclick="setMinimaxMode('fl2va_dual')">
+              <i class="fa-solid fa-arrows-left-right-to-line"></i>
+              <span>Start &amp; End Frame</span>
+            </button>
+          </div>
+
+          <!-- Image-to-Video: Single Keyframe Upload Area -->
+          <div class="studio-mode-pane" id="pane_mm_single_frame" style="display: none;">
+            <div class="field-label-row">
+              <label class="field-label"><i class="fa-solid fa-image"></i> Starting Frame <span class="field-subtext">(Animates starting from this picture)</span></label>
+            </div>
+            <div class="keyframe-card">
+              <div class="keyframe-header">
+                <span class="keyframe-badge" style="color: #60a5fa;"><i class="fa-solid fa-play"></i> First Frame (t=0s)</span>
+                <button type="button" class="btn-clear-frame" id="clear_mm_single_btn" style="display:none;" onclick="clearMinimaxSingleFrame()"><i class="fa-solid fa-trash"></i> Remove</button>
+              </div>
+              <div class="keyframe-dropzone" id="dropzone_mm_single" onclick="document.getElementById('input_mm_single_frame').click()">
+                <div class="empty-frame-state" id="body_mm_single">
+                  <i class="fa-solid fa-cloud-arrow-up" style="color: #60a5fa;"></i>
+                  <span>Upload start frame or product picture</span>
+                </div>
+                <img id="preview_mm_single_frame" class="keyframe-preview-img" style="display:none;" alt="Start frame">
+              </div>
+              <input type="file" id="input_mm_single_frame" accept="image/*" style="display:none;" onchange="handleMinimaxSingleUpload(event)">
+            </div>
+          </div>
+
+          <!-- Dual Keyframes: Start & End Frame Area -->
+          <div class="studio-mode-pane" id="pane_mm_dual_frame" style="display: none;">
+            <div class="field-label-row">
+              <label class="field-label"><i class="fa-solid fa-arrows-left-right-to-line"></i> Boundary Frames <span class="field-subtext">(Frame 0 &amp; Frame -1)</span></label>
+            </div>
+            <div class="keyframes-grid">
+              <!-- Start Frame -->
+              <div class="keyframe-card">
+                <div class="keyframe-header">
+                  <span class="keyframe-badge" style="color: #60a5fa;"><i class="fa-solid fa-play"></i> Start Frame</span>
+                  <button type="button" class="btn-clear-frame" id="clear_mm_first_btn" style="display:none;" onclick="clearMinimaxDualFrame('first')"><i class="fa-solid fa-trash"></i></button>
+                </div>
+                <div class="keyframe-dropzone" id="dropzone_mm_first" onclick="document.getElementById('input_mm_first_frame').click()">
+                  <div class="empty-frame-state" id="body_mm_first">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Frame 0</span>
+                  </div>
+                  <img id="preview_mm_first_frame" class="keyframe-preview-img" style="display:none;" alt="First frame">
+                </div>
+                <input type="file" id="input_mm_first_frame" accept="image/*" style="display:none;" onchange="handleMinimaxDualUpload(event, 'first')">
+              </div>
+
+              <!-- End Frame -->
+              <div class="keyframe-card">
+                <div class="keyframe-header">
+                  <span class="keyframe-badge" style="color: #60a5fa;"><i class="fa-solid fa-stop"></i> End Frame</span>
+                  <button type="button" class="btn-clear-frame" id="clear_mm_last_btn" style="display:none;" onclick="clearMinimaxDualFrame('last')"><i class="fa-solid fa-trash"></i></button>
+                </div>
+                <div class="keyframe-dropzone" id="dropzone_mm_last" onclick="document.getElementById('input_mm_last_frame').click()">
+                  <div class="empty-frame-state" id="body_mm_last">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Frame -1</span>
+                  </div>
+                  <img id="preview_mm_last_frame" class="keyframe-preview-img" style="display:none;" alt="Last frame">
+                </div>
+                <input type="file" id="input_mm_last_frame" accept="image/*" style="display:none;" onchange="handleMinimaxDualUpload(event, 'last')">
+              </div>
+            </div>
+          </div>
+
+          <!-- Prompt Input Section -->
+          <div class="studio-field-group">
+            <div class="field-label-row">
+              <label class="field-label" for="minimax_prompt">
+                <i class="fa-solid fa-feather-pointed"></i> <span id="minimax_prompt_label">Scene Prompt &amp; Motion Directions</span>
+              </label>
+            </div>
+            
+            <textarea id="minimax_prompt" class="studio-textarea" rows="3" placeholder="Describe the scene action, motion dynamics, visual atmosphere, and audio style in detail..."></textarea>
+
+            <!-- Camera / Motion preset chips -->
+            <div class="camera-preset-chips">
+              <span class="preset-label"><i class="fa-solid fa-video"></i> Camera:</span>
+              <button type="button" class="chip-preset" onclick="appendMinimaxKeyword('Slow cinematic push-in tracking shot, shallow depth of field')">🎥 Push In</button>
+              <button type="button" class="chip-preset" onclick="appendMinimaxKeyword('360 degree smooth orbit camera movement around subject')">🔄 Orbit</button>
+              <button type="button" class="chip-preset" onclick="appendMinimaxKeyword('Sweeping aerial drone shot with dramatic lighting')">🚁 Drone</button>
+              <button type="button" class="chip-preset" onclick="appendMinimaxKeyword('Macro close-up focus pull, crisp surface details')">🔍 Macro</button>
+              <button type="button" class="chip-preset" onclick="appendMinimaxKeyword('Natural handheld camera motion with subtle micro-drift')">🤳 Handheld</button>
+            </div>
+          </div>
+
+          <!-- MiniMax-H3 Parameters -->
+          <div class="studio-specs-compact">
+            <!-- Aspect Ratio -->
+            <div class="spec-row">
+              <span class="spec-inline-label"><i class="fa-solid fa-crop-simple"></i> Aspect:</span>
+              <div class="pill-group" id="minimax_aspect_selector">
+                <button type="button" class="pill-btn active" data-ratio="9:16" onclick="setMinimaxAspectRatio('9:16')">
+                  <i class="fa-solid fa-mobile-screen"></i> 9:16 <span class="pill-sub">Vertical</span>
+                </button>
+                <button type="button" class="pill-btn" data-ratio="16:9" onclick="setMinimaxAspectRatio('16:9')">
+                  <i class="fa-solid fa-tv"></i> 16:9 <span class="pill-sub">Wide</span>
+                </button>
+                <button type="button" class="pill-btn" data-ratio="auto" onclick="setMinimaxAspectRatio('auto')">
+                  <i class="fa-solid fa-expand"></i> auto <span class="pill-sub">Auto</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Short Edge Resolution -->
+            <div class="spec-row">
+              <span class="spec-inline-label"><i class="fa-solid fa-wand-magic"></i> Short Edge:</span>
+              <div class="pill-group" id="minimax_res_selector">
+                <button type="button" class="pill-btn" data-edge="480" onclick="setMinimaxResolution(480)">480 <span class="pill-sub">Fast</span></button>
+                <button type="button" class="pill-btn active" data-edge="768" onclick="setMinimaxResolution(768)">768 <span class="pill-sub">Standard</span></button>
+                <button type="button" class="pill-btn" data-edge="1344" onclick="setMinimaxResolution(1344)">1344 <span class="pill-sub">High Def</span></button>
+              </div>
+            </div>
+
+            <!-- Duration (4 to 15 seconds) -->
+            <div class="spec-row">
+              <span class="spec-inline-label"><i class="fa-solid fa-clock"></i> Duration:</span>
+              <div class="pill-group" id="minimax_dur_selector">
+                <button type="button" class="pill-btn" data-dur="4" onclick="setMinimaxDuration(4)">4s</button>
+                <button type="button" class="pill-btn active" data-dur="5" onclick="setMinimaxDuration(5)">5s</button>
+                <button type="button" class="pill-btn" data-dur="6" onclick="setMinimaxDuration(6)">6s</button>
+                <button type="button" class="pill-btn" data-dur="8" onclick="setMinimaxDuration(8)">8s</button>
+                <button type="button" class="pill-btn" data-dur="10" onclick="setMinimaxDuration(10)">10s</button>
+                <button type="button" class="pill-btn" data-dur="12" onclick="setMinimaxDuration(12)">12s</button>
+                <button type="button" class="pill-btn" data-dur="15" onclick="setMinimaxDuration(15)">15s</button>
+              </div>
+            </div>
+
+            <!-- Inference Steps & Seed -->
+            <div class="spec-dual-row">
+              <div class="spec-dual-col">
+                <span class="spec-inline-label"><i class="fa-solid fa-gauge-high"></i> Steps:</span>
+                <div class="pill-group" id="minimax_steps_selector">
+                  <button type="button" class="pill-btn" data-steps="20" onclick="setMinimaxSteps(20)">20</button>
+                  <button type="button" class="pill-btn active" data-steps="30" onclick="setMinimaxSteps(30)">30</button>
+                  <button type="button" class="pill-btn" data-steps="40" onclick="setMinimaxSteps(40)">40</button>
+                  <button type="button" class="pill-btn" data-steps="50" onclick="setMinimaxSteps(50)">50</button>
+                </div>
+              </div>
+
+              <div class="spec-dual-col">
+                <span class="spec-inline-label"><i class="fa-solid fa-dice"></i> Seed:</span>
+                <input type="number" id="minimax_seed" class="text-input" placeholder="Random" style="padding: 0.35rem 0.6rem; font-size: 0.8rem; border-radius: var(--radius-sm); width: 100%;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Generate CTA Button -->
+          <button type="button" id="minimax_generate_btn" class="btn btn-primary btn-xl studio-submit-btn" style="background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%);" onclick="submitMiniMaxStudioVideo()">
+            <i class="fa-solid fa-play"></i>
+            <span>Generate Video + Audio (MiniMax-H3)</span>
+          </button>
+        </div>
+
+        <!-- Right: MiniMax Output Canvas Deck & History -->
+        <div class="studio-canvas-deck">
+          <!-- Main Preview Player Card -->
+          <div class="glass-card studio-player-card">
+            <div class="player-card-header">
+              <div class="player-title-info">
+                <h3><i class="fa-solid fa-clapperboard" style="color: #60a5fa;"></i> MiniMax Video Player</h3>
+                <div class="player-meta-badges">
+                  <span class="meta-tag" id="minimax_meta_res">9:16 Vertical · 768p</span>
+                  <span class="meta-tag" id="minimax_meta_dur">5s</span>
+                  <span class="meta-tag" style="background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.35); color: #93c5fd;"><i class="fa-solid fa-volume-high"></i> Stereo Audio</span>
+                  <span class="engine-tag" style="background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4); color: #60a5fa;"><i class="fa-solid fa-microchip"></i> MiniMax-H3</span>
+                </div>
+              </div>
+              <div class="player-actions" id="minimax_player_actions" style="display: none;">
+                <a id="download_minimax_btn" class="btn btn-secondary btn-sm" download="minimax_video.mp4">
+                  <i class="fa-solid fa-download"></i> Download MP4 (with Audio)
+                </a>
+              </div>
+            </div>
+
+            <!-- Video Player Stage Viewport -->
+            <div class="player-stage-viewport ratio-9-16" id="minimax_viewport">
+              <!-- Empty State -->
+              <div class="player-empty-state" id="minimax_empty_state">
+                <div class="glow-orb" style="background: radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, transparent 70%);"></div>
+                <div class="flow-icon-wrap" style="color: #60a5fa;"><i class="fa-solid fa-play"></i></div>
+                <h4>Ready to generate with MiniMax-H3</h4>
+                <p>Configure prompt, keyframes, and duration (4-15s). The output will include generated video and synchronized stereo audio.</p>
+              </div>
+
+              <!-- Loading State Overlay -->
+              <div class="player-loading-state" id="minimax_loading_state" style="display: none;">
+                <div class="spinner-glow" style="border-top-color: #60a5fa;"></div>
+                <h4 id="minimax_loading_title">Synthesizing with MiniMax-H3</h4>
+                <p id="minimax_loading_sub">Job queued on self-hosted GPU server...</p>
+                <div class="loading-progress-bar"><div class="loading-progress-fill" id="minimax_progress_bar" style="background: linear-gradient(90deg, #2563eb, #60a5fa);"></div></div>
+                <span id="minimax_elapsed_timer" style="font-size: 0.76rem; color: var(--text-muted); margin-top: 0.5rem; font-family: var(--font-mono);">0s elapsed · Polling server</span>
+              </div>
+
+              <!-- Video Player Element -->
+              <video id="minimax_video_player" class="studio-rendered-video" controls autoplay loop playsinline style="display: none;"></video>
+            </div>
+          </div>
+
+          <!-- MiniMax History Reel -->
+          <div class="glass-card studio-history-card">
+            <div class="history-card-header">
+              <h4><i class="fa-solid fa-clock-rotate-left"></i> MiniMax Generations</h4>
+              <span class="history-counter" id="minimax_history_count">0 videos</span>
+            </div>
+            <div class="history-reel" id="minimax_history_reel">
+              <div class="history-empty" id="minimax_history_empty_msg">MiniMax video clips in this session will appear here for instant replay and comparison.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== FLOW 2: GEMINI OMNI FLASH 1.1 STUDIO ==================== -->
+    <section id="view_omniflash_studio" class="studio-workspace-section" style="display: none;">
       <!-- Studio Subheader Bar -->
       <div class="studio-toolbar-strip">
         <div class="studio-status-wrap">
@@ -239,32 +490,19 @@
             </div>
           </div>
 
-          <!-- Format & Engine Controls -->
+          <!-- Format Controls -->
           <div class="studio-specs-compact">
-            <!-- Engine Selection -->
-            <div class="spec-row">
-              <span class="spec-inline-label"><i class="fa-solid fa-server"></i> Engine:</span>
-              <div class="pill-group" id="studio_engine_selector">
-                <button type="button" class="pill-btn active" data-engine="minimax" onclick="setStudioEngine('minimax')">
-                  <i class="fa-solid fa-microchip"></i> MiniMax-H3 <span class="pill-sub">Self-Hosted GPU</span>
-                </button>
-                <button type="button" class="pill-btn" data-engine="omni-flash" onclick="setStudioEngine('omni-flash')">
-                  <i class="fa-solid fa-bolt"></i> Omni Flash 1.1 <span class="pill-sub">Gemini</span>
-                </button>
-              </div>
-            </div>
-
             <!-- Aspect Ratio -->
             <div class="spec-row">
               <span class="spec-inline-label"><i class="fa-solid fa-crop-simple"></i> Ratio:</span>
-              <div class="pill-group" id="aspect_ratio_selector">
-                <button type="button" class="pill-btn active" data-ratio="9:16" onclick="setStudioAspectRatio('9:16')">
+              <div class="pill-group" id="omni_aspect_ratio_selector">
+                <button type="button" class="pill-btn active" data-ratio="9:16" onclick="setOmniAspectRatio('9:16')">
                   <i class="fa-solid fa-mobile-screen"></i> 9:16 <span class="pill-sub">Vertical</span>
                 </button>
-                <button type="button" class="pill-btn" data-ratio="16:9" onclick="setStudioAspectRatio('16:9')">
+                <button type="button" class="pill-btn" data-ratio="16:9" onclick="setOmniAspectRatio('16:9')">
                   <i class="fa-solid fa-tv"></i> 16:9 <span class="pill-sub">Wide</span>
                 </button>
-                <button type="button" class="pill-btn" data-ratio="1:1" onclick="setStudioAspectRatio('1:1')">
+                <button type="button" class="pill-btn" data-ratio="1:1" onclick="setOmniAspectRatio('1:1')">
                   <i class="fa-regular fa-square"></i> 1:1 <span class="pill-sub">Square</span>
                 </button>
               </div>
@@ -274,20 +512,20 @@
             <div class="spec-dual-row">
               <div class="spec-dual-col">
                 <span class="spec-inline-label"><i class="fa-solid fa-wand-magic"></i> Resolution:</span>
-                <div class="pill-group" id="resolution_selector">
-                  <button type="button" class="pill-btn active" data-res="720p" onclick="setStudioResolution('720p')">720p</button>
-                  <button type="button" class="pill-btn" data-res="1080p" onclick="setStudioResolution('1080p')">1080p</button>
-                  <button type="button" class="pill-btn" data-res="4K" onclick="setStudioResolution('4K')">4K</button>
+                <div class="pill-group" id="omni_resolution_selector">
+                  <button type="button" class="pill-btn active" data-res="720p" onclick="setOmniResolution('720p')">720p</button>
+                  <button type="button" class="pill-btn" data-res="1080p" onclick="setOmniResolution('1080p')">1080p</button>
+                  <button type="button" class="pill-btn" data-res="4K" onclick="setOmniResolution('4K')">4K</button>
                 </div>
               </div>
 
               <div class="spec-dual-col">
                 <span class="spec-inline-label"><i class="fa-solid fa-clock"></i> Duration:</span>
-                <div class="pill-group" id="duration_selector">
-                  <button type="button" class="pill-btn" data-dur="4" onclick="setStudioDuration(4)">4s</button>
-                  <button type="button" class="pill-btn active" data-dur="6" onclick="setStudioDuration(6)">6s</button>
-                  <button type="button" class="pill-btn" data-dur="8" onclick="setStudioDuration(8)">8s</button>
-                  <button type="button" class="pill-btn" data-dur="10" onclick="setStudioDuration(10)">10s</button>
+                <div class="pill-group" id="omni_duration_selector">
+                  <button type="button" class="pill-btn" data-dur="4" onclick="setOmniDuration(4)">4s</button>
+                  <button type="button" class="pill-btn active" data-dur="6" onclick="setOmniDuration(6)">6s</button>
+                  <button type="button" class="pill-btn" data-dur="8" onclick="setOmniDuration(8)">8s</button>
+                  <button type="button" class="pill-btn" data-dur="10" onclick="setOmniDuration(10)">10s</button>
                 </div>
               </div>
             </div>
@@ -296,40 +534,40 @@
           <!-- Collapsible Negative Prompt -->
           <details class="negative-prompt-details">
             <summary><i class="fa-solid fa-ban"></i> Negative Prompt (Optional)</summary>
-            <textarea id="studio_negative_prompt" class="studio-textarea-sm" rows="2" placeholder="watermark, blur, jerky motion, distorted hands, cartoonish, low resolution..."></textarea>
+            <textarea id="omni_negative_prompt" class="studio-textarea-sm" rows="2" placeholder="watermark, blur, jerky motion, distorted hands, cartoonish, low resolution..."></textarea>
           </details>
 
           <!-- Generate CTA Button -->
-          <button type="button" id="studio_generate_btn" class="btn btn-primary btn-xl studio-submit-btn" onclick="submitStudioVideo()">
+          <button type="button" id="omni_generate_btn" class="btn btn-primary btn-xl studio-submit-btn" onclick="submitOmniStudioVideo()">
             <i class="fa-solid fa-play"></i>
-            <span>Generate Video (MiniMax-H3)</span>
+            <span>Generate Video with Omni Flash 1.1</span>
           </button>
         </div>
 
-        <!-- Right: Studio Playback Canvas & History Reel -->
+        <!-- Right: Omni Flash Playback Canvas & History Reel -->
         <div class="studio-canvas-deck">
           <!-- Main Preview Player Card -->
           <div class="glass-card studio-player-card">
             <div class="player-card-header">
               <div class="player-title-info">
-                <h3><i class="fa-solid fa-clapperboard"></i> Studio Player</h3>
+                <h3><i class="fa-solid fa-clapperboard"></i> Omni Flash Player</h3>
                 <div class="player-meta-badges">
-                  <span class="meta-tag" id="player_res_badge">9:16 Vertical · 720p</span>
-                  <span class="meta-tag" id="player_dur_badge">6s</span>
+                  <span class="meta-tag" id="omni_player_res_badge">9:16 Vertical · 720p</span>
+                  <span class="meta-tag" id="omni_player_dur_badge">6s</span>
                   <span class="engine-tag"><i class="fa-solid fa-bolt"></i> Omni Flash 1.1</span>
                 </div>
               </div>
-              <div class="player-actions" id="player_actions" style="display: none;">
-                <a id="download_video_btn" class="btn btn-secondary btn-sm" download="omni_flash_video.mp4">
+              <div class="player-actions" id="omni_player_actions" style="display: none;">
+                <a id="download_omni_video_btn" class="btn btn-secondary btn-sm" download="omni_flash_video.mp4">
                   <i class="fa-solid fa-download"></i> Download MP4
                 </a>
               </div>
             </div>
 
             <!-- Video Player Stage -->
-            <div class="player-stage-viewport ratio-9-16" id="player_viewport">
+            <div class="player-stage-viewport ratio-9-16" id="omni_player_viewport">
               <!-- Empty State -->
-              <div class="player-empty-state" id="player_empty_state">
+              <div class="player-empty-state" id="omni_player_empty_state">
                 <div class="glow-orb"></div>
                 <div class="flow-icon-wrap"><i class="fa-solid fa-play"></i></div>
                 <h4>Ready to generate</h4>
@@ -337,26 +575,26 @@
               </div>
 
               <!-- Loading State Overlay -->
-              <div class="player-loading-state" id="player_loading_state" style="display: none;">
+              <div class="player-loading-state" id="omni_player_loading_state" style="display: none;">
                 <div class="spinner-glow"></div>
-                <h4 id="studio_loading_title">Synthesizing with Omni Flash 1.1</h4>
-                <p id="studio_loading_sub">Rendering frames and interpolating motion...</p>
-                <div class="loading-progress-bar"><div class="loading-progress-fill" id="studio_progress_bar"></div></div>
+                <h4 id="omni_loading_title">Synthesizing with Omni Flash 1.1</h4>
+                <p id="omni_loading_sub">Rendering frames and interpolating motion...</p>
+                <div class="loading-progress-bar"><div class="loading-progress-fill" id="omni_progress_bar"></div></div>
               </div>
 
               <!-- Video Player Element -->
-              <video id="studio_video_player" class="studio-rendered-video" controls autoplay loop playsinline style="display: none;"></video>
+              <video id="omni_video_player" class="studio-rendered-video" controls autoplay loop playsinline style="display: none;"></video>
             </div>
           </div>
 
           <!-- Generation History Reel -->
           <div class="glass-card studio-history-card">
             <div class="history-card-header">
-              <h4><i class="fa-solid fa-clock-rotate-left"></i> Session Generations</h4>
-              <span class="history-counter" id="history_count">0 videos</span>
+              <h4><i class="fa-solid fa-clock-rotate-left"></i> Omni Flash Generations</h4>
+              <span class="history-counter" id="omni_history_count">0 videos</span>
             </div>
-            <div class="history-reel" id="studio_history_reel">
-              <div class="history-empty" id="history_empty_msg">Generated clips in this session will appear here for instant replay and comparison.</div>
+            <div class="history-reel" id="omni_history_reel">
+              <div class="history-empty" id="omni_history_empty_msg">Generated clips in this session will appear here for instant replay and comparison.</div>
             </div>
           </div>
         </div>

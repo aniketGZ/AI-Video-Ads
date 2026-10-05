@@ -1042,21 +1042,24 @@ async def generate_studio_video_background(
     source_video_path: Optional[str],
     api_key: Optional[str],
     generator: str = "minimax",
-    video_api_key: Optional[str] = None
+    video_api_key: Optional[str] = None,
+    short_edge: Optional[int] = None,
+    steps: Optional[int] = None,
+    seed: Optional[int] = None
 ):
     try:
         import time
         # Check if MiniMax-H3 should be used
         use_minimax = (
             generator in ["minimax", "self-hosted"] or
-            (is_self_hosted_enabled() and generator not in ["omni-flash-forced"])
+            (is_self_hosted_enabled() and generator not in ["omni-flash", "omniflash", "omni-flash-forced"])
         )
 
-        if use_minimax and mode in ["prompt_images", "first_last_frame"]:
+        if use_minimax and mode in ["prompt_images", "first_last_frame", "t2va", "fl2va_single", "fl2va_dual"]:
             try:
                 persist_job_update(job_id, {
                     "status": "processing",
-                    "progress_msg": "Queued for MiniMax-H3 GPU server...",
+                    "progress_msg": "Queued for MiniMax-H3 GPU server (video + stereo audio)...",
                     "progress": 5,
                     "created_at": time.time()
                 }, video_jobs)
@@ -1064,18 +1067,29 @@ async def generate_studio_video_background(
                 first_frame_uri = None
                 last_frame_uri = None
 
-                if mode == "first_last_frame":
+                if mode in ["first_last_frame", "fl2va_dual"]:
                     if first_frame_path and os.path.exists(first_frame_path):
                         first_frame_uri = image_file_to_data_uri(first_frame_path)
                     if last_frame_path and os.path.exists(last_frame_path):
                         last_frame_uri = image_file_to_data_uri(last_frame_path)
-                elif mode == "prompt_images" and reference_image_paths:
-                    if os.path.exists(reference_image_paths[0]):
+                elif mode in ["prompt_images", "fl2va_single"]:
+                    if first_frame_path and os.path.exists(first_frame_path):
+                        first_frame_uri = image_file_to_data_uri(first_frame_path)
+                    elif reference_image_paths and os.path.exists(reference_image_paths[0]):
                         first_frame_uri = image_file_to_data_uri(reference_image_paths[0])
 
-                short_edge = 1344 if resolution in ("1080p", "4k", "4K") else (480 if resolution == "480p" else 768)
+                target_short_edge = short_edge
+                if not target_short_edge:
+                    if resolution in ("1344p", "1080p", "4k", "4K", "1344"):
+                        target_short_edge = 1344
+                    elif resolution in ("480p", "480"):
+                        target_short_edge = 480
+                    else:
+                        target_short_edge = 768
+
                 aspect = "9:16" if aspect_ratio == "9:16" else ("16:9" if aspect_ratio == "16:9" else "auto")
                 dur = max(4, min(15, int(duration)))
+                num_steps = steps if (steps and 20 <= steps <= 50) else 30
 
                 def on_studio_poll(st_dict, poll_count):
                     secs = poll_count * 10
@@ -1085,13 +1099,17 @@ async def generate_studio_video_background(
                         "progress": min(10 + poll_count * 7, 92)
                     }, video_jobs)
 
-                logger.info(f"Triggering MiniMax-H3 studio video for {job_id} (mode={mode}, res={resolution}, dur={dur}s)...")
+                logger.info(
+                    f"Triggering MiniMax-H3 video job for {job_id} "
+                    f"(mode={mode}, short_edge={target_short_edge}, dur={dur}s, steps={num_steps}, seed={seed})..."
+                )
                 video_bytes = await generate_video_async(
                     prompt=prompt,
                     seconds=dur,
                     aspect=aspect,
-                    short_edge=short_edge,
-                    steps=30,
+                    short_edge=target_short_edge,
+                    steps=num_steps,
+                    seed=seed,
                     first_frame_uri=first_frame_uri,
                     last_frame_uri=last_frame_uri,
                     api_key=video_api_key or get_video_api_key(),
@@ -1102,28 +1120,32 @@ async def generate_studio_video_background(
                 )
 
                 import uuid
-                filename = f"studio_video_{uuid.uuid4().hex}.mp4"
+                filename = f"minimax_video_{uuid.uuid4().hex}.mp4"
                 file_path = os.path.join("static/generated", filename)
 
                 with open(file_path, "wb") as f:
                     f.write(video_bytes)
 
-                logger.info(f"Studio video saved to {file_path}")
+                logger.info(f"MiniMax-H3 video saved to {file_path}")
                 persist_job_update(job_id, {
                     "status": "success",
                     "video_url": f"/static/generated/{filename}",
                     "mode": mode,
-                    "resolution": resolution,
-                    "aspect_ratio": aspect_ratio,
+                    "resolution": f"{target_short_edge}p",
+                    "short_edge": target_short_edge,
+                    "aspect_ratio": aspect,
                     "duration": dur,
+                    "steps": num_steps,
+                    "seed": seed,
                     "prompt": prompt,
-                    "engine": "MiniMax-H3"
+                    "engine": "MiniMax-H3",
+                    "has_audio": True
                 }, video_jobs)
                 return
 
             except Exception as minimax_err:
                 logger.warning(f"MiniMax-H3 studio generation failed: {minimax_err}")
-                if should_fallback_to_gemini() and api_key:
+                if should_fallback_to_gemini() and api_key and generator not in ["minimax"]:
                     logger.info("Falling back to Gemini Omni Flash for studio video...")
                     persist_job_update(job_id, {
                         "status": "processing",
@@ -1305,6 +1327,9 @@ async def studio_generate_video(
     resolution: str = Form("720p"),
     duration: int = Form(6),
     generator: str = Form("minimax"),
+    short_edge: Optional[int] = Form(None),
+    steps: Optional[int] = Form(None),
+    seed: Optional[int] = Form(None),
     reference_images: Optional[List[UploadFile]] = File(None),
     first_frame: Optional[UploadFile] = File(None),
     last_frame: Optional[UploadFile] = File(None),
@@ -1377,7 +1402,10 @@ async def studio_generate_video(
             source_video_path=saved_source_video,
             api_key=x_api_key,
             generator=generator,
-            video_api_key=x_video_api_key
+            video_api_key=x_video_api_key,
+            short_edge=short_edge,
+            steps=steps,
+            seed=seed
         )
         
         return {"status": "processing", "job_id": job_id}

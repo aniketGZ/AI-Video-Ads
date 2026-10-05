@@ -914,38 +914,45 @@ function copyPublicIp() {
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     initAPIKeysPersistence();
-    initStudioDragAndDrop();
+    initMinimaxDragAndDrop();
+    initOmniDragAndDrop();
     initImageStudioDragAndDrop();
     checkSelfHostedStatus();
   });
 } else {
   initAPIKeysPersistence();
-  initStudioDragAndDrop();
+  initMinimaxDragAndDrop();
+  initOmniDragAndDrop();
   initImageStudioDragAndDrop();
   checkSelfHostedStatus();
 }
 
 /* ============================================================
-   GOOGLE FLOW — AI VIDEO STUDIO JAVASCRIPT CONTROLLER
+   VIEW SWITCHER (MiniMax vs Omni Flash vs Image Studio vs Campaign vs MPT)
    ============================================================ */
 
-// Main View Switcher (Video Studio vs Image Studio vs Ad Campaign vs MoneyPrinter Turbo)
 function switchMainView(view) {
-  const studioTab = document.getElementById("nav_tab_studio");
+  const mmTab = document.getElementById("nav_tab_minimax");
+  const omniTab = document.getElementById("nav_tab_omniflash");
   const imageTab = document.getElementById("nav_tab_image");
   const campaignTab = document.getElementById("nav_tab_campaign");
   const mptTab = document.getElementById("nav_tab_moneyprinter");
-  const studioView = document.getElementById("view_video_studio");
+
+  const mmView = document.getElementById("view_minimax_studio");
+  const omniView = document.getElementById("view_omniflash_studio");
   const imageView = document.getElementById("view_image_studio");
   const campaignView = document.getElementById("view_ad_campaign");
   const mptView = document.getElementById("view_moneyprinter");
-  
-  [studioTab, imageTab, campaignTab, mptTab].forEach(t => t && t.classList.remove("active"));
-  [studioView, imageView, campaignView, mptView].forEach(v => v && (v.style.display = "none"));
-  
-  if (view === "studio") {
-    if (studioTab) studioTab.classList.add("active");
-    if (studioView) studioView.style.display = "block";
+
+  [mmTab, omniTab, imageTab, campaignTab, mptTab].forEach(t => t && t.classList.remove("active"));
+  [mmView, omniView, imageView, campaignView, mptView].forEach(v => v && (v.style.display = "none"));
+
+  if (view === "minimax" || view === "studio") {
+    if (mmTab) mmTab.classList.add("active");
+    if (mmView) mmView.style.display = "block";
+  } else if (view === "omniflash") {
+    if (omniTab) omniTab.classList.add("active");
+    if (omniView) omniView.style.display = "block";
   } else if (view === "image") {
     if (imageTab) imageTab.classList.add("active");
     if (imageView) imageView.style.display = "block";
@@ -959,10 +966,465 @@ function switchMainView(view) {
   }
 }
 
-// Studio State
-const studioState = {
-  engine: "minimax",
-  mode: "prompt_images",
+/* ============================================================
+   FLOW 1: MINIMAX-H3 VIDEO STUDIO (SELF-HOSTED GPU ENGINE)
+   ============================================================ */
+
+const minimaxState = {
+  mode: "t2va", // "t2va", "fl2va_single", "fl2va_dual"
+  aspectRatio: "9:16", // "9:16", "16:9", "auto"
+  shortEdge: 768, // 480, 768, 1344
+  duration: 5, // 4 to 15
+  steps: 30, // 20, 30, 40, 50
+  singleFrame: null,
+  firstFrame: null,
+  lastFrame: null,
+  history: []
+};
+
+function setMinimaxMode(mode) {
+  minimaxState.mode = mode;
+
+  const btnT2va = document.getElementById("btn_mm_mode_t2va");
+  const btnSingle = document.getElementById("btn_mm_mode_single");
+  const btnDual = document.getElementById("btn_mm_mode_dual");
+
+  if (btnT2va) btnT2va.classList.toggle("active", mode === "t2va");
+  if (btnSingle) btnSingle.classList.toggle("active", mode === "fl2va_single");
+  if (btnDual) btnDual.classList.toggle("active", mode === "fl2va_dual");
+
+  const paneSingle = document.getElementById("pane_mm_single_frame");
+  const paneDual = document.getElementById("pane_mm_dual_frame");
+  const promptLabel = document.getElementById("minimax_prompt_label");
+  const promptInput = document.getElementById("minimax_prompt");
+
+  if (paneSingle) paneSingle.style.display = mode === "fl2va_single" ? "block" : "none";
+  if (paneDual) paneDual.style.display = mode === "fl2va_dual" ? "block" : "none";
+
+  if (mode === "fl2va_single") {
+    if (promptLabel) promptLabel.textContent = "Motion & Animation Directions";
+    if (promptInput) promptInput.placeholder = "Describe how this picture should animate, camera motion, atmosphere, action, and sound...";
+  } else if (mode === "fl2va_dual") {
+    if (promptLabel) promptLabel.textContent = "Frame Transition & Interpolation Prompt";
+    if (promptInput) promptInput.placeholder = "Describe the evolution that bridges Frame 0 into Frame -1, camera motion, and sound...";
+  } else {
+    if (promptLabel) promptLabel.textContent = "Scene Prompt & Motion Directions";
+    if (promptInput) promptInput.placeholder = "Describe the scene action, motion dynamics, visual atmosphere, and audio style in detail...";
+  }
+}
+
+function setMinimaxAspectRatio(ratio) {
+  minimaxState.aspectRatio = ratio;
+  document.querySelectorAll("#minimax_aspect_selector .pill-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.ratio === ratio);
+  });
+
+  const viewport = document.getElementById("minimax_viewport");
+  if (viewport) {
+    viewport.classList.remove("ratio-9-16", "ratio-16-9", "ratio-auto");
+    viewport.classList.add(ratio === "auto" ? "ratio-16-9" : `ratio-${ratio.replace(":", "-")}`);
+  }
+  updateMinimaxMetaBadges();
+}
+
+function setMinimaxResolution(edge) {
+  minimaxState.shortEdge = parseInt(edge, 10);
+  document.querySelectorAll("#minimax_res_selector .pill-btn").forEach(btn => {
+    btn.classList.toggle("active", parseInt(btn.dataset.edge, 10) === minimaxState.shortEdge);
+  });
+  updateMinimaxMetaBadges();
+}
+
+function setMinimaxDuration(dur) {
+  minimaxState.duration = parseInt(dur, 10);
+  document.querySelectorAll("#minimax_dur_selector .pill-btn").forEach(btn => {
+    btn.classList.toggle("active", parseInt(btn.dataset.dur, 10) === minimaxState.duration);
+  });
+  updateMinimaxMetaBadges();
+}
+
+function setMinimaxSteps(steps) {
+  minimaxState.steps = parseInt(steps, 10);
+  document.querySelectorAll("#minimax_steps_selector .pill-btn").forEach(btn => {
+    btn.classList.toggle("active", parseInt(btn.dataset.steps, 10) === minimaxState.steps);
+  });
+}
+
+function updateMinimaxMetaBadges() {
+  const resBadge = document.getElementById("minimax_meta_res");
+  const durBadge = document.getElementById("minimax_meta_dur");
+  let ratioName = "9:16 Vertical";
+  if (minimaxState.aspectRatio === "16:9") ratioName = "16:9 Wide";
+  else if (minimaxState.aspectRatio === "auto") ratioName = "Auto Aspect";
+
+  if (resBadge) resBadge.textContent = `${ratioName} · ${minimaxState.shortEdge}p`;
+  if (durBadge) durBadge.textContent = `${minimaxState.duration}s`;
+}
+
+function appendMinimaxKeyword(keyword) {
+  const textarea = document.getElementById("minimax_prompt");
+  if (!textarea) return;
+  const current = textarea.value.trim();
+  if (!current) {
+    textarea.value = keyword;
+  } else {
+    textarea.value = current.endsWith(",") ? `${current} ${keyword}` : `${current}, ${keyword}`;
+  }
+  textarea.focus();
+}
+
+// Single Frame (Image-to-Video) handlers
+function handleMinimaxSingleUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  minimaxState.singleFrame = file;
+
+  const preview = document.getElementById("preview_mm_single_frame");
+  const emptyState = document.getElementById("body_mm_single");
+  const clearBtn = document.getElementById("clear_mm_single_btn");
+
+  if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = "block"; }
+  if (emptyState) emptyState.style.display = "none";
+  if (clearBtn) clearBtn.style.display = "inline-flex";
+}
+
+function clearMinimaxSingleFrame() {
+  minimaxState.singleFrame = null;
+  const preview = document.getElementById("preview_mm_single_frame");
+  const emptyState = document.getElementById("body_mm_single");
+  const clearBtn = document.getElementById("clear_mm_single_btn");
+  const input = document.getElementById("input_mm_single_frame");
+
+  if (preview) { preview.src = ""; preview.style.display = "none"; }
+  if (emptyState) emptyState.style.display = "flex";
+  if (clearBtn) clearBtn.style.display = "none";
+  if (input) input.value = "";
+}
+
+// Dual Keyframes (Start & End Frame) handlers
+function handleMinimaxDualUpload(e, position) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (position === "first") {
+    minimaxState.firstFrame = file;
+    const preview = document.getElementById("preview_mm_first_frame");
+    const emptyState = document.getElementById("body_mm_first");
+    const clearBtn = document.getElementById("clear_mm_first_btn");
+    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = "block"; }
+    if (emptyState) emptyState.style.display = "none";
+    if (clearBtn) clearBtn.style.display = "inline-flex";
+  } else {
+    minimaxState.lastFrame = file;
+    const preview = document.getElementById("preview_mm_last_frame");
+    const emptyState = document.getElementById("body_mm_last");
+    const clearBtn = document.getElementById("clear_mm_last_btn");
+    if (preview) { preview.src = URL.createObjectURL(file); preview.style.display = "block"; }
+    if (emptyState) emptyState.style.display = "none";
+    if (clearBtn) clearBtn.style.display = "inline-flex";
+  }
+}
+
+function clearMinimaxDualFrame(position) {
+  if (position === "first") {
+    minimaxState.firstFrame = null;
+    const preview = document.getElementById("preview_mm_first_frame");
+    const emptyState = document.getElementById("body_mm_first");
+    const clearBtn = document.getElementById("clear_mm_first_btn");
+    const input = document.getElementById("input_mm_first_frame");
+    if (preview) { preview.src = ""; preview.style.display = "none"; }
+    if (emptyState) emptyState.style.display = "flex";
+    if (clearBtn) clearBtn.style.display = "none";
+    if (input) input.value = "";
+  } else {
+    minimaxState.lastFrame = null;
+    const preview = document.getElementById("preview_mm_last_frame");
+    const emptyState = document.getElementById("body_mm_last");
+    const clearBtn = document.getElementById("clear_mm_last_btn");
+    const input = document.getElementById("input_mm_last_frame");
+    if (preview) { preview.src = ""; preview.style.display = "none"; }
+    if (emptyState) emptyState.style.display = "flex";
+    if (clearBtn) clearBtn.style.display = "none";
+    if (input) input.value = "";
+  }
+}
+
+// Drag & Drop for MiniMax
+function initMinimaxDragAndDrop() {
+  const dropSingle = document.getElementById("dropzone_mm_single");
+  const dropFirst = document.getElementById("dropzone_mm_first");
+  const dropLast = document.getElementById("dropzone_mm_last");
+
+  const setupDrop = (zone, onFile) => {
+    if (!zone) return;
+    zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag-over"); });
+    zone.addEventListener("dragleave", (e) => { e.preventDefault(); zone.classList.remove("drag-over"); });
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      zone.classList.remove("drag-over");
+      const f = Array.from(e.dataTransfer.files).find(file => file.type.startsWith("image/"));
+      if (f) onFile(f);
+    });
+  };
+
+  setupDrop(dropSingle, (file) => handleMinimaxSingleUpload({ target: { files: [file] } }));
+  setupDrop(dropFirst, (file) => handleMinimaxDualUpload({ target: { files: [file] } }, "first"));
+  setupDrop(dropLast, (file) => handleMinimaxDualUpload({ target: { files: [file] } }, "last"));
+}
+
+let mmElapsedInterval = null;
+
+async function submitMiniMaxStudioVideo() {
+  const promptInput = document.getElementById("minimax_prompt");
+  const generateBtn = document.getElementById("minimax_generate_btn");
+  const emptyState = document.getElementById("minimax_empty_state");
+  const loadingOverlay = document.getElementById("minimax_loading_state");
+  const videoPlayer = document.getElementById("minimax_video_player");
+  const actionsBar = document.getElementById("minimax_player_actions");
+  const downloadBtn = document.getElementById("download_minimax_btn");
+  const loadingTitle = document.getElementById("minimax_loading_title");
+  const loadingSub = document.getElementById("minimax_loading_sub");
+  const progressBar = document.getElementById("minimax_progress_bar");
+  const elapsedTimer = document.getElementById("minimax_elapsed_timer");
+
+  const prompt = promptInput ? promptInput.value.trim() : "";
+  if (!prompt) {
+    alert("Please enter a scene prompt or motion directions for MiniMax-H3.");
+    if (promptInput) promptInput.focus();
+    return;
+  }
+
+  if (minimaxState.mode === "fl2va_single" && !minimaxState.singleFrame) {
+    alert("Please upload a starting frame to animate with MiniMax-H3.");
+    return;
+  }
+
+  if (minimaxState.mode === "fl2va_dual" && (!minimaxState.firstFrame || !minimaxState.lastFrame)) {
+    alert("Please upload both start frame (Frame 0) and end frame (Frame -1) for boundary generation.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("mode", minimaxState.mode);
+  formData.append("prompt", prompt);
+  formData.append("generator", "minimax");
+  formData.append("aspect_ratio", minimaxState.aspectRatio);
+  formData.append("resolution", `${minimaxState.shortEdge}p`);
+  formData.append("short_edge", minimaxState.shortEdge);
+  formData.append("duration", minimaxState.duration);
+  formData.append("steps", minimaxState.steps);
+
+  const seedInput = document.getElementById("minimax_seed");
+  if (seedInput && seedInput.value.trim()) {
+    const s = parseInt(seedInput.value.trim(), 10);
+    if (!isNaN(s)) formData.append("seed", s);
+  }
+
+  if (minimaxState.mode === "fl2va_single" && minimaxState.singleFrame) {
+    formData.append("first_frame", minimaxState.singleFrame);
+  } else if (minimaxState.mode === "fl2va_dual") {
+    if (minimaxState.firstFrame) formData.append("first_frame", minimaxState.firstFrame);
+    if (minimaxState.lastFrame) formData.append("last_frame", minimaxState.lastFrame);
+  }
+
+  const apiKey = document.getElementById("api_key_input") ? document.getElementById("api_key_input").value.trim() : "";
+  const videoKey = localStorage.getItem("self_hosted_video_key") || "";
+  const headers = {};
+  if (apiKey) headers["x-api-key"] = apiKey;
+  if (videoKey) headers["x-video-api-key"] = videoKey;
+
+  // UI state
+  if (generateBtn) {
+    generateBtn.disabled = true;
+    generateBtn.innerHTML = '<div class="mini-spinner"></div><span>Synthesizing with MiniMax-H3 (GPU)...</span>';
+  }
+  if (emptyState) emptyState.style.display = "none";
+  if (videoPlayer) videoPlayer.style.display = "none";
+  if (actionsBar) actionsBar.style.display = "none";
+  if (loadingOverlay) loadingOverlay.style.display = "flex";
+  if (loadingTitle) loadingTitle.textContent = "Synthesizing with MiniMax-H3";
+  if (loadingSub) loadingSub.textContent = `Queueing job on GPU server (${minimaxState.shortEdge}p, ${minimaxState.duration}s, steps=${minimaxState.steps})...`;
+  if (progressBar) progressBar.style.width = "10%";
+
+  let elapsedSec = 0;
+  if (mmElapsedInterval) clearInterval(mmElapsedInterval);
+  if (elapsedTimer) elapsedTimer.textContent = "0s elapsed · Submitting job...";
+  mmElapsedInterval = setInterval(() => {
+    elapsedSec += 1;
+    if (elapsedTimer) {
+      elapsedTimer.textContent = `${elapsedSec}s elapsed · Polling MiniMax-H3 GPU server...`;
+    }
+  }, 1000);
+
+  try {
+    const res = await fetch("/api/studio/generate-video", {
+      method: "POST",
+      headers: headers,
+      body: formData
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      throw new Error(err.detail || "Failed to dispatch MiniMax video job");
+    }
+
+    const data = await res.json();
+    const jobId = data.job_id;
+
+    // Polling status
+    let progress = 15;
+    const pollInterval = setInterval(async () => {
+      try {
+        progress = Math.min(progress + 5, 92);
+        if (progressBar) progressBar.style.width = `${progress}%`;
+
+        const statusRes = await fetch(`/api/video-status/${jobId}`);
+        if (!statusRes.ok) return;
+        const jobData = await statusRes.json();
+
+        if (jobData.progress_msg && loadingSub) {
+          loadingSub.textContent = jobData.progress_msg;
+        }
+
+        if (jobData.status === "success") {
+          clearInterval(pollInterval);
+          if (mmElapsedInterval) clearInterval(mmElapsedInterval);
+          if (progressBar) progressBar.style.width = "100%";
+
+          setTimeout(() => {
+            if (loadingOverlay) loadingOverlay.style.display = "none";
+            if (videoPlayer) {
+              videoPlayer.src = jobData.video_url;
+              videoPlayer.style.display = "block";
+              videoPlayer.play().catch(e => console.log("Autoplay caught:", e));
+            }
+            if (actionsBar) actionsBar.style.display = "flex";
+            if (downloadBtn) {
+              downloadBtn.href = jobData.video_url;
+              downloadBtn.download = `minimax_video_${minimaxState.shortEdge}p_${minimaxState.duration}s_${Date.now()}.mp4`;
+            }
+
+            // History entry
+            const historyEntry = {
+              id: jobId,
+              url: jobData.video_url,
+              prompt: prompt,
+              aspectRatio: minimaxState.aspectRatio,
+              shortEdge: minimaxState.shortEdge,
+              duration: minimaxState.duration,
+              steps: minimaxState.steps,
+              hasAudio: true,
+              time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+            };
+            minimaxState.history.unshift(historyEntry);
+            renderMiniMaxHistory();
+
+            if (generateBtn) {
+              generateBtn.disabled = false;
+              generateBtn.innerHTML = '<i class="fa-solid fa-play"></i><span>Generate Video + Audio (MiniMax-H3)</span>';
+            }
+          }, 600);
+
+        } else if (jobData.status === "failed") {
+          clearInterval(pollInterval);
+          if (mmElapsedInterval) clearInterval(mmElapsedInterval);
+          throw new Error(jobData.error || "MiniMax-H3 video generation failed on server");
+        }
+      } catch (pollErr) {
+        clearInterval(pollInterval);
+        if (mmElapsedInterval) clearInterval(mmElapsedInterval);
+        console.error("MiniMax polling error:", pollErr);
+        alert("Generation failed: " + pollErr.message);
+        if (loadingOverlay) loadingOverlay.style.display = "none";
+        if (emptyState) emptyState.style.display = "flex";
+        if (generateBtn) {
+          generateBtn.disabled = false;
+          generateBtn.innerHTML = '<i class="fa-solid fa-play"></i><span>Generate Video + Audio (MiniMax-H3)</span>';
+        }
+      }
+    }, 4000);
+
+  } catch (err) {
+    if (mmElapsedInterval) clearInterval(mmElapsedInterval);
+    console.error("MiniMax submit error:", err);
+    alert("MiniMax generation failed: " + err.message);
+    if (loadingOverlay) loadingOverlay.style.display = "none";
+    if (emptyState) emptyState.style.display = "flex";
+    if (generateBtn) {
+      generateBtn.disabled = false;
+      generateBtn.innerHTML = '<i class="fa-solid fa-play"></i><span>Generate Video + Audio (MiniMax-H3)</span>';
+    }
+  }
+}
+
+function renderMiniMaxHistory() {
+  const reel = document.getElementById("minimax_history_reel");
+  const countBadge = document.getElementById("minimax_history_count");
+  if (!reel) return;
+
+  if (countBadge) {
+    countBadge.textContent = `${minimaxState.history.length} video${minimaxState.history.length === 1 ? '' : 's'}`;
+  }
+  reel.innerHTML = "";
+
+  if (minimaxState.history.length === 0) {
+    reel.innerHTML = '<div class="history-empty" id="minimax_history_empty_msg">MiniMax video clips in this session will appear here for instant replay and comparison.</div>';
+    return;
+  }
+
+  minimaxState.history.forEach((item, idx) => {
+    const card = document.createElement("div");
+    card.className = `history-item ${idx === 0 ? 'active' : ''}`;
+    card.title = `${item.prompt} (${item.shortEdge || 768}p · ${item.duration}s)`;
+
+    const vid = document.createElement("video");
+    vid.src = item.url;
+    vid.muted = true;
+    vid.playsInline = true;
+    vid.onmouseover = () => vid.play().catch(() => {});
+    vid.onmouseout = () => vid.pause();
+
+    const badge = document.createElement("span");
+    badge.className = "history-item-badge";
+    badge.innerHTML = `<i class="fa-solid fa-volume-high" style="margin-right:2px;"></i> ${item.shortEdge || 768}p · ${item.duration}s`;
+
+    card.appendChild(vid);
+    card.appendChild(badge);
+
+    card.onclick = () => {
+      document.querySelectorAll("#minimax_history_reel .history-item").forEach(c => c.classList.remove("active"));
+      card.classList.add("active");
+
+      const player = document.getElementById("minimax_video_player");
+      const emptyState = document.getElementById("minimax_empty_state");
+      const actionsBar = document.getElementById("minimax_player_actions");
+      const downloadBtn = document.getElementById("download_minimax_btn");
+
+      if (emptyState) emptyState.style.display = "none";
+      if (player) {
+        player.src = item.url;
+        player.style.display = "block";
+        player.play().catch(() => {});
+      }
+      if (actionsBar) actionsBar.style.display = "flex";
+      if (downloadBtn) {
+        downloadBtn.href = item.url;
+        downloadBtn.download = `minimax_${item.shortEdge || 768}p_${item.duration}s_${Date.now()}.mp4`;
+      }
+
+      setMinimaxAspectRatio(item.aspectRatio || "9:16");
+    };
+
+    reel.appendChild(card);
+  });
+}
+
+/* ============================================================
+   FLOW 2: GEMINI OMNI FLASH 1.1 STUDIO
+   ============================================================ */
+
+const omniState = {
+  mode: "prompt_images", // "prompt_images", "first_last_frame", "edit_video"
   aspectRatio: "9:16",
   resolution: "720p",
   duration: 6,
@@ -973,107 +1435,83 @@ const studioState = {
   history: []
 };
 
-// Set Video Engine (MiniMax-H3 vs Omni Flash)
-function setStudioEngine(engine) {
-  studioState.engine = engine;
-  document.querySelectorAll("#studio_engine_selector .pill-btn").forEach(btn => {
-    btn.classList.toggle("active", btn.dataset.engine === engine);
-  });
-  const generateBtn = document.getElementById("studio_generate_btn");
-  if (generateBtn) {
-    if (engine === "minimax") {
-      generateBtn.innerHTML = '<i class="fa-solid fa-play"></i><span>Generate Video (MiniMax-H3)</span>';
-    } else {
-      generateBtn.innerHTML = '<i class="fa-solid fa-play"></i><span>Generate Video with Omni Flash 1.1</span>';
-    }
-  }
+// Mode switcher
+function setStudioMode(mode) {
+  setOmniMode(mode);
 }
 
-// Set Generation Mode
-function setStudioMode(mode) {
-  studioState.mode = mode;
-  
-  // Update mode buttons
-  document.querySelectorAll(".mode-tab-btn").forEach(btn => {
+function setOmniMode(mode) {
+  omniState.mode = mode;
+
+  document.querySelectorAll("#view_omniflash_studio .mode-tab-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.mode === mode);
   });
-  
-  // Update mode panels
+
   const panePrompt = document.getElementById("pane_prompt_images");
   const paneKeyframes = document.getElementById("pane_first_last_frame");
   const paneVideo = document.getElementById("pane_edit_video");
   const promptLabel = document.getElementById("prompt_label_text");
   const promptInput = document.getElementById("studio_prompt");
-  
+
   if (panePrompt) panePrompt.style.display = mode === "prompt_images" ? "block" : "none";
   if (paneKeyframes) paneKeyframes.style.display = mode === "first_last_frame" ? "block" : "none";
   if (paneVideo) paneVideo.style.display = mode === "edit_video" ? "block" : "none";
-  
-  // Update prompt placeholders based on mode
+
   if (mode === "first_last_frame") {
     if (promptLabel) promptLabel.textContent = "Motion & Transition Instructions";
     if (promptInput) promptInput.placeholder = "Describe the motion and scene evolution that bridges the start frame to the end frame...";
   } else if (mode === "edit_video") {
     if (promptLabel) promptLabel.textContent = "Video Edit Instructions & Modifications";
-    if (promptInput) promptInput.placeholder = "Describe what to modify (e.g. change the backdrop to a futuristic neon city, make lighting golden-hour, change wardrobe to a red leather jacket)...";
+    if (promptInput) promptInput.placeholder = "Describe what to modify (e.g. change backdrop to neon city, golden-hour lighting)...";
   } else {
     if (promptLabel) promptLabel.textContent = "Scene Prompt & Motion Directions";
     if (promptInput) promptInput.placeholder = "Describe the scene, lighting, action, and style in rich detail...";
   }
 }
 
-// Set Aspect Ratio
-function setStudioAspectRatio(ratio) {
-  studioState.aspectRatio = ratio;
-  
-  document.querySelectorAll("#aspect_ratio_selector .pill-btn").forEach(btn => {
+function setStudioAspectRatio(ratio) { setOmniAspectRatio(ratio); }
+function setOmniAspectRatio(ratio) {
+  omniState.aspectRatio = ratio;
+  document.querySelectorAll("#omni_aspect_ratio_selector .pill-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.ratio === ratio);
   });
-  
-  const viewport = document.getElementById("player_viewport");
+  const viewport = document.getElementById("omni_player_viewport");
   if (viewport) {
     viewport.classList.remove("ratio-9-16", "ratio-16-9", "ratio-1-1");
     viewport.classList.add(`ratio-${ratio.replace(":", "-")}`);
   }
-  
-  updateStudioMetaBadges();
+  updateOmniMetaBadges();
 }
 
-// Set Resolution
-function setStudioResolution(res) {
-  studioState.resolution = res;
-  
-  document.querySelectorAll("#resolution_selector .pill-btn").forEach(btn => {
+function setStudioResolution(res) { setOmniResolution(res); }
+function setOmniResolution(res) {
+  omniState.resolution = res;
+  document.querySelectorAll("#omni_resolution_selector .pill-btn").forEach(btn => {
     btn.classList.toggle("active", btn.dataset.res === res);
   });
-  
-  updateStudioMetaBadges();
+  updateOmniMetaBadges();
 }
 
-// Set Duration
-function setStudioDuration(dur) {
-  studioState.duration = dur;
-  
-  document.querySelectorAll("#duration_selector .pill-btn").forEach(btn => {
-    btn.classList.toggle("active", parseInt(btn.dataset.dur) === dur);
+function setStudioDuration(dur) { setOmniDuration(dur); }
+function setOmniDuration(dur) {
+  omniState.duration = parseInt(dur, 10);
+  document.querySelectorAll("#omni_duration_selector .pill-btn").forEach(btn => {
+    btn.classList.toggle("active", parseInt(btn.dataset.dur, 10) === omniState.duration);
   });
-  
-  updateStudioMetaBadges();
+  updateOmniMetaBadges();
 }
 
-function updateStudioMetaBadges() {
-  const resBadge = document.getElementById("player_res_badge");
-  const durBadge = document.getElementById("player_dur_badge");
-  
+function updateOmniMetaBadges() {
+  const resBadge = document.getElementById("omni_player_res_badge");
+  const durBadge = document.getElementById("omni_player_dur_badge");
   let ratioName = "9:16 Vertical";
-  if (studioState.aspectRatio === "16:9") ratioName = "16:9 Landscape";
-  else if (studioState.aspectRatio === "1:1") ratioName = "1:1 Square";
-  
-  if (resBadge) resBadge.textContent = `${ratioName} · ${studioState.resolution}`;
-  if (durBadge) durBadge.textContent = `${studioState.duration}s`;
+  if (omniState.aspectRatio === "16:9") ratioName = "16:9 Landscape";
+  else if (omniState.aspectRatio === "1:1") ratioName = "1:1 Square";
+
+  if (resBadge) resBadge.textContent = `${ratioName} · ${omniState.resolution}`;
+  if (durBadge) durBadge.textContent = `${omniState.duration}s`;
 }
 
-// Append Camera Preset Keyword to Prompt
 function appendPromptKeyword(keyword) {
   const textarea = document.getElementById("studio_prompt");
   if (!textarea) return;
@@ -1086,11 +1524,10 @@ function appendPromptKeyword(keyword) {
   textarea.focus();
 }
 
-// Reference Image Slots Handling (3 slots: Character, Product, Style)
-let activeSlotIndex = 0;
-
+// Omni Flash Reference Image Slots
+let omniActiveSlotIndex = 0;
 function triggerRefUpload(index) {
-  activeSlotIndex = index;
+  omniActiveSlotIndex = index;
   const input = document.getElementById("studio_ref_input_hidden");
   if (input) input.click();
 }
@@ -1098,54 +1535,52 @@ function triggerRefUpload(index) {
 function handleSingleSlotUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
-  
-  studioState.referenceImages[activeSlotIndex] = file;
-  
-  const imgEl = document.getElementById(`slot_img_${activeSlotIndex}`);
-  const emptyEl = document.getElementById(`slot_empty_${activeSlotIndex}`);
-  const delBtn = document.getElementById(`slot_del_${activeSlotIndex}`);
-  
+
+  omniState.referenceImages[omniActiveSlotIndex] = file;
+  const imgEl = document.getElementById(`slot_img_${omniActiveSlotIndex}`);
+  const emptyEl = document.getElementById(`slot_empty_${omniActiveSlotIndex}`);
+  const delBtn = document.getElementById(`slot_del_${omniActiveSlotIndex}`);
+
   if (imgEl) {
     imgEl.src = URL.createObjectURL(file);
     imgEl.style.display = "block";
   }
   if (emptyEl) emptyEl.style.display = "none";
   if (delBtn) delBtn.style.display = "flex";
-  
+
   updateRefCountBadge();
   e.target.value = "";
 }
 
 function removeSlotRef(index) {
-  studioState.referenceImages[index] = null;
-  
+  omniState.referenceImages[index] = null;
   const imgEl = document.getElementById(`slot_img_${index}`);
   const emptyEl = document.getElementById(`slot_empty_${index}`);
   const delBtn = document.getElementById(`slot_del_${index}`);
-  
+
   if (imgEl) {
     imgEl.src = "";
     imgEl.style.display = "none";
   }
   if (emptyEl) emptyEl.style.display = "flex";
   if (delBtn) delBtn.style.display = "none";
-  
+
   updateRefCountBadge();
 }
 
 function updateRefCountBadge() {
-  const count = studioState.referenceImages.filter(Boolean).length;
+  const count = omniState.referenceImages.filter(Boolean).length;
   const badge = document.getElementById("ref_count_badge");
   if (badge) badge.textContent = `${count} / 3`;
 }
 
-// Handle Keyframe Uploads (First & Last frame)
+// Keyframes
 function handleKeyframeUpload(e, position) {
   const file = e.target.files[0];
   if (!file) return;
-  
+
   if (position === "first") {
-    studioState.firstFrame = file;
+    omniState.firstFrame = file;
     const preview = document.getElementById("preview_first_frame");
     const emptyState = document.getElementById("keyframe_body_first");
     const clearBtn = document.getElementById("clear_first_frame_btn");
@@ -1153,7 +1588,7 @@ function handleKeyframeUpload(e, position) {
     if (emptyState) emptyState.style.display = "none";
     if (clearBtn) clearBtn.style.display = "flex";
   } else {
-    studioState.lastFrame = file;
+    omniState.lastFrame = file;
     const preview = document.getElementById("preview_last_frame");
     const emptyState = document.getElementById("keyframe_body_last");
     const clearBtn = document.getElementById("clear_last_frame_btn");
@@ -1165,7 +1600,7 @@ function handleKeyframeUpload(e, position) {
 
 function clearKeyframe(position) {
   if (position === "first") {
-    studioState.firstFrame = null;
+    omniState.firstFrame = null;
     const preview = document.getElementById("preview_first_frame");
     const emptyState = document.getElementById("keyframe_body_first");
     const clearBtn = document.getElementById("clear_first_frame_btn");
@@ -1175,7 +1610,7 @@ function clearKeyframe(position) {
     if (clearBtn) clearBtn.style.display = "none";
     if (input) input.value = "";
   } else {
-    studioState.lastFrame = null;
+    omniState.lastFrame = null;
     const preview = document.getElementById("preview_last_frame");
     const emptyState = document.getElementById("keyframe_body_last");
     const clearBtn = document.getElementById("clear_last_frame_btn");
@@ -1187,174 +1622,145 @@ function clearKeyframe(position) {
   }
 }
 
-// Handle Source Video Upload for Video-to-Video Editing
+// Source Video
 function handleSourceVideoUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
-  
-  studioState.sourceVideo = file;
+
+  omniState.sourceVideo = file;
   const previewContainer = document.getElementById("video_preview_container");
   const emptyState = document.getElementById("video_empty_state");
   const videoPlayer = document.getElementById("preview_source_video");
-  
+
   if (videoPlayer) videoPlayer.src = URL.createObjectURL(file);
   if (emptyState) emptyState.style.display = "none";
   if (previewContainer) previewContainer.style.display = "flex";
 }
 
 function clearSourceVideo() {
-  studioState.sourceVideo = null;
+  omniState.sourceVideo = null;
   const previewContainer = document.getElementById("video_preview_container");
   const emptyState = document.getElementById("video_empty_state");
   const videoPlayer = document.getElementById("preview_source_video");
   const input = document.getElementById("studio_video_input");
-  
+
   if (videoPlayer) videoPlayer.src = "";
   if (previewContainer) previewContainer.style.display = "none";
   if (emptyState) emptyState.style.display = "flex";
   if (input) input.value = "";
 }
 
-// Drag & Drop Listeners Setup
-function initStudioDragAndDrop() {
-  const dropzoneRef = document.getElementById("dropzone_reference");
-  const dropzoneFirst = document.getElementById("dropzone_first_frame");
-  const dropzoneLast = document.getElementById("dropzone_last_frame");
-  const dropzoneVideo = document.getElementById("dropzone_source_video");
-  
-  const setupDrop = (zone, onFile) => {
-    if (!zone) return;
-    zone.addEventListener("dragover", (e) => { e.preventDefault(); zone.classList.add("drag-over"); });
-    zone.addEventListener("dragleave", (e) => { e.preventDefault(); zone.classList.remove("drag-over"); });
-    zone.addEventListener("drop", (e) => {
+function initOmniDragAndDrop() {
+  const firstCard = document.querySelector(".keyframe-compact-card:nth-child(1)");
+  const lastCard = document.querySelector(".keyframe-compact-card:nth-child(3)");
+  const videoBox = document.querySelector(".video-compact-box");
+
+  const setupDrop = (el, onFile) => {
+    if (!el) return;
+    el.addEventListener("dragover", (e) => { e.preventDefault(); el.classList.add("drag-over"); });
+    el.addEventListener("dragleave", (e) => { e.preventDefault(); el.classList.remove("drag-over"); });
+    el.addEventListener("drop", (e) => {
       e.preventDefault();
-      zone.classList.remove("drag-over");
-      onFile(e.dataTransfer.files);
+      el.classList.remove("drag-over");
+      const f = Array.from(e.dataTransfer.files).find(onFile.filter || (() => true));
+      if (f) onFile.handler(f);
     });
   };
-  
-  setupDrop(dropzoneRef, (files) => {
-    const remainingSlots = 3 - studioState.referenceImages.length;
-    if (remainingSlots <= 0) return alert("Maximum 3 reference images allowed.");
-    const toAdd = Array.from(files).filter(f => f.type.startsWith("image/")).slice(0, remainingSlots);
-    studioState.referenceImages = studioState.referenceImages.concat(toAdd);
-    renderStudioRefThumbnails();
-  });
-  
-  setupDrop(dropzoneFirst, (files) => {
-    const f = Array.from(files).find(f => f.type.startsWith("image/"));
-    if (f) handleKeyframeUpload({ target: { files: [f] } }, "first");
-  });
-  
-  setupDrop(dropzoneLast, (files) => {
-    const f = Array.from(files).find(f => f.type.startsWith("image/"));
-    if (f) handleKeyframeUpload({ target: { files: [f] } }, "last");
-  });
-  
-  setupDrop(dropzoneVideo, (files) => {
-    const f = Array.from(files).find(f => f.type.startsWith("video/"));
-    if (f) handleSourceVideoUpload({ target: { files: [f] } });
-  });
+
+  if (firstCard) setupDrop(firstCard, { filter: f => f.type.startsWith("image/"), handler: f => handleKeyframeUpload({ target: { files: [f] } }, "first") });
+  if (lastCard) setupDrop(lastCard, { filter: f => f.type.startsWith("image/"), handler: f => handleKeyframeUpload({ target: { files: [f] } }, "last") });
+  if (videoBox) setupDrop(videoBox, { filter: f => f.type.startsWith("video/"), handler: f => handleSourceVideoUpload({ target: { files: [f] } }) });
 }
 
-// Submit Studio Video Generation
-async function submitStudioVideo() {
+async function submitOmniStudioVideo() {
   const promptInput = document.getElementById("studio_prompt");
-  const negInput = document.getElementById("studio_negative_prompt");
-  const generateBtn = document.getElementById("studio_generate_btn");
-  const emptyState = document.getElementById("player_empty_state");
-  const loadingOverlay = document.getElementById("player_loading_state");
-  const videoPlayer = document.getElementById("studio_video_player");
-  const actionsBar = document.getElementById("player_actions");
-  const downloadBtn = document.getElementById("download_video_btn");
-  const loadingTitle = document.getElementById("studio_loading_title");
-  const loadingSub = document.getElementById("studio_loading_sub");
-  const progressBar = document.getElementById("studio_progress_bar");
-  
+  const negInput = document.getElementById("omni_negative_prompt");
+  const generateBtn = document.getElementById("omni_generate_btn");
+  const emptyState = document.getElementById("omni_player_empty_state");
+  const loadingOverlay = document.getElementById("omni_player_loading_state");
+  const videoPlayer = document.getElementById("omni_video_player");
+  const actionsBar = document.getElementById("omni_player_actions");
+  const downloadBtn = document.getElementById("download_omni_video_btn");
+  const loadingTitle = document.getElementById("omni_loading_title");
+  const loadingSub = document.getElementById("omni_loading_sub");
+  const progressBar = document.getElementById("omni_progress_bar");
+
   const prompt = promptInput ? promptInput.value.trim() : "";
   if (!prompt) {
     alert("Please enter a scene prompt or motion directions.");
     if (promptInput) promptInput.focus();
     return;
   }
-  
-  if (studioState.mode === "edit_video" && !studioState.sourceVideo) {
+
+  if (omniState.mode === "edit_video" && !omniState.sourceVideo) {
     alert("Please upload a source video to edit.");
     return;
   }
-  
+
   const formData = new FormData();
-  formData.append("mode", studioState.mode);
+  formData.append("mode", omniState.mode);
   formData.append("prompt", prompt);
+  formData.append("generator", "omni-flash");
   if (negInput && negInput.value.trim()) {
     formData.append("negative_prompt", negInput.value.trim());
   }
-  formData.append("aspect_ratio", studioState.aspectRatio);
-  formData.append("resolution", studioState.resolution);
-  formData.append("duration", studioState.duration);
-  
+  formData.append("aspect_ratio", omniState.aspectRatio);
+  formData.append("resolution", omniState.resolution);
+  formData.append("duration", omniState.duration);
+
   // Attach mode-specific files
-  if (studioState.mode === "prompt_images" && studioState.referenceImages.length > 0) {
-    studioState.referenceImages.forEach(img => {
-      formData.append("reference_images", img);
-    });
-  } else if (studioState.mode === "first_last_frame") {
-    if (studioState.firstFrame) formData.append("first_frame", studioState.firstFrame);
-    if (studioState.lastFrame) formData.append("last_frame", studioState.lastFrame);
-  } else if (studioState.mode === "edit_video" && studioState.sourceVideo) {
-    formData.append("source_video", studioState.sourceVideo);
+  const activeRefs = omniState.referenceImages.filter(Boolean);
+  if (omniState.mode === "prompt_images" && activeRefs.length > 0) {
+    activeRefs.forEach(img => formData.append("reference_images", img));
+  } else if (omniState.mode === "first_last_frame") {
+    if (omniState.firstFrame) formData.append("first_frame", omniState.firstFrame);
+    if (omniState.lastFrame) formData.append("last_frame", omniState.lastFrame);
+  } else if (omniState.mode === "edit_video" && omniState.sourceVideo) {
+    formData.append("source_video", omniState.sourceVideo);
   }
-  
+
   const apiKey = document.getElementById("api_key_input") ? document.getElementById("api_key_input").value.trim() : "";
-  const videoKey = localStorage.getItem("self_hosted_video_key") || "";
   const headers = {};
   if (apiKey) headers["x-api-key"] = apiKey;
-  if (videoKey) headers["x-video-api-key"] = videoKey;
-  
-  const activeEngine = studioState.engine || "minimax";
-  formData.append("generator", activeEngine);
 
-  const engineTitle = activeEngine === "minimax" ? "MiniMax-H3 (Self-Hosted)" : "Omni Flash 1.1";
-
-  // UI Loading State
+  // UI state
   if (generateBtn) {
     generateBtn.disabled = true;
-    generateBtn.innerHTML = `<div class="mini-spinner"></div><span>Rendering with ${engineTitle}...</span>`;
+    generateBtn.innerHTML = '<div class="mini-spinner"></div><span>Rendering with Omni Flash 1.1...</span>';
   }
   if (emptyState) emptyState.style.display = "none";
   if (videoPlayer) videoPlayer.style.display = "none";
   if (actionsBar) actionsBar.style.display = "none";
   if (loadingOverlay) loadingOverlay.style.display = "flex";
-  if (loadingTitle) loadingTitle.textContent = `Synthesizing Video with ${engineTitle}`;
-  if (loadingSub) loadingSub.textContent = `Targeting ${studioState.resolution} · ${studioState.aspectRatio} · ${studioState.duration}s...`;
+  if (loadingTitle) loadingTitle.textContent = "Synthesizing with Omni Flash 1.1";
+  if (loadingSub) loadingSub.textContent = `Targeting ${omniState.resolution} · ${omniState.aspectRatio} · ${omniState.duration}s...`;
   if (progressBar) progressBar.style.width = "25%";
-  
+
   try {
     const res = await fetch("/api/studio/generate-video", {
       method: "POST",
       headers: headers,
       body: formData
     });
-    
+
     if (!res.ok) {
       const err = await res.json();
-      throw new Error(err.detail || "Failed to dispatch video generation job");
+      throw new Error(err.detail || "Failed to dispatch Omni Flash job");
     }
-    
+
     const data = await res.json();
     const jobId = data.job_id;
-    
-    // Poll for status
+
     let progress = 35;
     const pollInterval = setInterval(async () => {
       try {
         progress = Math.min(progress + 7, 92);
         if (progressBar) progressBar.style.width = `${progress}%`;
-        
+
         const statusRes = await fetch(`/api/video-status/${jobId}`);
         if (!statusRes.ok) return;
         const jobData = await statusRes.json();
-        
+
         if (jobData.progress_msg && loadingSub) {
           loadingSub.textContent = jobData.progress_msg;
         }
@@ -1362,7 +1768,7 @@ async function submitStudioVideo() {
         if (jobData.status === "success") {
           clearInterval(pollInterval);
           if (progressBar) progressBar.style.width = "100%";
-          
+
           setTimeout(() => {
             if (loadingOverlay) loadingOverlay.style.display = "none";
             if (videoPlayer) {
@@ -1373,106 +1779,99 @@ async function submitStudioVideo() {
             if (actionsBar) actionsBar.style.display = "flex";
             if (downloadBtn) {
               downloadBtn.href = jobData.video_url;
-              downloadBtn.download = `${activeEngine}_video_${studioState.resolution}_${Date.now()}.mp4`;
+              downloadBtn.download = `omniflash_video_${omniState.resolution}_${Date.now()}.mp4`;
             }
-            
-            // Add to session history
+
             const historyEntry = {
               id: jobId,
               url: jobData.video_url,
               prompt: prompt,
-              aspectRatio: studioState.aspectRatio,
-              resolution: studioState.resolution,
-              duration: studioState.duration,
+              aspectRatio: omniState.aspectRatio,
+              resolution: omniState.resolution,
+              duration: omniState.duration,
               time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
             };
-            studioState.history.unshift(historyEntry);
-            renderStudioHistory();
-            
-            // Reset generate button
+            omniState.history.unshift(historyEntry);
+            renderOmniHistory();
+
             if (generateBtn) {
               generateBtn.disabled = false;
-              generateBtn.innerHTML = activeEngine === 'minimax' 
-                ? '<i class="fa-solid fa-play"></i><span>Generate Video (MiniMax-H3)</span>' 
-                : '<i class="fa-solid fa-play"></i><span>Generate Video with Omni Flash 1.1</span>';
+              generateBtn.innerHTML = '<i class="fa-solid fa-play"></i><span>Generate Video with Omni Flash 1.1</span>';
             }
           }, 600);
-          
+
         } else if (jobData.status === "failed") {
           clearInterval(pollInterval);
-          throw new Error(jobData.error || `${engineTitle} video generation failed on server`);
+          throw new Error(jobData.error || "Omni Flash video generation failed on server");
         }
       } catch (pollErr) {
         clearInterval(pollInterval);
-        console.error("Polling error:", pollErr);
+        console.error("Omni Flash polling error:", pollErr);
         alert("Generation failed: " + pollErr.message);
         if (loadingOverlay) loadingOverlay.style.display = "none";
         if (emptyState) emptyState.style.display = "flex";
         if (generateBtn) {
           generateBtn.disabled = false;
-          generateBtn.innerHTML = activeEngine === 'minimax' 
-            ? '<i class="fa-solid fa-play"></i><span>Generate Video (MiniMax-H3)</span>' 
-            : '<i class="fa-solid fa-play"></i><span>Generate Video with Omni Flash 1.1</span>';
+          generateBtn.innerHTML = '<i class="fa-solid fa-play"></i><span>Generate Video with Omni Flash 1.1</span>';
         }
       }
     }, 3000);
-    
+
   } catch (err) {
-    console.error("Submit error:", err);
+    console.error("Omni submit error:", err);
     alert("Generation failed: " + err.message);
     if (loadingOverlay) loadingOverlay.style.display = "none";
     if (emptyState) emptyState.style.display = "flex";
     if (generateBtn) {
       generateBtn.disabled = false;
-      generateBtn.innerHTML = activeEngine === 'minimax' 
-        ? '<i class="fa-solid fa-play"></i><span>Generate Video (MiniMax-H3)</span>' 
-        : '<i class="fa-solid fa-play"></i><span>Generate Video with Omni Flash 1.1</span>';
+      generateBtn.innerHTML = '<i class="fa-solid fa-play"></i><span>Generate Video with Omni Flash 1.1</span>';
     }
   }
 }
 
-// Render Session Generations Reel
-function renderStudioHistory() {
-  const reel = document.getElementById("studio_history_reel");
-  const countBadge = document.getElementById("history_count");
+function renderOmniHistory() {
+  const reel = document.getElementById("omni_history_reel");
+  const countBadge = document.getElementById("omni_history_count");
   if (!reel) return;
-  
-  if (countBadge) countBadge.textContent = `${studioState.history.length} video${studioState.history.length === 1 ? '' : 's'}`;
+
+  if (countBadge) {
+    countBadge.textContent = `${omniState.history.length} video${omniState.history.length === 1 ? '' : 's'}`;
+  }
   reel.innerHTML = "";
-  
-  if (studioState.history.length === 0) {
-    reel.innerHTML = '<div class="history-empty">Generated videos in this session will appear here for instant replay and comparison.</div>';
+
+  if (omniState.history.length === 0) {
+    reel.innerHTML = '<div class="history-empty" id="omni_history_empty_msg">Generated clips in this session will appear here for instant replay and comparison.</div>';
     return;
   }
-  
-  studioState.history.forEach((item, idx) => {
+
+  omniState.history.forEach((item, idx) => {
     const card = document.createElement("div");
     card.className = `history-item ${idx === 0 ? 'active' : ''}`;
     card.title = `${item.prompt} (${item.resolution})`;
-    
+
     const vid = document.createElement("video");
     vid.src = item.url;
     vid.muted = true;
     vid.playsInline = true;
     vid.onmouseover = () => vid.play().catch(() => {});
     vid.onmouseout = () => vid.pause();
-    
+
     const badge = document.createElement("span");
     badge.className = "history-item-badge";
     badge.textContent = `${item.resolution}`;
-    
+
     card.appendChild(vid);
     card.appendChild(badge);
-    
+
     card.onclick = () => {
-      document.querySelectorAll(".history-item").forEach(c => c.classList.remove("active"));
+      document.querySelectorAll("#omni_history_reel .history-item").forEach(c => c.classList.remove("active"));
       card.classList.add("active");
-      
-      const player = document.getElementById("studio_video_player");
-      const emptyState = document.getElementById("player_empty_state");
-      const actionsBar = document.getElementById("player_actions");
-      const downloadBtn = document.getElementById("download_video_btn");
-      
+
+      const player = document.getElementById("omni_video_player");
+      const emptyState = document.getElementById("omni_player_empty_state");
+      const actionsBar = document.getElementById("omni_player_actions");
+      const downloadBtn = document.getElementById("download_omni_video_btn");
+
       if (emptyState) emptyState.style.display = "none";
       if (player) {
         player.src = item.url;
@@ -1481,13 +1880,19 @@ function renderStudioHistory() {
       }
       if (actionsBar) actionsBar.style.display = "flex";
       if (downloadBtn) downloadBtn.href = item.url;
-      
-      setStudioAspectRatio(item.aspectRatio);
+
+      setOmniAspectRatio(item.aspectRatio);
     };
-    
+
     reel.appendChild(card);
   });
 }
+
+// Backward compatibility aliases
+const studioState = omniState;
+const submitStudioVideo = submitOmniStudioVideo;
+const renderStudioHistory = renderOmniHistory;
+function setStudioEngine() {}
 
 /* ============================================================
    FLOW 3: MONEYPRINTER TURBO JAVASCRIPT CONTROLLER
@@ -1960,39 +2365,41 @@ async function generateImageAd() {
   }
 }
 
-// Bridge function: Animate current image ad in Video Studio
+// Bridge function: Animate current image ad in MiniMax Video Studio
 async function animateCurrentImageAd() {
   if (!imageStudioState.currentImageUrl) return;
   const imgUrl = imageStudioState.currentImageUrl;
   const prompt = imageStudioState.currentPrompt;
   
-  // 1. Switch to Video Studio view
-  switchMainView("studio");
+  // 1. Switch to MiniMax Video Studio view
+  switchMainView("minimax");
   
-  // 2. Set mode to start & end frame
-  setStudioMode("first_last_frame");
+  // 2. Set mode to Image-to-Video (fl2va_single)
+  setMinimaxMode("fl2va_single");
   
-  // 3. Convert image url to Blob & File for studioState.firstFrame
+  // 3. Convert image url to Blob & File for minimaxState.singleFrame
   try {
     const res = await fetch(imgUrl);
     const blob = await res.blob();
-    const file = new File([blob], "image_ad_keyframe.png", { type: blob.type || "image/png" });
-    studioState.firstFrame = file;
+    const file = new File([blob], "image_ad_start_frame.png", { type: blob.type || "image/png" });
+    minimaxState.singleFrame = file;
     
-    const preview = document.getElementById("preview_first_frame");
-    const emptyState = document.getElementById("keyframe_body_first");
-    const clearBtn = document.getElementById("clear_first_frame_btn");
+    const preview = document.getElementById("preview_mm_single_frame");
+    const emptyState = document.getElementById("body_mm_single");
+    const clearBtn = document.getElementById("clear_mm_single_btn");
     if (preview) { preview.src = imgUrl; preview.style.display = "block"; }
     if (emptyState) emptyState.style.display = "none";
-    if (clearBtn) clearBtn.style.display = "flex";
+    if (clearBtn) clearBtn.style.display = "inline-flex";
   } catch (e) {
-    console.warn("Could not set image as first frame blob:", e);
+    console.warn("Could not set image as MiniMax start frame blob:", e);
   }
   
   // 4. Autofill scene prompt for video motion
-  const promptInput = document.getElementById("studio_prompt");
+  const promptInput = document.getElementById("minimax_prompt");
   if (promptInput) {
-    promptInput.value = prompt ? `Cinematic dynamic ad animation starting from this scene: ${prompt}` : "Cinematic commercial animation, smooth camera motion revealing the product with dynamic lighting and atmospheric depth";
+    promptInput.value = prompt 
+      ? `Cinematic commercial animation starting from this scene: ${prompt}` 
+      : "Cinematic commercial animation, smooth camera motion revealing the product with dynamic lighting and synchronized stereo ambiance";
   }
 }
 
