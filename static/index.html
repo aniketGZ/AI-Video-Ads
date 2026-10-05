@@ -1076,10 +1076,10 @@
     <section class="hero" id="hero_section">
       <div class="hero-badge">
         <span class="pulse-dot"></span>
-        Gemini 3.6 · Nano Banana Pro · Seedance 2
+        Qwen-Image-2.1 · Nano Banana Pro · MiniMax-H3 · Omni Flash
       </div>
-      <h2 class="hero-title">Turn any link into<br><span class="gradient-text">scroll&#8209;stopping video ads</span></h2>
-      <p class="hero-sub">Paste a landing page, app store link, or product URL. Get a complete Meta campaign — 6 ad angles, 18 scripts, storyboards, and finished 10&#8209;second videos.</p>
+      <h2 class="hero-title">Turn any link into<br><span class="gradient-text">high-converting Meta image &amp; video ads</span></h2>
+      <p class="hero-sub">Paste a landing page, app store link, or product URL. Get a complete Meta campaign — 6 audience angles, 18 video scripts, Meta Image Ads (Qwen 2.1 &amp; Nano Banana Pro), storyboards, and finished videos.</p>
 
       <div class="command-card glass-card">
         <form id="campaign_form" onsubmit="event.preventDefault();">
@@ -1129,10 +1129,10 @@
 
       <!-- Pipeline steps strip -->
       <div class="pipeline-strip">
-        <div class="pipeline-step"><div class="pipeline-num">1</div><span>Brand research<br><em>Search grounding</em></span></div>
-        <div class="pipeline-step"><div class="pipeline-num">2</div><span>18 ad scripts<br><em>6 angles × 3 styles</em></span></div>
-        <div class="pipeline-step"><div class="pipeline-num">3</div><span>Storyboards<br><em>Nano Banana Pro</em></span></div>
-        <div class="pipeline-step"><div class="pipeline-num">4</div><span>Finished videos<br><em>9:16 + 16:9</em></span></div>
+        <div class="pipeline-step"><div class="pipeline-num">1</div><span>Brand research<br><em>Search grounding &amp; DNA</em></span></div>
+        <div class="pipeline-step"><div class="pipeline-num">2</div><span>6 angles &amp; 18 scripts<br><em>Strategic hooks &amp; styles</em></span></div>
+        <div class="pipeline-step"><div class="pipeline-num">3</div><span>Meta image ads<br><em>Qwen 2.1 or Nano Banana</em></span></div>
+        <div class="pipeline-step"><div class="pipeline-num">4</div><span>Animated videos<br><em>MiniMax-H3 or Omni Flash</em></span></div>
       </div>
     </section>
 
@@ -1164,6 +1164,29 @@
 
     <!-- Campaign Dashboard -->
     <section class="dashboard-container" id="dashboard_container">
+
+      <!-- Campaign Format Quick-Switcher Bar -->
+      <div class="campaign-format-bar glass-card" id="campaign_format_bar">
+        <div class="format-bar-left">
+          <span class="format-bar-title"><i class="fa-solid fa-layer-group"></i> Campaign Focus:</span>
+          <div class="format-pills-group" id="campaign_view_pills">
+            <button type="button" class="format-pill active" data-filter="all" onclick="setCampaignViewFilter('all')">
+              <i class="fa-solid fa-table-cells-large"></i> All Assets
+            </button>
+            <button type="button" class="format-pill" data-filter="image_ads" onclick="setCampaignViewFilter('image_ads')">
+              <i class="fa-brands fa-meta"></i> Meta Image Ads (Qwen &amp; Nano Banana)
+            </button>
+            <button type="button" class="format-pill" data-filter="video_ads" onclick="setCampaignViewFilter('video_ads')">
+              <i class="fa-solid fa-clapperboard"></i> Video Scripts (MiniMax &amp; Omni)
+            </button>
+          </div>
+        </div>
+        <div class="format-bar-right">
+          <button class="btn btn-secondary btn-sm" onclick="scrollToMetaImageStudio()">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Launch Image Ad Generator
+          </button>
+        </div>
+      </div>
 
       <!-- Brand DNA -->
       <div class="glass-card brand-dna-card">
@@ -1595,9 +1618,22 @@
 
       <div class="studio-grid">
 
-        <!-- Left: Storyboard -->
+        <!-- Left: Storyboard & Image Ad Reference -->
         <div class="studio-pane">
-          <div class="pane-label"><span class="pane-step">1</span> Storyboard reference poster</div>
+          <div class="pane-label-row">
+            <div class="pane-label"><span class="pane-step">1</span> Storyboard &amp; Image Reference</div>
+            <div class="sb-engine-toggle-wrap">
+              <span class="sb-engine-label"><i class="fa-solid fa-microchip"></i> Engine:</span>
+              <div class="sb-engine-pill-group" id="sb_engine_pill_group">
+                <button type="button" class="sb-engine-pill active" id="sb_engine_banana" onclick="setStoryboardEngine('banana')">
+                  <i class="fa-solid fa-bolt"></i> Nano Banana Pro
+                </button>
+                <button type="button" class="sb-engine-pill" id="sb_engine_qwen" onclick="setStoryboardEngine('qwen')">
+                  <i class="fa-solid fa-server"></i> Qwen-Image-2.1
+                </button>
+              </div>
+            </div>
+          </div>
 
           <div class="preview-box storyboard-pane" id="storyboard_preview_box">
             <div class="preview-placeholder" id="storyboard_placeholder">
@@ -1608,9 +1644,14 @@
           </div>
 
           <div class="pane-actions">
-            <button id="generate_storyboard_btn" class="btn btn-primary" onclick="generateStoryboard()">
-              <i class="fa-solid fa-image"></i> Generate Storyboard (Nano Banana Pro)
-            </button>
+            <div class="pane-action-buttons">
+              <button id="generate_storyboard_btn" class="btn btn-primary" onclick="generateStoryboard()">
+                <i class="fa-solid fa-image"></i> Generate Storyboard (Nano Banana Pro)
+              </button>
+              <button id="studio_meta_img_btn" class="btn btn-secondary btn-sm" onclick="createMetaAdFromStudio()" title="Design a 4:5 / 1:1 Meta Image Ad for this script angle">
+                <i class="fa-brands fa-meta"></i> Create Meta Image Ad
+              </button>
+            </div>
             <div class="generator-status" id="storyboard_status">
               <div class="mini-spinner"></div>
               <span>Generating 9:16 storyboard layout…</span>

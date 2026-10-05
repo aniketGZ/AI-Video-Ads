@@ -4,6 +4,7 @@ let state = {
   selectedAdGroupIndex: 0,
   selectedVideoIndex: 0,
   uploadedFiles: [],
+  storyboardEngine: "banana", // "banana" (Nano Banana Pro) or "qwen" (Qwen-Image-2.1)
   generatedStoryboards: {}, // Key: "adGroup_video" -> storyboard URL
   generatedVideos: {}      // Key: "adGroup_video" -> video URL
 };
@@ -305,18 +306,51 @@ function selectAdGroup(index) {
           </div>
         </div>
       </div>
-      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
-        <button class="btn btn-primary" style="flex: 1;" onclick="openStudio(${vIdx})">
-          <i class="fa-solid fa-clapperboard"></i> Open Video Studio
-        </button>
-        <button class="btn btn-secondary btn-sm" onclick="createMetaAdForScript(${vIdx})" title="Design a Meta Image Ad using this script angle">
-          <i class="fa-brands fa-meta"></i> Meta Image Ad
-        </button>
+      <div class="script-card-footer" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; gap: 8px;">
+          <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="openStudio(${vIdx})">
+            <i class="fa-solid fa-clapperboard"></i> Creator Studio (10s)
+          </button>
+          <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="openStudio(${vIdx})">
+            <i class="fa-solid fa-image"></i> Storyboard
+          </button>
+        </div>
+        <div class="script-image-ad-strip">
+          <span class="script-img-ad-label"><i class="fa-brands fa-meta"></i> Image Ad:</span>
+          <div class="script-img-ad-chips">
+            <button class="chip-btn-engine" onclick="createMetaAdForScript(${vIdx}, 'qwen')" title="Create Meta Image Ad with Qwen-Image-2.1 (Self-Hosted GPU)">
+              <i class="fa-solid fa-server"></i> Qwen 2.1
+            </button>
+            <button class="chip-btn-engine" onclick="createMetaAdForScript(${vIdx}, 'banana')" title="Create Meta Image Ad with Nano Banana Pro (Gemini)">
+              <i class="fa-solid fa-bolt"></i> Nano Banana
+            </button>
+          </div>
+        </div>
       </div>
     `;
     
     grid.appendChild(card);
   });
+}
+
+// Switch storyboard engine in Creator Studio (Nano Banana Pro vs Qwen-Image-2.1)
+function setStoryboardEngine(engine) {
+  state.storyboardEngine = engine;
+  const btnBanana = document.getElementById("sb_engine_banana");
+  const btnQwen = document.getElementById("sb_engine_qwen");
+  if (btnBanana) btnBanana.classList.toggle("active", engine === "banana");
+  if (btnQwen) btnQwen.classList.toggle("active", engine === "qwen");
+
+  const generateStoryboardBtn = document.getElementById("generate_storyboard_btn");
+  if (generateStoryboardBtn) {
+    const key = `${state.selectedAdGroupIndex}_${state.selectedVideoIndex}`;
+    const engineLabel = engine === "qwen" ? "Qwen-Image-2.1" : "Nano Banana Pro";
+    if (state.generatedStoryboards[key]) {
+      generateStoryboardBtn.innerHTML = `<i class="fa-solid fa-rotate-right"></i> Regenerate Storyboard (${engineLabel})`;
+    } else {
+      generateStoryboardBtn.innerHTML = `<i class="fa-solid fa-image"></i> Generate Storyboard (${engineLabel})`;
+    }
+  }
 }
 
 // Open Studio Overlay modal for a specific video
@@ -332,6 +366,9 @@ function openStudio(videoIndex) {
   
   const key = `${state.selectedAdGroupIndex}_${videoIndex}`;
   
+  // Sync storyboard engine toggle & label
+  setStoryboardEngine(state.storyboardEngine || "banana");
+
   // Storyboard pane setup
   const storyboardBox = document.getElementById("storyboard_preview_box");
   const storyboardPlaceholder = document.getElementById("storyboard_placeholder");
@@ -358,13 +395,15 @@ function openStudio(videoIndex) {
     videoPlaceholder_16_9.querySelector("p").textContent = txt;
   };
   
+  const engineLabel = (state.storyboardEngine === "qwen") ? "Qwen-Image-2.1" : "Nano Banana Pro";
+
   if (state.generatedStoryboards[key]) {
     // Already generated storyboard
     storyboardPlaceholder.style.display = "none";
     storyboardImg.src = state.generatedStoryboards[key];
     storyboardImg.style.display = "block";
     
-    generateStoryboardBtn.textContent = "Regenerate Storyboard";
+    generateStoryboardBtn.innerHTML = `<i class="fa-solid fa-rotate-right"></i> Regenerate Storyboard (${engineLabel})`;
     generateVideoBtn.disabled = false;
     generateVideoBtn.style.opacity = "1";
     setVideoPlaceholderText("Ready to Animate Videos");
@@ -373,7 +412,7 @@ function openStudio(videoIndex) {
     storyboardImg.style.display = "none";
     storyboardImg.src = "";
     
-    generateStoryboardBtn.textContent = "Generate Storyboard (Nano Banana Pro)";
+    generateStoryboardBtn.innerHTML = `<i class="fa-solid fa-image"></i> Generate Storyboard (${engineLabel})`;
     generateVideoBtn.disabled = true;
     generateVideoBtn.style.opacity = "0.5";
     setVideoPlaceholderText("Generate Storyboard First");
@@ -429,11 +468,16 @@ function closeStudio() {
 async function generateStoryboard() {
   const ag = state.campaignData.ad_groups[state.selectedAdGroupIndex];
   const video = ag.videos[state.selectedVideoIndex];
+  const engine = state.storyboardEngine || "banana";
+  const isQwen = (engine === "qwen");
+  const engineLabel = isQwen ? "Qwen-Image-2.1 (Self-Hosted GPU)" : "Nano Banana Pro";
   
   const statusEl = document.getElementById("storyboard_status");
   statusEl.className = "generator-status working";
   statusEl.style.display = "flex";
-  statusEl.querySelector("span").textContent = "Drafting 9:16 layout using Nano Banana Pro...";
+  statusEl.querySelector("span").textContent = isQwen
+    ? "Synthesizing 9:16 layout using Qwen-Image-2.1 on GPU (approx 60-90s)..."
+    : "Drafting 9:16 layout using Nano Banana Pro...";
   
   const generateBtn = document.getElementById("generate_storyboard_btn");
   generateBtn.disabled = true;
@@ -459,7 +503,8 @@ async function generateStoryboard() {
     shot_2: video.shot_2,
     shot_3: video.shot_3,
     shot_4: video.shot_4,
-    product_image_paths: state.campaignData.product_image_paths || []
+    product_image_paths: state.campaignData.product_image_paths || [],
+    use_self_hosted: isQwen
   };
   
   const apiKey = document.getElementById("api_key_input").value;
@@ -506,7 +551,7 @@ async function generateStoryboard() {
     const modelLabel = data.model_used ? ` (${data.model_used})` : "";
     statusEl.className = "generator-status success";
     statusEl.querySelector("span").textContent = `Storyboard Generated Successfully${modelLabel}!`;
-    generateBtn.textContent = "Regenerate Storyboard";
+    generateBtn.innerHTML = `<i class="fa-solid fa-rotate-right"></i> Regenerate Storyboard (${isQwen ? "Qwen-Image-2.1" : "Nano Banana Pro"})`;
     
   } catch (error) {
     console.error(error);
@@ -3295,10 +3340,18 @@ function bridgeToOmniFromMeta() {
     .catch(err => console.warn("Failed to bridge image to Omni Flash:", err));
 }
 
-function createMetaAdForScript(videoIndex) {
+function createMetaAdForScript(videoIndex, engine) {
   const ag = state.campaignData && state.campaignData.ad_groups[state.selectedAdGroupIndex];
   if (!ag) return;
   const video = ag.videos[videoIndex];
+
+  // Set chosen image engine if provided
+  if (engine) {
+    setMetaEngine(engine);
+  }
+
+  // Ensure campaign view is showing image studio
+  setCampaignViewFilter("all");
 
   // Set angle selector
   const angleSel = document.getElementById("meta_angle_select");
@@ -3313,10 +3366,60 @@ function createMetaAdForScript(videoIndex) {
     directiveInput.value = `${video.hook_line}. Style: ${video.visual_directions.slice(0, 100)}`;
   }
 
-  // Scroll to Meta Ad Studio card
+  // Scroll to Meta Ad Studio card and add attention glow
+  const metaCard = document.getElementById("meta_ad_studio_card");
+  if (metaCard) {
+    metaCard.style.display = "block";
+    metaCard.scrollIntoView({ behavior: "smooth" });
+    metaCard.classList.add("card-highlight-pulse");
+    setTimeout(() => metaCard.classList.remove("card-highlight-pulse"), 2500);
+  }
+}
+
+function createMetaAdFromStudio() {
+  const vIdx = state.selectedVideoIndex || 0;
+  const engine = state.storyboardEngine || "banana";
+  closeStudio();
+  createMetaAdForScript(vIdx, engine);
+}
+
+function setCampaignViewFilter(filter) {
+  const metaCard = document.getElementById("meta_ad_studio_card");
+  const adGroupsCard = document.querySelector(".ad-groups-card");
+  const brandDnaCard = document.querySelector(".brand-dna-card");
+
+  document.querySelectorAll("#campaign_view_pills .format-pill").forEach(p => {
+    p.classList.toggle("active", p.dataset.filter === filter);
+  });
+
+  if (filter === "image_ads") {
+    if (brandDnaCard) brandDnaCard.style.display = "block";
+    if (metaCard) {
+      metaCard.style.display = "block";
+      metaCard.scrollIntoView({ behavior: "smooth" });
+    }
+    if (adGroupsCard) adGroupsCard.style.display = "none";
+  } else if (filter === "video_ads") {
+    if (brandDnaCard) brandDnaCard.style.display = "block";
+    if (metaCard) metaCard.style.display = "none";
+    if (adGroupsCard) {
+      adGroupsCard.style.display = "block";
+      adGroupsCard.scrollIntoView({ behavior: "smooth" });
+    }
+  } else { // 'all'
+    if (brandDnaCard) brandDnaCard.style.display = "block";
+    if (metaCard) metaCard.style.display = "block";
+    if (adGroupsCard) adGroupsCard.style.display = "block";
+  }
+}
+
+function scrollToMetaImageStudio() {
+  setCampaignViewFilter("all");
   const metaCard = document.getElementById("meta_ad_studio_card");
   if (metaCard) {
     metaCard.scrollIntoView({ behavior: "smooth" });
+    metaCard.classList.add("card-highlight-pulse");
+    setTimeout(() => metaCard.classList.remove("card-highlight-pulse"), 2500);
   }
 }
 
