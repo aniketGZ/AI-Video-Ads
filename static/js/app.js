@@ -915,11 +915,13 @@ if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     initAPIKeysPersistence();
     initStudioDragAndDrop();
+    initImageStudioDragAndDrop();
     checkSelfHostedStatus();
   });
 } else {
   initAPIKeysPersistence();
   initStudioDragAndDrop();
+  initImageStudioDragAndDrop();
   checkSelfHostedStatus();
 }
 
@@ -927,21 +929,27 @@ if (document.readyState === "loading") {
    GOOGLE FLOW — AI VIDEO STUDIO JAVASCRIPT CONTROLLER
    ============================================================ */
 
-// Main View Switcher (Video Studio vs Ad Campaign vs MoneyPrinter Turbo)
+// Main View Switcher (Video Studio vs Image Studio vs Ad Campaign vs MoneyPrinter Turbo)
 function switchMainView(view) {
   const studioTab = document.getElementById("nav_tab_studio");
+  const imageTab = document.getElementById("nav_tab_image");
   const campaignTab = document.getElementById("nav_tab_campaign");
   const mptTab = document.getElementById("nav_tab_moneyprinter");
   const studioView = document.getElementById("view_video_studio");
+  const imageView = document.getElementById("view_image_studio");
   const campaignView = document.getElementById("view_ad_campaign");
   const mptView = document.getElementById("view_moneyprinter");
   
-  [studioTab, campaignTab, mptTab].forEach(t => t && t.classList.remove("active"));
-  [studioView, campaignView, mptView].forEach(v => v && (v.style.display = "none"));
+  [studioTab, imageTab, campaignTab, mptTab].forEach(t => t && t.classList.remove("active"));
+  [studioView, imageView, campaignView, mptView].forEach(v => v && (v.style.display = "none"));
   
   if (view === "studio") {
     if (studioTab) studioTab.classList.add("active");
     if (studioView) studioView.style.display = "block";
+  } else if (view === "image") {
+    if (imageTab) imageTab.classList.add("active");
+    if (imageView) imageView.style.display = "block";
+    loadImageStudioHistory();
   } else if (view === "moneyprinter") {
     if (mptTab) mptTab.classList.add("active");
     if (mptView) mptView.style.display = "block";
@@ -1633,5 +1641,434 @@ async function generateMoneyPrinterVideo() {
     generateBtn.disabled = false;
   }
 }
+
+/* ============================================================
+   AI IMAGE ADS STUDIO JAVASCRIPT CONTROLLER (QWEN-IMAGE-2.1)
+   ============================================================ */
+
+const imageStudioState = {
+  mode: "text", // "text" or "product"
+  aspectRatio: "1:1",
+  stylePreset: "luxury_podium",
+  engine: "qwen", // "qwen" or "gemini"
+  steps: 35,
+  seed: null,
+  productFile: null,
+  currentImageUrl: null,
+  currentPrompt: "",
+  history: []
+};
+
+// Set Creation Mode: "text" vs "product"
+function setImageStudioMode(mode) {
+  imageStudioState.mode = mode;
+  const btnText = document.getElementById("btn_img_mode_text");
+  const btnProduct = document.getElementById("btn_img_mode_product");
+  const uploadPane = document.getElementById("image_product_upload_pane");
+  const promptInput = document.getElementById("img_studio_prompt");
+  
+  if (btnText) btnText.classList.toggle("active", mode === "text");
+  if (btnProduct) btnProduct.classList.toggle("active", mode === "product");
+  if (uploadPane) uploadPane.style.display = mode === "product" ? "block" : "none";
+  
+  if (promptInput && !promptInput.value.trim()) {
+    if (mode === "product") {
+      promptInput.placeholder = "Describe where to place your product: e.g. Place this luxury bottle on a sleek black marble pedestal with soft morning window light...";
+    } else {
+      promptInput.placeholder = "Describe the ad creative: product appearance, background setting, lighting, atmosphere, colors...";
+    }
+  }
+}
+
+// Set Aspect Ratio
+function setImageStudioAspectRatio(ratio) {
+  imageStudioState.aspectRatio = ratio;
+  document.querySelectorAll("#img_aspect_ratio_selector .pill-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.ratio === ratio);
+  });
+  
+  const viewport = document.getElementById("img_stage_viewport");
+  if (viewport) {
+    viewport.classList.remove("ratio-9-16", "ratio-16-9", "ratio-1-1", "ratio-4-5");
+    viewport.classList.add(`ratio-${ratio.replace(":", "-")}`);
+  }
+  updateImageStudioMetaBadges();
+}
+
+// Set Engine
+function setImageStudioEngine(engine) {
+  imageStudioState.engine = engine;
+  document.querySelectorAll("#img_engine_selector .pill-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.engine === engine);
+  });
+  
+  const btn = document.getElementById("img_studio_generate_btn");
+  if (btn) {
+    if (engine === "qwen") {
+      btn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i><span>Generate Image Ad (Qwen-Image-2.1)</span>';
+    } else {
+      btn.innerHTML = '<i class="fa-solid fa-bolt"></i><span>Generate Image Ad (Gemini Nano Banana Pro)</span>';
+    }
+  }
+  updateImageStudioMetaBadges();
+}
+
+// Set Steps
+function setImageStudioSteps(steps) {
+  imageStudioState.steps = steps;
+  document.querySelectorAll("#img_steps_selector .pill-btn").forEach(btn => {
+    btn.classList.toggle("active", parseInt(btn.dataset.steps) === steps);
+  });
+}
+
+// Set Style Preset
+function setImageStudioPreset(presetKey) {
+  imageStudioState.stylePreset = presetKey;
+  document.querySelectorAll("#img_style_presets_grid .preset-card-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.preset === presetKey);
+  });
+  updateImageStudioMetaBadges();
+}
+
+function updateImageStudioMetaBadges() {
+  const resBadge = document.getElementById("img_player_res_badge");
+  const presetBadge = document.getElementById("img_player_preset_badge");
+  const engineBadge = document.getElementById("img_player_engine_badge");
+  
+  const ratioLabels = {
+    "1:1": "1:1 Square · 1024x1024",
+    "9:16": "9:16 Story · 1024x1792",
+    "16:9": "16:9 Banner · 1792x1024",
+    "4:5": "4:5 Portrait · 1024x1280"
+  };
+  if (resBadge) resBadge.textContent = ratioLabels[imageStudioState.aspectRatio] || imageStudioState.aspectRatio;
+  
+  const presetLabels = {
+    "luxury_podium": "Luxury Podium",
+    "ugc_lifestyle": "UGC Lifestyle",
+    "neon_cyber": "Cyber Neon",
+    "nature_botanical": "Botanical",
+    "dramatic_splash": "Dynamic Splash",
+    "minimal_dtc": "Minimal DTC"
+  };
+  if (presetBadge) presetBadge.textContent = presetLabels[imageStudioState.stylePreset] || (imageStudioState.stylePreset ? imageStudioState.stylePreset : "Custom Style");
+  
+  if (engineBadge) {
+    if (imageStudioState.engine === "qwen") {
+      engineBadge.innerHTML = '<i class="fa-solid fa-microchip"></i> Qwen-Image-2.1';
+    } else {
+      engineBadge.innerHTML = '<i class="fa-solid fa-bolt"></i> Nano Banana Pro';
+    }
+  }
+}
+
+// Append visual booster to prompt
+function appendImagePromptBooster(phrase) {
+  const textarea = document.getElementById("img_studio_prompt");
+  if (!textarea) return;
+  const current = textarea.value.trim();
+  if (!current) {
+    textarea.value = phrase;
+  } else {
+    textarea.value = current.endsWith(",") ? `${current} ${phrase}` : `${current}, ${phrase}`;
+  }
+  textarea.focus();
+}
+
+// Product Image upload handling
+function handleProductImageUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  
+  imageStudioState.productFile = file;
+  const preview = document.getElementById("img_product_preview");
+  const emptyState = document.getElementById("img_dropzone_empty");
+  const previewWrap = document.getElementById("img_dropzone_preview_wrap");
+  
+  if (preview) {
+    preview.src = URL.createObjectURL(file);
+  }
+  if (emptyState) emptyState.style.display = "none";
+  if (previewWrap) previewWrap.style.display = "flex";
+}
+
+function clearProductImage() {
+  imageStudioState.productFile = null;
+  const fileInput = document.getElementById("img_studio_product_file");
+  if (fileInput) fileInput.value = "";
+  
+  const preview = document.getElementById("img_product_preview");
+  const emptyState = document.getElementById("img_dropzone_empty");
+  const previewWrap = document.getElementById("img_dropzone_preview_wrap");
+  
+  if (preview) preview.src = "";
+  if (emptyState) emptyState.style.display = "flex";
+  if (previewWrap) previewWrap.style.display = "none";
+}
+
+// Drag & drop setup for Image Studio dropzone
+function initImageStudioDragAndDrop() {
+  const dropzone = document.getElementById("img_studio_dropzone");
+  if (!dropzone) return;
+  
+  ["dragenter", "dragover"].forEach(ev => {
+    dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.add("drag-over"); });
+  });
+  ["dragleave", "drop"].forEach(ev => {
+    dropzone.addEventListener(ev, (e) => { e.preventDefault(); dropzone.classList.remove("drag-over"); });
+  });
+  dropzone.addEventListener("drop", (e) => {
+    const file = Array.from(e.dataTransfer.files).find(f => f.type.startsWith("image/"));
+    if (file) {
+      handleProductImageUpload({ target: { files: [file] } });
+    }
+  });
+}
+
+// Generate Image Ad API call
+let imgElapsedInterval = null;
+
+async function generateImageAd() {
+  const promptInput = document.getElementById("img_studio_prompt");
+  const negInput = document.getElementById("img_studio_negative_prompt");
+  const seedInput = document.getElementById("img_studio_seed");
+  const generateBtn = document.getElementById("img_studio_generate_btn");
+  
+  const emptyState = document.getElementById("img_empty_state");
+  const loadingOverlay = document.getElementById("img_loading_state");
+  const imgDisplay = document.getElementById("img_ad_display");
+  const actionsBar = document.getElementById("img_player_actions");
+  const downloadBtn = document.getElementById("btn_download_image_ad");
+  const loadingTitle = document.getElementById("img_loading_title");
+  const loadingSub = document.getElementById("img_loading_sub");
+  const progressBar = document.getElementById("img_progress_bar");
+  const timerEl = document.getElementById("img_elapsed_timer");
+  
+  const prompt = promptInput ? promptInput.value.trim() : "";
+  if (!prompt) {
+    alert("Please enter a scene prompt or ad concept.");
+    if (promptInput) promptInput.focus();
+    return;
+  }
+  
+  if (imageStudioState.mode === "product" && !imageStudioState.productFile) {
+    alert("Please upload a tangible product image to remix or switch to 'Text-to-Ad Creative'.");
+    return;
+  }
+  
+  const formData = new FormData();
+  formData.append("prompt", prompt);
+  formData.append("aspect_ratio", imageStudioState.aspectRatio);
+  formData.append("style_preset", imageStudioState.stylePreset || "");
+  formData.append("engine", imageStudioState.engine);
+  formData.append("steps", imageStudioState.steps);
+  
+  if (seedInput && seedInput.value.trim()) {
+    formData.append("seed", parseInt(seedInput.value.trim()));
+  }
+  if (negInput && negInput.value.trim()) {
+    formData.append("negative_prompt", negInput.value.trim());
+  }
+  if (imageStudioState.mode === "product" && imageStudioState.productFile) {
+    formData.append("product_image", imageStudioState.productFile);
+  }
+  
+  const apiKey = document.getElementById("api_key_input") ? document.getElementById("api_key_input").value.trim() : "";
+  const imageKey = localStorage.getItem("self_hosted_image_key") || "";
+  const headers = {};
+  if (apiKey) headers["x-api-key"] = apiKey;
+  if (imageKey) headers["x-image-api-key"] = imageKey;
+  
+  // Show Loading state
+  if (emptyState) emptyState.style.display = "none";
+  if (imgDisplay) imgDisplay.style.display = "none";
+  if (actionsBar) actionsBar.style.display = "none";
+  if (loadingOverlay) loadingOverlay.style.display = "flex";
+  if (generateBtn) generateBtn.disabled = true;
+  
+  const engineTitle = imageStudioState.engine === "qwen" ? "Qwen-Image-2.1 (Self-Hosted)" : "Gemini Nano Banana Pro";
+  if (loadingTitle) loadingTitle.textContent = `Synthesizing with ${engineTitle}`;
+  if (loadingSub) loadingSub.textContent = "Running diffusion steps (approx 60-90s on GPU)...";
+  
+  // Progress animation & timer
+  let elapsed = 0;
+  if (timerEl) timerEl.textContent = "0s elapsed";
+  if (progressBar) progressBar.style.width = "5%";
+  
+  if (imgElapsedInterval) clearInterval(imgElapsedInterval);
+  imgElapsedInterval = setInterval(() => {
+    elapsed++;
+    if (timerEl) timerEl.textContent = `${elapsed}s elapsed`;
+    
+    // Simulate gradual progress bar up to 90%
+    if (progressBar) {
+      const pct = Math.min(90, Math.floor(5 + (elapsed / 70) * 85));
+      progressBar.style.width = `${pct}%`;
+    }
+    
+    if (elapsed === 15 && loadingSub) {
+      loadingSub.textContent = "Evaluating layout and denoising latent features...";
+    } else if (elapsed === 40 && loadingSub) {
+      loadingSub.textContent = "Rendering high-frequency textures and studio lighting...";
+    } else if (elapsed === 70 && loadingSub) {
+      loadingSub.textContent = "Finalizing 2K upscaling and color balancing...";
+    }
+  }, 1000);
+  
+  try {
+    const res = await fetch("/api/image-studio/generate", {
+      method: "POST",
+      headers: headers,
+      body: formData
+    });
+    
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: `HTTP ${res.status}` }));
+      throw new Error(err.detail || `Image generation failed with status ${res.status}`);
+    }
+    
+    const data = await res.json();
+    if (progressBar) progressBar.style.width = "100%";
+    
+    // Cache current output
+    imageStudioState.currentImageUrl = data.image_url;
+    imageStudioState.currentPrompt = prompt;
+    
+    // Render image
+    if (imgDisplay) {
+      imgDisplay.src = data.image_url;
+      imgDisplay.style.display = "block";
+    }
+    if (downloadBtn) {
+      downloadBtn.href = data.image_url;
+      downloadBtn.download = data.filename || "ai_image_ad.png";
+    }
+    if (actionsBar) actionsBar.style.display = "flex";
+    
+    // Add to history
+    imageStudioState.history.unshift(data);
+    renderImageStudioHistory();
+    
+  } catch (err) {
+    console.error("Image generation failed:", err);
+    alert(`Image generation failed:\n${err.message}`);
+    if (emptyState) emptyState.style.display = "flex";
+  } finally {
+    if (imgElapsedInterval) clearInterval(imgElapsedInterval);
+    if (loadingOverlay) loadingOverlay.style.display = "none";
+    if (generateBtn) generateBtn.disabled = false;
+  }
+}
+
+// Bridge function: Animate current image ad in Video Studio
+async function animateCurrentImageAd() {
+  if (!imageStudioState.currentImageUrl) return;
+  const imgUrl = imageStudioState.currentImageUrl;
+  const prompt = imageStudioState.currentPrompt;
+  
+  // 1. Switch to Video Studio view
+  switchMainView("studio");
+  
+  // 2. Set mode to start & end frame
+  setStudioMode("first_last_frame");
+  
+  // 3. Convert image url to Blob & File for studioState.firstFrame
+  try {
+    const res = await fetch(imgUrl);
+    const blob = await res.blob();
+    const file = new File([blob], "image_ad_keyframe.png", { type: blob.type || "image/png" });
+    studioState.firstFrame = file;
+    
+    const preview = document.getElementById("preview_first_frame");
+    const emptyState = document.getElementById("keyframe_body_first");
+    const clearBtn = document.getElementById("clear_first_frame_btn");
+    if (preview) { preview.src = imgUrl; preview.style.display = "block"; }
+    if (emptyState) emptyState.style.display = "none";
+    if (clearBtn) clearBtn.style.display = "flex";
+  } catch (e) {
+    console.warn("Could not set image as first frame blob:", e);
+  }
+  
+  // 4. Autofill scene prompt for video motion
+  const promptInput = document.getElementById("studio_prompt");
+  if (promptInput) {
+    promptInput.value = prompt ? `Cinematic dynamic ad animation starting from this scene: ${prompt}` : "Cinematic commercial animation, smooth camera motion revealing the product with dynamic lighting and atmospheric depth";
+  }
+}
+
+// Load and render history from server
+async function loadImageStudioHistory() {
+  try {
+    const res = await fetch("/api/image-studio/history");
+    if (res.ok) {
+      const data = await res.json();
+      if (data.images && data.images.length > 0) {
+        // Merge with session history
+        const existingUrls = new Set(imageStudioState.history.map(h => h.image_url));
+        data.images.forEach(img => {
+          if (!existingUrls.has(img.url)) {
+            imageStudioState.history.push({
+              image_url: img.url,
+              filename: img.filename,
+              aspect_ratio: "1:1",
+              model_used: "Qwen-Image-2.1"
+            });
+          }
+        });
+        renderImageStudioHistory();
+      }
+    }
+  } catch (e) {
+    console.warn("Failed to load image history:", e);
+  }
+}
+
+function renderImageStudioHistory() {
+  const reel = document.getElementById("img_studio_history_reel");
+  const countEl = document.getElementById("img_history_count");
+  if (!reel) return;
+  
+  if (imageStudioState.history.length === 0) {
+    reel.innerHTML = '<div class="history-empty" id="img_history_empty_msg">Generated image ads will appear here for instant preview, download, and video animation.</div>';
+    if (countEl) countEl.textContent = "0 images";
+    return;
+  }
+  
+  if (countEl) countEl.textContent = `${imageStudioState.history.length} image${imageStudioState.history.length > 1 ? "s" : ""}`;
+  
+  reel.innerHTML = imageStudioState.history.map((item, idx) => `
+    <div class="history-item image-ad-item ${item.image_url === imageStudioState.currentImageUrl ? 'active' : ''}" onclick="selectHistoryImageAd(${idx})">
+      <img src="${item.image_url}" alt="Ad history ${idx + 1}" loading="lazy">
+      <span class="history-item-badge">#${idx + 1}</span>
+    </div>
+  `).join('');
+}
+
+function selectHistoryImageAd(index) {
+  const item = imageStudioState.history[index];
+  if (!item) return;
+  
+  imageStudioState.currentImageUrl = item.image_url;
+  imageStudioState.currentPrompt = item.prompt || "";
+  
+  const emptyState = document.getElementById("img_empty_state");
+  const imgDisplay = document.getElementById("img_ad_display");
+  const actionsBar = document.getElementById("img_player_actions");
+  const downloadBtn = document.getElementById("btn_download_image_ad");
+  
+  if (emptyState) emptyState.style.display = "none";
+  if (imgDisplay) {
+    imgDisplay.src = item.image_url;
+    imgDisplay.style.display = "block";
+  }
+  if (downloadBtn) {
+    downloadBtn.href = item.image_url;
+    downloadBtn.download = item.filename || "ai_image_ad.png";
+  }
+  if (actionsBar) actionsBar.style.display = "flex";
+  
+  renderImageStudioHistory();
+}
+
 
 

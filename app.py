@@ -24,6 +24,7 @@ from self_hosted_engine import (
     get_public_ip,
     get_diagnostics,
     image_file_to_data_uri,
+    image_bytes_to_data_uri,
     generate_image_async,
     generate_video_async,
 )
@@ -1383,6 +1384,176 @@ async def studio_generate_video(
     except Exception as e:
         logger.error(f"Studio video dispatch failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/api/image-studio/generate")
+async def generate_image_ad(
+    prompt: str = Form(...),
+    aspect_ratio: str = Form("1:1"),
+    style_preset: Optional[str] = Form(None),
+    engine: str = Form("qwen"),
+    steps: int = Form(35),
+    seed: Optional[int] = Form(None),
+    negative_prompt: Optional[str] = Form(None),
+    product_image: Optional[UploadFile] = File(None),
+    x_api_key: Optional[str] = Header(None),
+    x_image_api_key: Optional[str] = Header(None)
+):
+    """
+    Generate high-converting AI Image Ads using self-hosted Qwen-Image-2.1 or Gemini fallback.
+    Supports pure text-to-ad creative as well as product photo placement/remix.
+    """
+    try:
+        import uuid
+        
+        # 1. Map aspect ratios to optimal model resolutions
+        ratio_dimensions = {
+            "1:1": (1024, 1024),
+            "9:16": (1024, 1792),
+            "16:9": (1792, 1024),
+            "4:5": (1024, 1280),
+        }
+        target_w, target_h = ratio_dimensions.get(aspect_ratio, (1024, 1024))
+        
+        # 2. Style Preset Enrichment
+        style_prompts = {
+            "luxury_podium": "High-end luxury commercial advertisement, product displayed on an elegant white marble pedestal with brass accents, dramatic soft rim lighting, subtle volumetric atmosphere, crisp studio reflections, 8K ultra-sharp editorial quality.",
+            "ugc_lifestyle": "Authentic UGC creator ad photo, held naturally in hands or placed on a warm wooden cafe table, soft natural golden morning window light, realistic smartphone photo depth of field, relatable candid lifestyle aesthetic.",
+            "neon_cyber": "Electrifying cyberpunk ad visual, vibrant neon cyan and magenta rim lighting, dark glossy reflective wet floor, moody atmospheric volumetric smoke, futuristic energetic aesthetic, 8K commercial rendering.",
+            "nature_botanical": "Organic botanical product advertisement, resting on earthy moss and natural river stones, lush green tropical leaves, gentle sun rays filtering through foliage, clean eco-friendly aesthetic.",
+            "dramatic_splash": "High-speed dynamic splash advertisement, crystalline liquid splashes and droplets frozen in mid-air around the product, dramatic studio strobe lighting, vibrant energetic commercial composition.",
+            "minimal_dtc": "Minimalist modern direct-to-consumer (DTC) advertisement, seamless pastel studio backdrop, soft diffused softbox illumination, floating product hero angle, clean Apple-inspired negative space, ultra crisp presentation."
+        }
+        
+        enriched_prompt = prompt.strip()
+        preset_desc = style_prompts.get(style_preset)
+        if preset_desc:
+            enriched_prompt = f"{enriched_prompt}. Style: {preset_desc}"
+            
+        if negative_prompt and negative_prompt.strip():
+            enriched_prompt = f"{enriched_prompt} (Negative prompt: avoid {negative_prompt.strip()})"
+
+        # 3. Handle Product Image (for Product Placement / Remix Mode)
+        product_bytes = None
+        product_data_uri = None
+        mime_type = "image/png"
+        
+        if product_image and product_image.filename:
+            product_bytes = await product_image.read()
+            if product_bytes:
+                ext = os.path.splitext(product_image.filename)[1].lower() or ".png"
+                if ext in (".jpg", ".jpeg"):
+                    mime_type = "image/jpeg"
+                elif ext == ".webp":
+                    mime_type = "image/webp"
+                else:
+                    mime_type = "image/png"
+                
+                temp_filename = f"product_in_{uuid.uuid4().hex}{ext}"
+                saved_product_path = os.path.join("static/generated", temp_filename)
+                with open(saved_product_path, "wb") as f:
+                    f.write(product_bytes)
+                    
+                product_data_uri = image_bytes_to_data_uri(product_bytes, mime_type)
+                logger.info(f"[Image Studio] Product image attached ({len(product_bytes)} bytes) for product remix/placement.")
+
+        # 4. Engine dispatch (Qwen-Image-2.1 vs Gemini)
+        image_bytes = None
+        used_model = "Qwen-Image-2.1 (Self-Hosted)"
+        use_qwen = (engine == "qwen") or (engine != "gemini" and is_self_hosted_enabled())
+        
+        if use_qwen:
+            try:
+                logger.info(
+                    f"[Image Studio] Dispatching to Qwen-Image-2.1: size={target_w}x{target_h}, "
+                    f"steps={steps}, has_product={bool(product_data_uri)}..."
+                )
+                image_bytes = await generate_image_async(
+                    prompt=enriched_prompt,
+                    width=target_w,
+                    height=target_h,
+                    steps=steps,
+                    seed=seed,
+                    image_uri=product_data_uri,
+                    api_key=x_image_api_key or get_image_api_key(),
+                    timeout=600
+                )
+                used_model = "Qwen-Image-2.1 (Self-Hosted)"
+            except Exception as qwen_err:
+                logger.warning(f"[Image Studio] Qwen-Image-2.1 server error: {qwen_err}")
+                if should_fallback_to_gemini():
+                    logger.info("[Image Studio] Attempting fallback to Gemini Nano Banana Pro...")
+                else:
+                    raise HTTPException(status_code=503, detail=str(qwen_err))
+                    
+        if not image_bytes:
+            client = get_client(x_api_key)
+            if not client:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Gemini API Key is required when using Gemini engine or when self-hosted server is offline."
+                )
+            logger.info("[Image Studio] Generating with Gemini Nano Banana Pro...")
+            contents = [enriched_prompt]
+            if product_bytes:
+                contents.append(types.Part.from_bytes(data=product_bytes, mime_type=mime_type))
+            
+            response = client.models.generate_content(
+                model='nano-banana-pro-preview',
+                contents=contents
+            )
+            if response.candidates:
+                for part in response.candidates[0].content.parts:
+                    if part.inline_data and part.inline_data.data:
+                        image_bytes = part.inline_data.data
+                        break
+                        
+            if not image_bytes:
+                raise HTTPException(status_code=500, detail="Gemini model did not return any image data.")
+            used_model = "nano-banana-pro-preview"
+
+        # 5. Save generated image
+        out_filename = f"image_ad_{uuid.uuid4().hex}.png"
+        out_path = os.path.join("static/generated", out_filename)
+        if isinstance(image_bytes, str):
+            image_bytes = image_bytes.encode('latin1')
+        with open(out_path, "wb") as f:
+            f.write(image_bytes)
+
+        logger.info(f"[Image Studio] Successfully generated image ad: {out_path} using {used_model}")
+        return {
+            "status": "success",
+            "image_url": f"/static/generated/{out_filename}",
+            "filename": out_filename,
+            "model_used": used_model,
+            "aspect_ratio": aspect_ratio,
+            "width": target_w,
+            "height": target_h,
+            "prompt": prompt,
+            "enriched_prompt": enriched_prompt,
+            "style_preset": style_preset or "custom",
+            "has_product_reference": bool(product_bytes)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[Image Studio] Generation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/image-studio/history")
+async def get_image_studio_history():
+    """Retrieve recent generated image ads from static/generated."""
+    gen_dir = "static/generated"
+    items = []
+    if os.path.exists(gen_dir):
+        files = [f for f in os.listdir(gen_dir) if f.startswith("image_ad_") and f.endswith(".png")]
+        files.sort(key=lambda x: os.path.getmtime(os.path.join(gen_dir, x)), reverse=True)
+        for f in files[:24]:
+            items.append({
+                "filename": f,
+                "url": f"/static/generated/{f}",
+                "created_at": os.path.getmtime(os.path.join(gen_dir, f))
+            })
+    return {"images": items}
 
 @app.get("/api/self-hosted/status")
 async def self_hosted_status():

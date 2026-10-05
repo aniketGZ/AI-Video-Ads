@@ -44,6 +44,11 @@
           <span>Video Studio</span>
           <span class="nav-badge-pill">Omni Flash 1.1</span>
         </button>
+        <button type="button" id="nav_tab_image" class="nav-tab-btn" onclick="switchMainView('image')">
+          <i class="fa-solid fa-image"></i>
+          <span>Image Ads Studio</span>
+          <span class="nav-badge-pill" style="background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3);">Qwen 2.1</span>
+        </button>
         <button type="button" id="nav_tab_campaign" class="nav-tab-btn" onclick="switchMainView('campaign')">
           <i class="fa-solid fa-bullhorn"></i>
           <span>Ad Campaign Studio</span>
@@ -352,6 +357,259 @@
             </div>
             <div class="history-reel" id="studio_history_reel">
               <div class="history-empty" id="history_empty_msg">Generated clips in this session will appear here for instant replay and comparison.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== FLOW: AI IMAGE ADS STUDIO (QWEN-IMAGE-2.1) ==================== -->
+    <section id="view_image_studio" class="studio-workspace-section" style="display: none;">
+      <!-- Image Studio Subheader Bar -->
+      <div class="studio-toolbar-strip">
+        <div class="studio-status-wrap">
+          <div class="studio-pill-status" style="border-color: rgba(168, 85, 247, 0.4); background: rgba(168, 85, 247, 0.1);">
+            <span class="pulse-dot" style="background: #c084fc;"></span>
+            <strong>Qwen-Image-2.1</strong> · AI Image Ads Studio
+          </div>
+          <span class="studio-tagline">Create scroll-stopping commercial image ads, product photo placement &amp; luxury ecommerce hero visuals</span>
+        </div>
+        <div class="studio-engine-pills">
+          <span class="engine-badge"><i class="fa-solid fa-camera"></i> Up to 2K Studio Master</span>
+          <span class="engine-badge"><i class="fa-solid fa-box-open"></i> Product Placement</span>
+          <span class="engine-badge"><i class="fa-solid fa-clapperboard"></i> 1-Click Video Bridge</span>
+        </div>
+      </div>
+
+      <div class="studio-grid-layout">
+        <!-- Left: Image Controls & Inputs -->
+        <div class="glass-card studio-control-panel">
+          <!-- Creation Mode Selector Tabs -->
+          <div class="mode-tabs-container">
+            <button type="button" class="mode-tab-btn active" id="btn_img_mode_text" onclick="setImageStudioMode('text')">
+              <i class="fa-solid fa-feather-pointed"></i>
+              <span>Text-to-Ad Creative</span>
+            </button>
+            <button type="button" class="mode-tab-btn" id="btn_img_mode_product" onclick="setImageStudioMode('product')">
+              <i class="fa-solid fa-box-open"></i>
+              <span>Product Photo Remix</span>
+            </button>
+          </div>
+
+          <!-- Product Photo Upload Dropzone (shown when in Product Remix mode) -->
+          <div id="image_product_upload_pane" style="display: none; margin-bottom: 1rem;">
+            <div class="field-label-row">
+              <label class="field-label"><i class="fa-solid fa-upload"></i> Tangible Product Photo <span class="field-subtext">(Sneaker, Bottle, Packaging)</span></label>
+            </div>
+            <div class="image-product-dropzone" id="img_studio_dropzone" onclick="document.getElementById('img_studio_product_file').click()">
+              <div id="img_dropzone_empty" class="image-dropzone-content">
+                <i class="fa-solid fa-cloud-arrow-up dropzone-icon"></i>
+                <div>
+                  <strong>Drop product image here or click to browse</strong>
+                  <span>PNG, JPG, WEBP — Qwen preserves your product in the scene</span>
+                </div>
+              </div>
+              <div id="img_dropzone_preview_wrap" style="display: none;" class="image-dropzone-preview-wrap">
+                <img id="img_product_preview" class="image-product-preview-thumb" alt="Product preview">
+                <button type="button" class="btn-clear-frame" onclick="event.stopPropagation(); clearProductImage()"><i class="fa-solid fa-xmark"></i> Remove</button>
+              </div>
+              <input type="file" id="img_studio_product_file" accept="image/*" style="display:none;" onchange="handleProductImageUpload(event)">
+            </div>
+          </div>
+
+          <!-- Prompt Input Section -->
+          <div class="studio-field-group">
+            <div class="field-label-row">
+              <label class="field-label" for="img_studio_prompt">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> <span>Ad Creative Concept &amp; Scene Prompt</span>
+              </label>
+            </div>
+            
+            <textarea id="img_studio_prompt" class="studio-textarea" rows="3" placeholder="Describe the ad creative: product appearance, background setting, lighting, atmosphere, colors..."></textarea>
+
+            <!-- Quick Visual Booster Chips -->
+            <div class="camera-preset-chips" style="margin-top: 0.6rem;">
+              <span class="preset-label"><i class="fa-solid fa-sparkles"></i> Boosters:</span>
+              <button type="button" class="chip-preset" onclick="appendImagePromptBooster('dramatic studio rim lighting, subtle volumetric depth, premium reflections')">✨ Studio Light</button>
+              <button type="button" class="chip-preset" onclick="appendImagePromptBooster('crystal clear water droplets and morning mist on surface')">💧 Water Dew</button>
+              <button type="button" class="chip-preset" onclick="appendImagePromptBooster('warm golden hour sunbeams, soft cinematic bokeh')">🌅 Golden Hour</button>
+              <button type="button" class="chip-preset" onclick="appendImagePromptBooster('ultra-clean Apple-style minimalist negative space, pastel backdrop')">📐 Apple Minimal</button>
+              <button type="button" class="chip-preset" onclick="appendImagePromptBooster('macro close-up texture, razor-sharp 8k commercial detail')">🔍 Macro 8K</button>
+            </div>
+          </div>
+
+          <!-- One-Click Ad Style Presets -->
+          <div class="studio-field-group" style="margin-top: 1rem;">
+            <div class="field-label-row">
+              <label class="field-label"><i class="fa-solid fa-palette"></i> Ad Style Presets <span class="field-subtext">(Click to apply)</span></label>
+              <button type="button" class="btn-link-reset" onclick="setImageStudioPreset('')">Reset</button>
+            </div>
+            <div class="style-presets-grid" id="img_style_presets_grid">
+              <button type="button" class="preset-card-btn active" data-preset="luxury_podium" onclick="setImageStudioPreset('luxury_podium')">
+                <i class="fa-solid fa-chess-queen"></i>
+                <div class="preset-card-text">
+                  <strong>Luxury Podium</strong>
+                  <span>Marble &amp; Rim Light</span>
+                </div>
+              </button>
+              <button type="button" class="preset-card-btn" data-preset="ugc_lifestyle" onclick="setImageStudioPreset('ugc_lifestyle')">
+                <i class="fa-solid fa-mobile-screen"></i>
+                <div class="preset-card-text">
+                  <strong>UGC Lifestyle</strong>
+                  <span>Handheld phone photo</span>
+                </div>
+              </button>
+              <button type="button" class="preset-card-btn" data-preset="neon_cyber" onclick="setImageStudioPreset('neon_cyber')">
+                <i class="fa-solid fa-bolt-lightning"></i>
+                <div class="preset-card-text">
+                  <strong>Cyber Neon</strong>
+                  <span>High-energy glow</span>
+                </div>
+              </button>
+              <button type="button" class="preset-card-btn" data-preset="nature_botanical" onclick="setImageStudioPreset('nature_botanical')">
+                <i class="fa-solid fa-leaf"></i>
+                <div class="preset-card-text">
+                  <strong>Botanical</strong>
+                  <span>Moss &amp; Tropical foliage</span>
+                </div>
+              </button>
+              <button type="button" class="preset-card-btn" data-preset="dramatic_splash" onclick="setImageStudioPreset('dramatic_splash')">
+                <i class="fa-solid fa-droplet"></i>
+                <div class="preset-card-text">
+                  <strong>Dynamic Splash</strong>
+                  <span>Frozen high-speed liquid</span>
+                </div>
+              </button>
+              <button type="button" class="preset-card-btn" data-preset="minimal_dtc" onclick="setImageStudioPreset('minimal_dtc')">
+                <i class="fa-solid fa-shapes"></i>
+                <div class="preset-card-text">
+                  <strong>Minimal DTC</strong>
+                  <span>Clean pastel aesthetic</span>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Format & Engine Controls -->
+          <div class="studio-specs-compact" style="margin-top: 1rem;">
+            <!-- Engine Selection -->
+            <div class="spec-row">
+              <span class="spec-inline-label"><i class="fa-solid fa-server"></i> Engine:</span>
+              <div class="pill-group" id="img_engine_selector">
+                <button type="button" class="pill-btn active" data-engine="qwen" onclick="setImageStudioEngine('qwen')">
+                  <i class="fa-solid fa-microchip"></i> Qwen-Image-2.1 <span class="pill-sub">Self-Hosted</span>
+                </button>
+                <button type="button" class="pill-btn" data-engine="gemini" onclick="setImageStudioEngine('gemini')">
+                  <i class="fa-solid fa-bolt"></i> Gemini <span class="pill-sub">Nano Banana Pro</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Ad Aspect Ratio -->
+            <div class="spec-row">
+              <span class="spec-inline-label"><i class="fa-solid fa-crop-simple"></i> Ad Ratio:</span>
+              <div class="pill-group" id="img_aspect_ratio_selector">
+                <button type="button" class="pill-btn active" data-ratio="1:1" onclick="setImageStudioAspectRatio('1:1')">
+                  <i class="fa-regular fa-square"></i> 1:1 <span class="pill-sub">Feed / Square</span>
+                </button>
+                <button type="button" class="pill-btn" data-ratio="9:16" onclick="setImageStudioAspectRatio('9:16')">
+                  <i class="fa-solid fa-mobile-screen"></i> 9:16 <span class="pill-sub">Story / Reel</span>
+                </button>
+                <button type="button" class="pill-btn" data-ratio="4:5" onclick="setImageStudioAspectRatio('4:5')">
+                  <i class="fa-solid fa-image"></i> 4:5 <span class="pill-sub">IG Portrait</span>
+                </button>
+                <button type="button" class="pill-btn" data-ratio="16:9" onclick="setImageStudioAspectRatio('16:9')">
+                  <i class="fa-solid fa-tv"></i> 16:9 <span class="pill-sub">Banner / Display</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Steps & Seed in balanced row -->
+            <div class="spec-dual-row">
+              <div class="spec-dual-col">
+                <span class="spec-inline-label"><i class="fa-solid fa-gauge-high"></i> Steps:</span>
+                <div class="pill-group" id="img_steps_selector">
+                  <button type="button" class="pill-btn" data-steps="25" onclick="setImageStudioSteps(25)">25 <span class="pill-sub">Fast</span></button>
+                  <button type="button" class="pill-btn active" data-steps="35" onclick="setImageStudioSteps(35)">35 <span class="pill-sub">Balanced</span></button>
+                  <button type="button" class="pill-btn" data-steps="45" onclick="setImageStudioSteps(45)">45 <span class="pill-sub">Detail</span></button>
+                </div>
+              </div>
+
+              <div class="spec-dual-col">
+                <span class="spec-inline-label"><i class="fa-solid fa-dice"></i> Seed:</span>
+                <input type="number" id="img_studio_seed" class="text-input" placeholder="Random" style="padding: 0.35rem 0.6rem; font-size: 0.8rem; border-radius: var(--radius-sm); width: 100%;">
+              </div>
+            </div>
+          </div>
+
+          <!-- Negative Prompt Accordion -->
+          <details class="negative-prompt-details" style="margin-top: 0.85rem;">
+            <summary><i class="fa-solid fa-ban"></i> Negative Prompt (Optional)</summary>
+            <textarea id="img_studio_negative_prompt" class="studio-textarea-sm" rows="2" placeholder="watermark, ugly, distorted product label, low quality, blurry, warped hands..."></textarea>
+          </details>
+
+          <!-- Generate CTA Button -->
+          <button type="button" id="img_studio_generate_btn" class="btn btn-primary btn-xl studio-submit-btn" style="margin-top: 1rem;" onclick="generateImageAd()">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>Generate Image Ad (Qwen-Image-2.1)</span>
+          </button>
+        </div>
+
+        <!-- Right: Studio Image Display Deck & History -->
+        <div class="studio-canvas-deck">
+          <!-- Main Preview Player/Image Card -->
+          <div class="glass-card studio-player-card">
+            <div class="player-card-header">
+              <div class="player-title-info">
+                <h3><i class="fa-solid fa-image"></i> Ad Creative Canvas</h3>
+                <div class="player-meta-badges">
+                  <span class="meta-tag" id="img_player_res_badge">1:1 Square · 1024x1024</span>
+                  <span class="meta-tag" id="img_player_preset_badge">Luxury Podium</span>
+                  <span class="engine-tag" id="img_player_engine_badge"><i class="fa-solid fa-microchip"></i> Qwen-Image-2.1</span>
+                </div>
+              </div>
+              <div class="player-actions" id="img_player_actions" style="display: none; gap: 0.5rem;">
+                <a id="btn_download_image_ad" class="btn btn-secondary btn-sm" download="ai_image_ad.png">
+                  <i class="fa-solid fa-download"></i> Download PNG
+                </a>
+                <button type="button" id="btn_animate_image_ad" class="btn btn-primary btn-sm" onclick="animateCurrentImageAd()">
+                  <i class="fa-solid fa-clapperboard"></i> Animate in Video Studio
+                </button>
+              </div>
+            </div>
+
+            <!-- Image Stage Viewport -->
+            <div class="player-stage-viewport ratio-1-1" id="img_stage_viewport">
+              <!-- Empty State -->
+              <div class="player-empty-state" id="img_empty_state">
+                <div class="glow-orb" style="background: radial-gradient(circle, rgba(168, 85, 247, 0.4) 0%, transparent 70%);"></div>
+                <div class="flow-icon-wrap" style="color: #c084fc;"><i class="fa-solid fa-image"></i></div>
+                <h4>Ready to create your ad</h4>
+                <p>Type your ad idea or choose a style preset, then click Generate to create with Qwen-Image-2.1.</p>
+              </div>
+
+              <!-- Loading State Overlay -->
+              <div class="player-loading-state" id="img_loading_state" style="display: none;">
+                <div class="spinner-glow" style="border-top-color: #c084fc;"></div>
+                <h4 id="img_loading_title">Synthesizing with Qwen-Image-2.1</h4>
+                <p id="img_loading_sub">Running diffusion steps (approx 60-90s on self-hosted GPU)...</p>
+                <div class="loading-progress-bar"><div class="loading-progress-fill" id="img_progress_bar" style="background: linear-gradient(90deg, #8b5cf6, #c084fc);"></div></div>
+                <span id="img_elapsed_timer" style="font-size: 0.76rem; color: var(--text-muted); margin-top: 0.5rem; font-family: var(--font-mono);">0s elapsed</span>
+              </div>
+
+              <!-- Rendered Image Element -->
+              <img id="img_ad_display" class="studio-rendered-image" alt="Generated Ad Image" style="display: none;">
+            </div>
+          </div>
+
+          <!-- Generation History Reel -->
+          <div class="glass-card studio-history-card">
+            <div class="history-card-header">
+              <h4><i class="fa-solid fa-clock-rotate-left"></i> Image Ads Reel</h4>
+              <span class="history-counter" id="img_history_count">0 images</span>
+            </div>
+            <div class="history-reel" id="img_studio_history_reel">
+              <div class="history-empty" id="img_history_empty_msg">Generated image ads will appear here for instant preview, download, and video animation.</div>
             </div>
           </div>
         </div>
