@@ -27,6 +27,7 @@ ENV/
 # Local configuration
 .env
 .env.*
+!.env.example
 
 # IDEs
 .vscode/
@@ -40,3 +41,5 @@ static/generated/*
 scratch/
 scratch_image_*.jpg
 scratch_video.mp4
+ref videos/
+*.png

@@ -453,9 +453,13 @@ async function generateStoryboard() {
   };
   
   const apiKey = document.getElementById("api_key_input").value;
+  const imageKey = localStorage.getItem("self_hosted_image_key") || "";
   const headers = { "Content-Type": "application/json" };
   if (apiKey) {
     headers["x-api-key"] = apiKey;
+  }
+  if (imageKey) {
+    headers["x-image-api-key"] = imageKey;
   }
   
   try {
@@ -489,8 +493,9 @@ async function generateStoryboard() {
     document.getElementById("video_placeholder_9_16").querySelector("p").textContent = "Ready to Animate Videos";
     document.getElementById("video_placeholder_16_9").querySelector("p").textContent = "Ready to Animate Videos";
     
+    const modelLabel = data.model_used ? ` (${data.model_used})` : "";
     statusEl.className = "generator-status success";
-    statusEl.querySelector("span").textContent = "Storyboard Generated Successfully!";
+    statusEl.querySelector("span").textContent = `Storyboard Generated Successfully${modelLabel}!`;
     generateBtn.textContent = "Regenerate Storyboard";
     
   } catch (error) {
@@ -529,16 +534,18 @@ async function animateVideo() {
   statusEl.className = "generator-status working";
   statusEl.style.display = "flex";
   
-  const engineName = generator === "seedance" ? "Seedance 2 Mini" : (generator === "moneyprinter" ? "MoneyPrinter Turbo" : "Omni Flash");
-  statusEl.querySelector("span").textContent = `Generating both 9:16 and 16:9 videos using ${engineName}...`;
+  const engineName = generator === "minimax" ? "MiniMax-H3 (Self-Hosted)" : (generator === "seedance" ? "Seedance 2 Mini" : (generator === "moneyprinter" ? "MoneyPrinter Turbo" : "Omni Flash"));
+  statusEl.querySelector("span").textContent = `Generating videos using ${engineName}...`;
   
   const animateBtn = document.getElementById("generate_video_btn");
   animateBtn.disabled = true;
   
   const apiKey = document.getElementById("api_key_input").value;
+  const videoKey = localStorage.getItem("self_hosted_video_key") || "";
   const headers = { "Content-Type": "application/json" };
   if (apiKey) headers["x-api-key"] = apiKey;
   if (kieKey) headers["x-kie-key"] = kieKey;
+  if (videoKey) headers["x-video-api-key"] = videoKey;
   
   // Create base request body
   const baseReq = {
@@ -572,8 +579,8 @@ async function animateVideo() {
   async function generateRatio(ratio) {
     const isVertical = ratio === "9:16";
     const prompt = isVertical 
-      ? `Create a 10s vertical 9:16 advertising video from this storyboard grid. Hook is: "${video.hook_line}". Visual description: ${video.visual_directions}. Follow the 4 panels left-to-right, top-to-bottom as reference frames.`
-      : `Create a 10s landscape 16:9 advertising video from this storyboard grid. Hook is: "${video.hook_line}". Visual description: ${video.visual_directions}. Follow the 4 panels left-to-right, top-to-bottom as reference frames.`;
+      ? `Create a vertical 9:16 advertising video from this storyboard. Hook is: "${video.hook_line}". Visual description: ${video.visual_directions}. Follow the 4 panels left-to-right, top-to-bottom as reference frames.`
+      : `Create a landscape 16:9 advertising video from this storyboard. Hook is: "${video.hook_line}". Visual description: ${video.visual_directions}. Follow the 4 panels left-to-right, top-to-bottom as reference frames.`;
       
     const res = await fetch("/api/generate-video", {
       method: "POST",
@@ -615,10 +622,11 @@ async function animateVideo() {
         throw new Error(`${ratio} generation failed: ${jobData.error || "Video animation failed on the server"}`);
       } else {
         // Still processing
+        const msg = jobData.progress_msg || (isVertical ? `Generating 9:16... (attempt ${pollAttempts})` : `Generating 16:9... (attempt ${pollAttempts})`);
         if (isVertical) {
-          videoPlaceholder_9_16.querySelector("p").textContent = `Generating 9:16... (attempt ${pollAttempts})`;
+          videoPlaceholder_9_16.querySelector("p").textContent = msg;
         } else {
-          videoPlaceholder_16_9.querySelector("p").textContent = `Generating 16:9... (attempt ${pollAttempts})`;
+          videoPlaceholder_16_9.querySelector("p").textContent = msg;
         }
       }
     }
@@ -629,10 +637,26 @@ async function animateVideo() {
   }
   
   try {
-    const [res_9_16, res_16_9] = await Promise.all([
-      generateRatio("9:16"),
-      generateRatio("16:9")
-    ]);
+    let res_9_16, res_16_9;
+    if (generator === "minimax") {
+      videoPlaceholder_9_16.querySelector("p").textContent = "Processing 9:16 on MiniMax-H3 GPU...";
+      videoPlaceholder_16_9.querySelector("p").textContent = "Queued (will process after 9:16)...";
+      res_9_16 = await generateRatio("9:16");
+
+      videoPlaceholder_9_16.style.display = "none";
+      videoEl_9_16.src = res_9_16.video_url;
+      videoEl_9_16.style.display = "block";
+      downloadBtn_9_16.href = res_9_16.video_url;
+      downloadBtn_9_16.style.display = "flex";
+
+      videoPlaceholder_16_9.querySelector("p").textContent = "Now processing 16:9 on MiniMax-H3 GPU...";
+      res_16_9 = await generateRatio("16:9");
+    } else {
+      [res_9_16, res_16_9] = await Promise.all([
+        generateRatio("9:16"),
+        generateRatio("16:9")
+      ]);
+    }
     
     // Store in state
     state.generatedVideos[`${key}_9_16`] = res_9_16.video_url;
@@ -669,7 +693,9 @@ async function animateVideo() {
 function updateGeneratorModelText() {
   const model = document.getElementById("video_generator_select").value;
   const generateBtn = document.getElementById("generate_video_btn");
-  if (model === "seedance") {
+  if (model === "minimax") {
+    generateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Animate Videos (MiniMax-H3)';
+  } else if (model === "seedance") {
     generateBtn.innerHTML = '<i class="fa-solid fa-play"></i> Animate Videos (Seedance 2 Mini)';
   } else if (model === "moneyprinter") {
     generateBtn.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles"></i> Generate Videos (MoneyPrinter Turbo)';
@@ -727,16 +753,174 @@ function initAPIKeysPersistence() {
       if (pixKeyEl) pixKeyEl.value = e.target.value.trim();
     });
   }
+
+  // Self-hosted Image & Video Keys
+  const imgKeyModal = document.getElementById("modal_image_key");
+  const vidKeyModal = document.getElementById("modal_video_key");
+  if (imgKeyModal) {
+    const savedImgKey = localStorage.getItem("self_hosted_image_key");
+    if (savedImgKey) imgKeyModal.value = savedImgKey;
+    imgKeyModal.addEventListener("input", (e) => {
+      localStorage.setItem("self_hosted_image_key", e.target.value.trim());
+    });
+  }
+  if (vidKeyModal) {
+    const savedVidKey = localStorage.getItem("self_hosted_video_key");
+    if (savedVidKey) vidKeyModal.value = savedVidKey;
+    vidKeyModal.addEventListener("input", (e) => {
+      localStorage.setItem("self_hosted_video_key", e.target.value.trim());
+    });
+  }
+}
+
+// ------------------------------------------------------------
+// Self-Hosted GPU Modal & Diagnostics Controller
+// ------------------------------------------------------------
+let currentPublicIp = "";
+
+function openSelfHostedModal() {
+  const modal = document.getElementById("self_hosted_modal");
+  if (modal) {
+    modal.style.display = "flex";
+    const imgKeyInput = document.getElementById("modal_image_key");
+    const vidKeyInput = document.getElementById("modal_video_key");
+    if (imgKeyInput) imgKeyInput.value = localStorage.getItem("self_hosted_image_key") || "";
+    if (vidKeyInput) vidKeyInput.value = localStorage.getItem("self_hosted_video_key") || "";
+    checkSelfHostedStatus();
+  }
+}
+
+function closeSelfHostedModal() {
+  const modal = document.getElementById("self_hosted_modal");
+  if (modal) modal.style.display = "none";
+}
+
+async function checkSelfHostedStatus(showToast = false) {
+  try {
+    const res = await fetch("/api/self-hosted/status");
+    if (!res.ok) return;
+    const diag = await res.json();
+
+    currentPublicIp = diag.public_ip || "";
+    const ipEl = document.getElementById("user_public_ip");
+    if (ipEl) ipEl.textContent = currentPublicIp;
+
+    const imgServer = diag.image_server || {};
+    const vidServer = diag.video_server || {};
+
+    // Update Image Server card
+    const imgBadge = document.getElementById("badge_image_status");
+    const imgUrl = document.getElementById("node_image_url");
+    const imgHint = document.getElementById("node_image_hint");
+    if (imgUrl && imgServer.url) imgUrl.textContent = imgServer.url;
+    if (imgBadge) {
+      if (imgServer.online && imgServer.loaded) {
+        imgBadge.className = "node-badge online";
+        imgBadge.textContent = "Online";
+      } else if (imgServer.online && !imgServer.loaded) {
+        imgBadge.className = "node-badge loading";
+        imgBadge.textContent = "Loading Model";
+      } else {
+        imgBadge.className = "node-badge offline";
+        imgBadge.textContent = "Offline / Stopped";
+      }
+    }
+    if (imgHint && imgServer.detail) {
+      imgHint.textContent = imgServer.detail;
+    }
+
+    // Update Video Server card
+    const vidBadge = document.getElementById("badge_video_status");
+    const vidUrl = document.getElementById("node_video_url");
+    const vidHint = document.getElementById("node_video_hint");
+    if (vidUrl && vidServer.url) vidUrl.textContent = vidServer.url;
+    if (vidBadge) {
+      if (vidServer.online && vidServer.loaded) {
+        vidBadge.className = "node-badge online";
+        vidBadge.textContent = "Online";
+      } else if (vidServer.online && !vidServer.loaded) {
+        vidBadge.className = "node-badge loading";
+        vidBadge.textContent = "Loading Model";
+      } else {
+        vidBadge.className = "node-badge offline";
+        vidBadge.textContent = "Offline / Stopped";
+      }
+    }
+    if (vidHint && vidServer.detail) {
+      vidHint.textContent = vidServer.detail;
+    }
+
+    // Update Header Status Pill
+    const statusDot = document.getElementById("gpu_status_dot");
+    const statusText = document.getElementById("gpu_status_text");
+    if (statusDot && statusText) {
+      if (imgServer.online && vidServer.online) {
+        statusDot.className = "gpu-pulse-dot online";
+        statusText.textContent = "GPU: Online";
+      } else if (imgServer.online || vidServer.online) {
+        statusDot.className = "gpu-pulse-dot loading";
+        statusText.textContent = "GPU: Partial";
+      } else {
+        statusDot.className = "gpu-pulse-dot offline";
+        statusText.textContent = "GPU: Offline";
+      }
+    }
+
+    if (showToast) {
+      alert("Self-hosted servers health check refreshed!");
+    }
+  } catch (err) {
+    console.error("Failed to check self-hosted status:", err);
+  }
+}
+
+async function saveSelfHostedSettings() {
+  const imgKeyInput = document.getElementById("modal_image_key");
+  const vidKeyInput = document.getElementById("modal_video_key");
+  const imgKey = imgKeyInput ? imgKeyInput.value.trim() : "";
+  const vidKey = vidKeyInput ? vidKeyInput.value.trim() : "";
+
+  localStorage.setItem("self_hosted_image_key", imgKey);
+  localStorage.setItem("self_hosted_video_key", vidKey);
+
+  try {
+    await fetch("/api/self-hosted/configure", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        image_api_key: imgKey,
+        video_api_key: vidKey,
+        use_self_hosted: true
+      })
+    });
+    alert("API keys saved and applied successfully!");
+    checkSelfHostedStatus();
+  } catch (e) {
+    alert("Saved in browser: " + e.message);
+  }
+}
+
+function copyPublicIp() {
+  const ipText = currentPublicIp || (document.getElementById("user_public_ip") ? document.getElementById("user_public_ip").textContent : "");
+  if (ipText && ipText !== "Detecting...") {
+    navigator.clipboard.writeText(ipText).then(() => {
+      alert(`Copied IP: ${ipText}\nShare this with the server owner to allowlist on GCP firewall.`);
+    }).catch(() => {
+      prompt("Copy your IP:", ipText);
+    });
+  }
 }
 
 if (document.readyState === "loading") {
   document.addEventListener("DOMContentLoaded", () => {
     initAPIKeysPersistence();
     initStudioDragAndDrop();
+    checkSelfHostedStatus();
   });
 } else {
   initAPIKeysPersistence();
   initStudioDragAndDrop();
+  checkSelfHostedStatus();
 }
 
 /* ============================================================
@@ -769,6 +953,7 @@ function switchMainView(view) {
 
 // Studio State
 const studioState = {
+  engine: "minimax",
   mode: "prompt_images",
   aspectRatio: "9:16",
   resolution: "720p",
@@ -779,6 +964,22 @@ const studioState = {
   sourceVideo: null,
   history: []
 };
+
+// Set Video Engine (MiniMax-H3 vs Omni Flash)
+function setStudioEngine(engine) {
+  studioState.engine = engine;
+  document.querySelectorAll("#studio_engine_selector .pill-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.engine === engine);
+  });
+  const generateBtn = document.getElementById("studio_generate_btn");
+  if (generateBtn) {
+    if (engine === "minimax") {
+      generateBtn.innerHTML = '<i class="fa-solid fa-play"></i><span>Generate Video (MiniMax-H3)</span>';
+    } else {
+      generateBtn.innerHTML = '<i class="fa-solid fa-play"></i><span>Generate Video with Omni Flash 1.1</span>';
+    }
+  }
+}
 
 // Set Generation Mode
 function setStudioMode(mode) {
@@ -1097,19 +1298,26 @@ async function submitStudioVideo() {
   }
   
   const apiKey = document.getElementById("api_key_input") ? document.getElementById("api_key_input").value.trim() : "";
+  const videoKey = localStorage.getItem("self_hosted_video_key") || "";
   const headers = {};
   if (apiKey) headers["x-api-key"] = apiKey;
+  if (videoKey) headers["x-video-api-key"] = videoKey;
   
+  const activeEngine = studioState.engine || "minimax";
+  formData.append("generator", activeEngine);
+
+  const engineTitle = activeEngine === "minimax" ? "MiniMax-H3 (Self-Hosted)" : "Omni Flash 1.1";
+
   // UI Loading State
   if (generateBtn) {
     generateBtn.disabled = true;
-    generateBtn.innerHTML = '<div class="mini-spinner"></div><span>Rendering with Omni Flash 1.1...</span>';
+    generateBtn.innerHTML = `<div class="mini-spinner"></div><span>Rendering with ${engineTitle}...</span>`;
   }
   if (emptyState) emptyState.style.display = "none";
   if (videoPlayer) videoPlayer.style.display = "none";
   if (actionsBar) actionsBar.style.display = "none";
   if (loadingOverlay) loadingOverlay.style.display = "flex";
-  if (loadingTitle) loadingTitle.textContent = "Synthesizing Video with Omni Flash 1.1";
+  if (loadingTitle) loadingTitle.textContent = `Synthesizing Video with ${engineTitle}`;
   if (loadingSub) loadingSub.textContent = `Targeting ${studioState.resolution} · ${studioState.aspectRatio} · ${studioState.duration}s...`;
   if (progressBar) progressBar.style.width = "25%";
   
@@ -1132,13 +1340,17 @@ async function submitStudioVideo() {
     let progress = 35;
     const pollInterval = setInterval(async () => {
       try {
-        progress = Math.min(progress + 8, 92);
+        progress = Math.min(progress + 7, 92);
         if (progressBar) progressBar.style.width = `${progress}%`;
         
         const statusRes = await fetch(`/api/video-status/${jobId}`);
         if (!statusRes.ok) return;
         const jobData = await statusRes.json();
         
+        if (jobData.progress_msg && loadingSub) {
+          loadingSub.textContent = jobData.progress_msg;
+        }
+
         if (jobData.status === "success") {
           clearInterval(pollInterval);
           if (progressBar) progressBar.style.width = "100%";
@@ -1153,7 +1365,7 @@ async function submitStudioVideo() {
             if (actionsBar) actionsBar.style.display = "flex";
             if (downloadBtn) {
               downloadBtn.href = jobData.video_url;
-              downloadBtn.download = `omni_flash_${studioState.resolution}_${Date.now()}.mp4`;
+              downloadBtn.download = `${activeEngine}_video_${studioState.resolution}_${Date.now()}.mp4`;
             }
             
             // Add to session history
@@ -1172,13 +1384,15 @@ async function submitStudioVideo() {
             // Reset generate button
             if (generateBtn) {
               generateBtn.disabled = false;
-              generateBtn.innerHTML = '<i class="fa-solid fa-sparkles"></i><span>Generate with Omni Flash 1.1</span>';
+              generateBtn.innerHTML = activeEngine === 'minimax' 
+                ? '<i class="fa-solid fa-play"></i><span>Generate Video (MiniMax-H3)</span>' 
+                : '<i class="fa-solid fa-play"></i><span>Generate Video with Omni Flash 1.1</span>';
             }
           }, 600);
           
         } else if (jobData.status === "failed") {
           clearInterval(pollInterval);
-          throw new Error(jobData.error || "Omni Flash video generation failed on server");
+          throw new Error(jobData.error || `${engineTitle} video generation failed on server`);
         }
       } catch (pollErr) {
         clearInterval(pollInterval);
@@ -1188,7 +1402,9 @@ async function submitStudioVideo() {
         if (emptyState) emptyState.style.display = "flex";
         if (generateBtn) {
           generateBtn.disabled = false;
-          generateBtn.innerHTML = '<i class="fa-solid fa-sparkles"></i><span>Generate with Omni Flash 1.1</span>';
+          generateBtn.innerHTML = activeEngine === 'minimax' 
+            ? '<i class="fa-solid fa-play"></i><span>Generate Video (MiniMax-H3)</span>' 
+            : '<i class="fa-solid fa-play"></i><span>Generate Video with Omni Flash 1.1</span>';
         }
       }
     }, 3000);
@@ -1200,7 +1416,9 @@ async function submitStudioVideo() {
     if (emptyState) emptyState.style.display = "flex";
     if (generateBtn) {
       generateBtn.disabled = false;
-      generateBtn.innerHTML = '<i class="fa-solid fa-sparkles"></i><span>Generate with Omni Flash 1.1</span>';
+      generateBtn.innerHTML = activeEngine === 'minimax' 
+        ? '<i class="fa-solid fa-play"></i><span>Generate Video (MiniMax-H3)</span>' 
+        : '<i class="fa-solid fa-play"></i><span>Generate Video with Omni Flash 1.1</span>';
     }
   }
 }

@@ -13,6 +13,23 @@ from pydantic import BaseModel
 from google import genai
 from google.genai import types
 from moneyprinter_engine import execute_moneyprinter_job, persist_job_update, JOBS_CACHE_FILE
+from self_hosted_engine import (
+    load_dotenv,
+    get_image_api_url,
+    get_image_api_key,
+    get_video_api_url,
+    get_video_api_key,
+    is_self_hosted_enabled,
+    should_fallback_to_gemini,
+    get_public_ip,
+    get_diagnostics,
+    image_file_to_data_uri,
+    generate_image_async,
+    generate_video_async,
+)
+
+# Load configuration from .env file
+load_dotenv()
 
 class MoneyPrinterRequest(BaseModel):
     subject: str
@@ -97,16 +114,26 @@ class StoryboardRequest(BaseModel):
     shot_3: str
     shot_4: str
     product_image_paths: Optional[List[str]] = None
+    use_self_hosted: Optional[bool] = None
 
 class VideoRequest(BaseModel):
     storyboard_image_url: str
     video_prompt: str
     product_image_paths: Optional[List[str]] = None
-    generator: str = "omni-flash"
+    generator: str = "minimax"
     aspect_ratio: str = "9:16"
     mpt_service_url: Optional[str] = None
     voice_script: Optional[str] = None
     hook_line: Optional[str] = None
+    use_self_hosted: Optional[bool] = None
+
+class SelfHostedConfigRequest(BaseModel):
+    image_api_url: Optional[str] = None
+    image_api_key: Optional[str] = None
+    video_api_url: Optional[str] = None
+    video_api_key: Optional[str] = None
+    use_self_hosted: Optional[bool] = None
+    fallback_to_gemini: Optional[bool] = None
 
 # Helper to get the GenAI client
 def get_client(api_key: Optional[str] = None) -> Optional[genai.Client]:
@@ -321,7 +348,8 @@ async def analyze_campaign(
 @app.post("/api/generate-storyboard")
 async def generate_storyboard(
     req: StoryboardRequest,
-    x_api_key: Optional[str] = Header(None)
+    x_api_key: Optional[str] = Header(None),
+    x_image_api_key: Optional[str] = Header(None)
 ):
     try:
         client = get_client(x_api_key)
@@ -375,50 +403,86 @@ async def generate_storyboard(
             f"NEGATIVE: watermark, extra logos, misspelled text, blurry frames, distorted hands, warped product packaging, inconsistent character faces, cluttered layout, overlapping panels, sketch lines, low quality."
         )
         
-        logger.info(f"Generating storyboard with Nano Banana Pro (nano-banana-pro-preview)... Prompt length: {len(storyboard_prompt)}")
-        
-        # Prepare contents with reference images if provided
-        contents = [storyboard_prompt]
-        if req.product_image_paths:
-            logger.info(f"Adding {len(req.product_image_paths)} product images as consistency reference to Nano Banana Pro...")
-            for img_path in req.product_image_paths:
-                relative_path = img_path.lstrip("/")
-                if os.path.exists(relative_path):
-                    with open(relative_path, "rb") as f:
-                        img_data = f.read()
-                    if isinstance(img_data, str):
-                        img_data = img_data.encode('latin1')
-                    ext = os.path.splitext(img_path)[1].lower()
-                    mime_type = "image/jpeg"
-                    if ext == ".png":
-                        mime_type = "image/png"
-                    elif ext == ".gif":
-                        mime_type = "image/gif"
-                    elif ext == ".webp":
-                        mime_type = "image/webp"
-                        
-                    contents.append(
-                        types.Part.from_bytes(data=img_data, mime_type=mime_type)
-                    )
-        
-        response = client.models.generate_content(
-            model='nano-banana-pro-preview',
-            contents=contents
-        )
-        
+        # Check self-hosted preference
+        use_self_hosted = req.use_self_hosted if req.use_self_hosted is not None else is_self_hosted_enabled()
         image_bytes = None
-        if response.candidates:
-            for part in response.candidates[0].content.parts:
-                if part.inline_data and part.inline_data.data:
-                    image_bytes = part.inline_data.data
+        used_model = "nano-banana-pro-preview"
+
+        ref_image_uri = None
+        if req.product_image_paths:
+            for img_path in req.product_image_paths:
+                rel_path = img_path.lstrip("/")
+                if os.path.exists(rel_path):
+                    ref_image_uri = image_file_to_data_uri(rel_path)
                     break
-                    
+
+        if use_self_hosted:
+            try:
+                logger.info(f"Generating storyboard with Qwen-Image-2.1 (Self-Hosted)... Prompt length: {len(storyboard_prompt)}")
+                image_bytes = await generate_image_async(
+                    prompt=storyboard_prompt,
+                    width=1536 if not ref_image_uri else None,
+                    height=2752 if not ref_image_uri else None,
+                    steps=35,
+                    image_uri=ref_image_uri,
+                    api_key=x_image_api_key or get_image_api_key(),
+                    timeout=600
+                )
+                used_model = "Qwen-Image-2.1 (Self-Hosted)"
+            except Exception as sh_err:
+                logger.warning(f"Self-hosted Qwen-Image-2.1 failed: {sh_err}")
+                if should_fallback_to_gemini() and client:
+                    logger.info("Falling back to Gemini Nano Banana Pro...")
+                else:
+                    raise HTTPException(status_code=503, detail=str(sh_err))
+
         if not image_bytes:
-            raise HTTPException(status_code=500, detail="Nano Banana Pro failed to generate storyboard image")
+            # Fallback or default to Gemini Nano Banana Pro
+            logger.info(f"Generating storyboard with Nano Banana Pro (nano-banana-pro-preview)... Prompt length: {len(storyboard_prompt)}")
             
+            # Prepare contents with reference images if provided
+            contents = [storyboard_prompt]
+            if req.product_image_paths:
+                logger.info(f"Adding {len(req.product_image_paths)} product images as consistency reference to Nano Banana Pro...")
+                for img_path in req.product_image_paths:
+                    relative_path = img_path.lstrip("/")
+                    if os.path.exists(relative_path):
+                        with open(relative_path, "rb") as f:
+                            img_data = f.read()
+                        if isinstance(img_data, str):
+                            img_data = img_data.encode('latin1')
+                        ext = os.path.splitext(img_path)[1].lower()
+                        mime_type = "image/jpeg"
+                        if ext == ".png":
+                            mime_type = "image/png"
+                        elif ext == ".gif":
+                            mime_type = "image/gif"
+                        elif ext == ".webp":
+                            mime_type = "image/webp"
+                            
+                        contents.append(
+                            types.Part.from_bytes(data=img_data, mime_type=mime_type)
+                        )
+            
+            response = client.models.generate_content(
+                model='nano-banana-pro-preview',
+                contents=contents
+            )
+            
+            if response.candidates:
+                for part in response.candidates[0].content.parts:
+                    if part.inline_data and part.inline_data.data:
+                        image_bytes = part.inline_data.data
+                        break
+                        
+            if not image_bytes:
+                raise HTTPException(status_code=500, detail="Nano Banana Pro failed to generate storyboard image")
+            used_model = "nano-banana-pro-preview"
+                
         # Save generated storyboard image
         import uuid
-        filename = f"storyboard_{uuid.uuid4().hex}.jpg"
+        ext = ".png" if "Qwen" in used_model else ".jpg"
+        filename = f"storyboard_{uuid.uuid4().hex}{ext}"
         file_path = os.path.join("static/generated", filename)
         
         if isinstance(image_bytes, str):
@@ -426,9 +490,8 @@ async def generate_storyboard(
         with open(file_path, "wb") as f:
             f.write(image_bytes)
             
-        logger.info(f"Storyboard generated and saved to {file_path}")
-        
-        return {"storyboard_image_url": f"/static/generated/{filename}"}
+        logger.info(f"Storyboard generated with {used_model} and saved to {file_path}")
+        return {"storyboard_image_url": f"/static/generated/{filename}", "model_used": used_model}
         
     except Exception as e:
         logger.error(f"Storyboard generation failed: {e}", exc_info=True)
@@ -688,20 +751,144 @@ async def generate_omni_background(
         logger.error(f"Omni Flash background generation failed: {e}", exc_info=True)
         video_jobs[job_id] = {"status": "failed", "error": str(e)}
 
+async def generate_minimax_background(
+    job_id: str,
+    storyboard_image_url: str,
+    video_prompt: str,
+    aspect_ratio: str = "9:16",
+    product_image_paths: Optional[List[str]] = None,
+    api_key: Optional[str] = None,
+    api_url: Optional[str] = None,
+    fallback_gemini_key: Optional[str] = None
+):
+    """Generate ad video using self-hosted MiniMax-H3 (SGLang) server with audio."""
+    try:
+        import time
+        persist_job_update(job_id, {
+            "status": "processing",
+            "progress_msg": "Queued for MiniMax-H3 GPU server...",
+            "progress": 5,
+            "created_at": time.time()
+        }, video_jobs)
+
+        # Resolve storyboard reference image
+        relative_path = storyboard_image_url.lstrip("/")
+        first_frame_uri = None
+        if os.path.exists(relative_path):
+            first_frame_uri = image_file_to_data_uri(relative_path)
+        elif product_image_paths:
+            for p in product_image_paths:
+                p_rel = p.lstrip("/")
+                if os.path.exists(p_rel):
+                    first_frame_uri = image_file_to_data_uri(p_rel)
+                    break
+
+        if not first_frame_uri:
+            persist_job_update(job_id, {
+                "status": "failed",
+                "error": "Storyboard reference image not found locally"
+            }, video_jobs)
+            return
+
+        aspect = "9:16" if aspect_ratio == "9:16" else "16:9"
+
+        def on_poll(st_dict, poll_count):
+            secs = poll_count * 10
+            persist_job_update(job_id, {
+                "status": "processing",
+                "progress_msg": f"MiniMax-H3 synthesizing video & stereo audio... (~{secs}s elapsed)",
+                "progress": min(10 + poll_count * 7, 92)
+            }, video_jobs)
+
+        logger.info(f"Triggering MiniMax-H3 video job for {job_id} (aspect={aspect}, duration=5s)...")
+        video_bytes = await generate_video_async(
+            prompt=video_prompt,
+            seconds=5,
+            aspect=aspect,
+            short_edge=768,
+            steps=30,
+            first_frame_uri=first_frame_uri,
+            api_url=api_url,
+            api_key=api_key,
+            poll_every=10,
+            max_wait=1200,
+            progress_callback=on_poll
+        )
+
+        import uuid
+        filename = f"ad_video_{uuid.uuid4().hex}.mp4"
+        file_path = os.path.join("static/generated", filename)
+
+        with open(file_path, "wb") as f:
+            f.write(video_bytes)
+
+        logger.info(f"MiniMax-H3 video saved to {file_path}")
+        persist_job_update(job_id, {
+            "status": "success",
+            "video_url": f"/static/generated/{filename}",
+            "engine": "MiniMax-H3"
+        }, video_jobs)
+
+    except Exception as e:
+        logger.error(f"MiniMax-H3 video generation failed: {e}", exc_info=True)
+        if should_fallback_to_gemini() and fallback_gemini_key:
+            logger.info("Falling back to Gemini Omni Flash...")
+            persist_job_update(job_id, {
+                "status": "processing",
+                "progress_msg": "Self-hosted server offline/busy. Falling back to Gemini Omni Flash..."
+            }, video_jobs)
+            await generate_omni_background(
+                job_id=job_id,
+                storyboard_image_url=storyboard_image_url,
+                video_prompt=video_prompt,
+                product_image_paths=product_image_paths,
+                api_key=fallback_gemini_key,
+                aspect_ratio=aspect_ratio
+            )
+        else:
+            persist_job_update(job_id, {
+                "status": "failed",
+                "error": str(e)
+            }, video_jobs)
+
 @app.post("/api/generate-video")
 async def generate_video(
     req: VideoRequest,
     request: Request,
     background_tasks: BackgroundTasks,
     x_api_key: Optional[str] = Header(None),
-    x_kie_key: Optional[str] = Header(None)
+    x_kie_key: Optional[str] = Header(None),
+    x_video_api_key: Optional[str] = Header(None)
 ):
     try:
         import uuid
+        import time
         job_id = f"job_{uuid.uuid4().hex}"
-        video_jobs[job_id] = {"status": "processing"}
+        video_jobs[job_id] = {"status": "processing", "created_at": time.time()}
         
-        if req.generator == "seedance":
+        # Check if MiniMax-H3 should be used
+        use_minimax = (
+            req.generator in ["minimax", "self-hosted"] or
+            req.use_self_hosted is True or
+            (req.use_self_hosted is None and is_self_hosted_enabled() and req.generator not in ["seedance", "moneyprinter", "mpt", "omni-flash-forced"])
+        )
+
+        if use_minimax and req.generator not in ["seedance", "moneyprinter", "mpt"]:
+            logger.info(f"Dispatching MiniMax-H3 self-hosted video task for job {job_id}...")
+            background_tasks.add_task(
+                generate_minimax_background,
+                job_id=job_id,
+                storyboard_image_url=req.storyboard_image_url,
+                video_prompt=req.video_prompt,
+                aspect_ratio=req.aspect_ratio,
+                product_image_paths=req.product_image_paths,
+                api_key=x_video_api_key or get_video_api_key(),
+                api_url=get_video_api_url(),
+                fallback_gemini_key=x_api_key or os.environ.get("GEMINI_API_KEY")
+            )
+            return {"status": "processing", "job_id": job_id}
+
+        elif req.generator == "seedance":
             kie_key = x_kie_key or os.environ.get("KIE_API_KEY")
             if kie_key:
                 kie_key = kie_key.strip()
@@ -852,9 +1039,102 @@ async def generate_studio_video_background(
     first_frame_path: Optional[str],
     last_frame_path: Optional[str],
     source_video_path: Optional[str],
-    api_key: Optional[str]
+    api_key: Optional[str],
+    generator: str = "minimax",
+    video_api_key: Optional[str] = None
 ):
     try:
+        import time
+        # Check if MiniMax-H3 should be used
+        use_minimax = (
+            generator in ["minimax", "self-hosted"] or
+            (is_self_hosted_enabled() and generator not in ["omni-flash-forced"])
+        )
+
+        if use_minimax and mode in ["prompt_images", "first_last_frame"]:
+            try:
+                persist_job_update(job_id, {
+                    "status": "processing",
+                    "progress_msg": "Queued for MiniMax-H3 GPU server...",
+                    "progress": 5,
+                    "created_at": time.time()
+                }, video_jobs)
+
+                first_frame_uri = None
+                last_frame_uri = None
+
+                if mode == "first_last_frame":
+                    if first_frame_path and os.path.exists(first_frame_path):
+                        first_frame_uri = image_file_to_data_uri(first_frame_path)
+                    if last_frame_path and os.path.exists(last_frame_path):
+                        last_frame_uri = image_file_to_data_uri(last_frame_path)
+                elif mode == "prompt_images" and reference_image_paths:
+                    if os.path.exists(reference_image_paths[0]):
+                        first_frame_uri = image_file_to_data_uri(reference_image_paths[0])
+
+                short_edge = 1344 if resolution in ("1080p", "4k", "4K") else (480 if resolution == "480p" else 768)
+                aspect = "9:16" if aspect_ratio == "9:16" else ("16:9" if aspect_ratio == "16:9" else "auto")
+                dur = max(4, min(15, int(duration)))
+
+                def on_studio_poll(st_dict, poll_count):
+                    secs = poll_count * 10
+                    persist_job_update(job_id, {
+                        "status": "processing",
+                        "progress_msg": f"MiniMax-H3 synthesizing video & audio... (~{secs}s elapsed)",
+                        "progress": min(10 + poll_count * 7, 92)
+                    }, video_jobs)
+
+                logger.info(f"Triggering MiniMax-H3 studio video for {job_id} (mode={mode}, res={resolution}, dur={dur}s)...")
+                video_bytes = await generate_video_async(
+                    prompt=prompt,
+                    seconds=dur,
+                    aspect=aspect,
+                    short_edge=short_edge,
+                    steps=30,
+                    first_frame_uri=first_frame_uri,
+                    last_frame_uri=last_frame_uri,
+                    api_key=video_api_key or get_video_api_key(),
+                    api_url=get_video_api_url(),
+                    poll_every=10,
+                    max_wait=1200,
+                    progress_callback=on_studio_poll
+                )
+
+                import uuid
+                filename = f"studio_video_{uuid.uuid4().hex}.mp4"
+                file_path = os.path.join("static/generated", filename)
+
+                with open(file_path, "wb") as f:
+                    f.write(video_bytes)
+
+                logger.info(f"Studio video saved to {file_path}")
+                persist_job_update(job_id, {
+                    "status": "success",
+                    "video_url": f"/static/generated/{filename}",
+                    "mode": mode,
+                    "resolution": resolution,
+                    "aspect_ratio": aspect_ratio,
+                    "duration": dur,
+                    "prompt": prompt,
+                    "engine": "MiniMax-H3"
+                }, video_jobs)
+                return
+
+            except Exception as minimax_err:
+                logger.warning(f"MiniMax-H3 studio generation failed: {minimax_err}")
+                if should_fallback_to_gemini() and api_key:
+                    logger.info("Falling back to Gemini Omni Flash for studio video...")
+                    persist_job_update(job_id, {
+                        "status": "processing",
+                        "progress_msg": "Self-hosted server busy/offline. Falling back to Gemini Omni Flash..."
+                    }, video_jobs)
+                else:
+                    persist_job_update(job_id, {
+                        "status": "failed",
+                        "error": str(minimax_err)
+                    }, video_jobs)
+                    return
+
         client = get_client(api_key)
         
         # Build prompt instructions based on mode
@@ -1007,7 +1287,8 @@ async def generate_studio_video_background(
             "resolution": resolution,
             "aspect_ratio": aspect_ratio,
             "duration": duration,
-            "prompt": prompt
+            "prompt": prompt,
+            "engine": "Omni Flash 1.1"
         }
     except Exception as e:
         logger.error(f"Studio background generation failed: {e}", exc_info=True)
@@ -1022,16 +1303,19 @@ async def studio_generate_video(
     aspect_ratio: str = Form("16:9"),
     resolution: str = Form("720p"),
     duration: int = Form(6),
+    generator: str = Form("minimax"),
     reference_images: Optional[List[UploadFile]] = File(None),
     first_frame: Optional[UploadFile] = File(None),
     last_frame: Optional[UploadFile] = File(None),
     source_video: Optional[UploadFile] = File(None),
-    x_api_key: Optional[str] = Header(None)
+    x_api_key: Optional[str] = Header(None),
+    x_video_api_key: Optional[str] = Header(None)
 ):
     try:
         import uuid
+        import time
         job_id = f"job_studio_{uuid.uuid4().hex}"
-        video_jobs[job_id] = {"status": "processing"}
+        video_jobs[job_id] = {"status": "processing", "created_at": time.time()}
         
         # Save reference images if present
         saved_ref_paths = []
@@ -1090,13 +1374,37 @@ async def studio_generate_video(
             first_frame_path=saved_first_frame,
             last_frame_path=saved_last_frame,
             source_video_path=saved_source_video,
-            api_key=x_api_key
+            api_key=x_api_key,
+            generator=generator,
+            video_api_key=x_video_api_key
         )
         
         return {"status": "processing", "job_id": job_id}
     except Exception as e:
         logger.error(f"Studio video dispatch failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/self-hosted/status")
+async def self_hosted_status():
+    """Diagnostic health check for self-hosted Image and Video GPU servers."""
+    return get_diagnostics()
+
+@app.post("/api/self-hosted/configure")
+async def self_hosted_configure(cfg: SelfHostedConfigRequest):
+    """Dynamically update self-hosted settings."""
+    if cfg.image_api_url is not None:
+        os.environ["IMAGE_API_URL"] = cfg.image_api_url
+    if cfg.image_api_key is not None:
+        os.environ["IMAGE_API_KEY"] = cfg.image_api_key
+    if cfg.video_api_url is not None:
+        os.environ["VIDEO_API_URL"] = cfg.video_api_url
+    if cfg.video_api_key is not None:
+        os.environ["VIDEO_API_KEY"] = cfg.video_api_key
+    if cfg.use_self_hosted is not None:
+        os.environ["USE_SELF_HOSTED"] = "true" if cfg.use_self_hosted else "false"
+    if cfg.fallback_to_gemini is not None:
+        os.environ["FALLBACK_TO_GEMINI"] = "true" if cfg.fallback_to_gemini else "false"
+    return get_diagnostics()
 
 @app.get("/api/video-status/{job_id}")
 async def get_video_status(job_id: str):
@@ -1118,11 +1426,11 @@ async def get_video_status(job_id: str):
             detail="Job not found. The server may have restarted or deployed. Please click Generate to start."
         )
 
-    # Automatically fail any job stuck in processing for over 150 seconds
+    # Automatically fail any job stuck in processing for over 1800 seconds (30 minutes)
     created_at = job.get("created_at")
-    if job.get("status") == "processing" and created_at and (time.time() - created_at > 150):
+    if job.get("status") == "processing" and created_at and (time.time() - created_at > 1800):
         job["status"] = "failed"
-        job["error"] = "Task exceeded maximum allowed time. Please try generating again."
+        job["error"] = "Task exceeded maximum allowed time (30 minutes). Please try generating again."
         persist_job_update(job_id, job, video_jobs)
 
     return job
