@@ -213,6 +213,11 @@ function renderDashboard() {
   
   // Select first ad group
   selectAdGroup(0);
+
+  // Initialize Meta Image Ad Creative Studio
+  if (typeof initMetaAdStudio === "function") {
+    initMetaAdStudio();
+  }
   
   // Show dashboard
   document.getElementById("dashboard_container").style.display = "flex";
@@ -300,9 +305,14 @@ function selectAdGroup(index) {
           </div>
         </div>
       </div>
-      <button class="btn btn-primary" onclick="openStudio(${vIdx})">
-        <i class="fa-solid fa-clapperboard"></i> Open Creator Studio
-      </button>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+        <button class="btn btn-primary" style="flex: 1;" onclick="openStudio(${vIdx})">
+          <i class="fa-solid fa-clapperboard"></i> Open Video Studio
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="createMetaAdForScript(${vIdx})" title="Design a Meta Image Ad using this script angle">
+          <i class="fa-brands fa-meta"></i> Meta Image Ad
+        </button>
+      </div>
     `;
     
     grid.appendChild(card);
@@ -2788,5 +2798,511 @@ const renderImageStudioHistory = renderQwenHistory;
 const selectHistoryImageAd = selectQwenHistoryItem;
 function setImageStudioEngine() {}
 
+/* ============================================================
+   FLOW 4: META IMAGE AD CREATIVE STUDIO (Instagram & Facebook)
+   ============================================================ */
 
+const metaAdState = {
+  aspectRatio: "4:5",
+  engine: "qwen",
+  selectedAngleIndex: 0,
+  selectedProductPath: null,
+  customProductFile: null,
+  platform: "ig",
+  currentAd: null,
+  history: []
+};
 
+function initMetaAdStudio() {
+  const data = state.campaignData;
+  if (!data) return;
+
+  // 1. Audience Pill
+  const audPill = document.getElementById("meta_pill_audience_text");
+  if (audPill) {
+    const rawAud = data.target_audience_persona || "Analyzed Audience";
+    const shortAud = rawAud.length > 55 ? rawAud.slice(0, 52) + "..." : rawAud;
+    audPill.textContent = shortAud;
+    audPill.title = rawAud;
+  }
+
+  // 2. Populate Angles from Campaign Ad Groups
+  const angleSelect = document.getElementById("meta_angle_select");
+  if (angleSelect) {
+    angleSelect.innerHTML = "";
+    if (data.ad_groups && data.ad_groups.length > 0) {
+      data.ad_groups.forEach((ag, idx) => {
+        const opt = document.createElement("option");
+        opt.value = idx;
+        opt.textContent = `Angle ${idx + 1}: ${ag.name} — "${ag.angle}"`;
+        angleSelect.appendChild(opt);
+      });
+      angleSelect.value = "0";
+      metaAdState.selectedAngleIndex = 0;
+      updateMetaAngleHint(0);
+    }
+  }
+
+  // 3. Populate Product Photo Picker
+  renderMetaProductPicker();
+
+  // 4. Default Mockup Text & Info
+  const brandName = data.brand_name || "Brand Name";
+  const previewBrand = document.getElementById("meta_preview_brand");
+  const previewAvatar = document.getElementById("meta_preview_avatar");
+  const previewDomain = document.getElementById("meta_preview_domain");
+  const previewHeadline = document.getElementById("meta_preview_headline");
+  const previewPrimary = document.getElementById("meta_preview_primary_text");
+
+  if (previewBrand) previewBrand.textContent = brandName;
+  if (previewAvatar) previewAvatar.textContent = brandName.charAt(0).toUpperCase() || "B";
+  if (previewDomain) previewDomain.textContent = `WWW.${brandName.toUpperCase().replace(/[^A-Z0-9]/g, "") || "BRAND"}.COM`;
+  if (previewHeadline) previewHeadline.textContent = `Elevate Your Routine · ${data.product_name || "Shop Now"}`;
+  if (previewPrimary && !metaAdState.currentAd) {
+    previewPrimary.textContent = `Click "Generate Meta Creative & Ad Copy" to produce high-converting copy and photorealistic imagery tailored for ${data.target_audience_persona ? data.target_audience_persona.split(".")[0] : "your target audience"}.`;
+  }
+
+  // 5. Load past meta ads history
+  loadMetaAdsHistory();
+}
+
+function updateMetaAngleHint(index) {
+  const data = state.campaignData;
+  const hintEl = document.getElementById("meta_angle_hint");
+  if (!hintEl || !data || !data.ad_groups || !data.ad_groups[index]) return;
+  const ag = data.ad_groups[index];
+  hintEl.innerHTML = `<strong>Focus:</strong> ${escapeHtml(ag.angle || "")} · <em>Target Emotion: ${escapeHtml(ag.target_emotion || "Desire & Urgency")}</em>`;
+}
+
+function onMetaAngleChange() {
+  const sel = document.getElementById("meta_angle_select");
+  if (!sel) return;
+  const idx = parseInt(sel.value, 10);
+  metaAdState.selectedAngleIndex = idx;
+  updateMetaAngleHint(idx);
+}
+
+function renderMetaProductPicker() {
+  const picker = document.getElementById("meta_product_picker");
+  const badge = document.getElementById("meta_product_count_badge");
+  if (!picker) return;
+
+  picker.innerHTML = "";
+  const paths = (state.campaignData && state.campaignData.product_image_paths) || [];
+
+  if (paths.length === 0 && !metaAdState.customProductFile) {
+    picker.innerHTML = `
+      <div class="meta-picker-empty" id="meta_picker_empty">
+        <i class="fa-regular fa-image"></i>
+        <span>No product photos attached yet. Upload one below or generate creative without reference.</span>
+      </div>
+    `;
+    if (badge) badge.textContent = "0 photos attached";
+    metaAdState.selectedProductPath = null;
+    return;
+  }
+
+  const totalCount = paths.length + (metaAdState.customProductFile ? 1 : 0);
+  if (badge) badge.textContent = `${totalCount} photo${totalCount > 1 ? "s" : ""} available`;
+
+  // Render campaign uploaded photos
+  paths.forEach((p, idx) => {
+    const isSelected = !metaAdState.customProductFile && (metaAdState.selectedProductPath === p || (!metaAdState.selectedProductPath && idx === 0));
+    const thumb = document.createElement("div");
+    thumb.className = `meta-product-thumb ${isSelected ? "active" : ""}`;
+    thumb.title = `Product Photo #${idx + 1}`;
+    thumb.innerHTML = `<img src="${p}" alt="Product ${idx + 1}" />`;
+    thumb.onclick = () => {
+      metaAdState.selectedProductPath = p;
+      metaAdState.customProductFile = null;
+      document.querySelectorAll(".meta-product-thumb").forEach(t => t.classList.remove("active"));
+      thumb.classList.add("active");
+      const note = document.getElementById("meta_custom_product_note");
+      if (note) note.textContent = `Using product photo #${idx + 1}`;
+    };
+    picker.appendChild(thumb);
+    if (!metaAdState.selectedProductPath && idx === 0 && !metaAdState.customProductFile) {
+      metaAdState.selectedProductPath = p;
+    }
+  });
+
+  // Render custom uploaded photo if present
+  if (metaAdState.customProductFile) {
+    const thumb = document.createElement("div");
+    thumb.className = "meta-product-thumb active";
+    thumb.title = "Custom Uploaded Photo";
+    const objUrl = URL.createObjectURL(metaAdState.customProductFile);
+    thumb.innerHTML = `<img src="${objUrl}" alt="Custom Upload" />`;
+    thumb.onclick = () => {
+      metaAdState.selectedProductPath = null;
+      document.querySelectorAll(".meta-product-thumb").forEach(t => t.classList.remove("active"));
+      thumb.classList.add("active");
+    };
+    picker.appendChild(thumb);
+  }
+}
+
+function handleMetaCustomProductUpload(e) {
+  const file = e.target.files && e.target.files[0];
+  if (!file) return;
+  metaAdState.customProductFile = file;
+  metaAdState.selectedProductPath = null;
+  const note = document.getElementById("meta_custom_product_note");
+  if (note) note.textContent = `Custom: ${file.name}`;
+  renderMetaProductPicker();
+}
+
+function setMetaRatio(ratio) {
+  metaAdState.aspectRatio = ratio;
+  document.querySelectorAll("#meta_ratio_group .meta-pill-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.ratio === ratio);
+  });
+  const frame = document.getElementById("meta_media_frame");
+  if (frame) {
+    frame.classList.remove("ratio-1-1", "ratio-4-5", "ratio-9-16");
+    frame.classList.add(`ratio-${ratio.replace(":", "-")}`);
+  }
+}
+
+function setMetaEngine(engine) {
+  metaAdState.engine = engine;
+  document.querySelectorAll("#meta_engine_group .meta-pill-btn").forEach(btn => {
+    btn.classList.toggle("active", btn.dataset.engine === engine);
+  });
+}
+
+function setMockupPlatform(plat) {
+  metaAdState.platform = plat;
+  const igTab = document.getElementById("tab_mockup_ig");
+  const fbTab = document.getElementById("tab_mockup_fb");
+  if (igTab) igTab.classList.toggle("active", plat === "ig");
+  if (fbTab) fbTab.classList.toggle("active", plat === "fb");
+}
+
+async function generateMetaCreative() {
+  const data = state.campaignData;
+  if (!data) {
+    alert("Please enter a Brand URL and analyze the campaign first.");
+    return;
+  }
+
+  const btn = document.getElementById("btn_generate_meta_ad");
+  const mediaLoader = document.getElementById("meta_media_loader");
+  const mediaPlaceholder = document.getElementById("meta_media_placeholder");
+  const previewImg = document.getElementById("meta_preview_image");
+  const loaderStatus = document.getElementById("meta_loader_status");
+
+  // Get active ad group angle
+  let angleName = "Problem-Solution";
+  let angleDesc = "";
+  if (data.ad_groups && data.ad_groups[metaAdState.selectedAngleIndex]) {
+    const ag = data.ad_groups[metaAdState.selectedAngleIndex];
+    angleName = ag.name || "Angle";
+    angleDesc = ag.angle || "";
+  }
+
+  const customDirective = (document.getElementById("meta_custom_directive") ? document.getElementById("meta_custom_directive").value.trim() : "");
+  const apiKey = document.getElementById("api_key_input").value;
+  const imageKey = localStorage.getItem("self_hosted_image_key") || "";
+
+  // Prepare FormData
+  const formData = new FormData();
+  formData.append("brand_name", data.brand_name || "");
+  formData.append("product_name", data.product_name || "");
+  formData.append("product_category", data.product_category || "");
+  formData.append("target_audience_persona", data.target_audience_persona || "");
+  formData.append("visual_style", data.visual_style || "");
+  formData.append("product_visual_description", data.product_visual_description || "");
+  formData.append("angle_name", angleName);
+  formData.append("angle_description", angleDesc);
+  formData.append("aspect_ratio", metaAdState.aspectRatio);
+  formData.append("engine", metaAdState.engine);
+  if (customDirective) formData.append("custom_directive", customDirective);
+
+  // Attach product photo
+  if (metaAdState.customProductFile) {
+    formData.append("product_image", metaAdState.customProductFile);
+  } else if (metaAdState.selectedProductPath) {
+    formData.append("product_image_path", metaAdState.selectedProductPath);
+  }
+
+  // Show UI loading
+  if (btn) {
+    btn.disabled = true;
+    btn.innerHTML = '<div class="spinner" style="width:16px;height:16px;border-width:2px;display:inline-block;margin-right:8px;"></div> Synthesizing Meta Creative...';
+  }
+  if (mediaPlaceholder) mediaPlaceholder.style.display = "none";
+  if (previewImg) previewImg.style.display = "none";
+  if (mediaLoader) mediaLoader.style.display = "flex";
+  if (loaderStatus) {
+    loaderStatus.textContent = metaAdState.engine === "qwen" 
+      ? "Synthesizing with Qwen-Image-2.1 on GPU..."
+      : "Synthesizing with Gemini Nano Banana Pro...";
+  }
+
+  // Progress update interval
+  let elapsed = 0;
+  const timer = setInterval(() => {
+    elapsed += 5;
+    if (loaderStatus) {
+      if (metaAdState.engine === "qwen") {
+        loaderStatus.textContent = `Synthesizing creative on GCP GPU (${elapsed}s elapsed)...`;
+      } else {
+        loaderStatus.textContent = `Synthesizing creative & Meta copy (${elapsed}s elapsed)...`;
+      }
+    }
+  }, 5000);
+
+  const headers = {};
+  if (apiKey) headers["x-api-key"] = apiKey;
+  if (imageKey) headers["x-image-api-key"] = imageKey;
+
+  try {
+    const res = await fetch("/api/campaign/generate-meta-ad", {
+      method: "POST",
+      headers: headers,
+      body: formData
+    });
+
+    if (!res.ok) {
+      let msg = "Generation failed";
+      try {
+        const err = await res.json();
+        if (err.detail) msg = err.detail;
+      } catch (e) {}
+      throw new Error(msg);
+    }
+
+    const result = await res.json();
+    metaAdState.currentAd = result;
+    metaAdState.history.unshift(result);
+
+    // Update Live Mockup & Gallery
+    applyMetaAdToMockup(result);
+    renderMetaGallery();
+
+  } catch (err) {
+    console.error("Meta ad generation error:", err);
+    alert("Meta Creative Generation failed: " + err.message);
+    if (!metaAdState.currentAd && mediaPlaceholder) {
+      mediaPlaceholder.style.display = "flex";
+    }
+  } finally {
+    clearInterval(timer);
+    if (mediaLoader) mediaLoader.style.display = "none";
+    if (btn) {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="fa-brands fa-meta"></i> Generate Meta Creative &amp; Ad Copy';
+    }
+  }
+}
+
+function applyMetaAdToMockup(ad) {
+  if (!ad) return;
+
+  const previewImg = document.getElementById("meta_preview_image");
+  const mediaPlaceholder = document.getElementById("meta_media_placeholder");
+  const primaryText = document.getElementById("meta_preview_primary_text");
+  const headline = document.getElementById("meta_preview_headline");
+  const ctaBtn = document.getElementById("meta_preview_cta");
+  const brandTitle = document.getElementById("meta_preview_brand");
+  const avatar = document.getElementById("meta_preview_avatar");
+  const domain = document.getElementById("meta_preview_domain");
+
+  if (previewImg) {
+    previewImg.src = ad.image_url;
+    previewImg.style.display = "block";
+  }
+  if (mediaPlaceholder) mediaPlaceholder.style.display = "none";
+
+  if (primaryText) primaryText.textContent = ad.primary_text || "";
+  if (headline) headline.textContent = ad.headline || "";
+  if (ctaBtn) ctaBtn.textContent = ad.cta || "Shop Now";
+  if (brandTitle && ad.brand_name) brandTitle.textContent = ad.brand_name;
+  if (avatar && ad.brand_name) avatar.textContent = ad.brand_name.charAt(0).toUpperCase() || "B";
+  if (domain && ad.brand_name) domain.textContent = `WWW.${ad.brand_name.toUpperCase().replace(/[^A-Z0-9]/g, "")}.COM`;
+
+  if (ad.aspect_ratio) {
+    setMetaRatio(ad.aspect_ratio);
+  }
+}
+
+function copyCurrentMetaCopy() {
+  const ad = metaAdState.currentAd;
+  let textToCopy = "";
+  if (ad) {
+    textToCopy = `${ad.primary_text}\n\nHeadline: ${ad.headline}\nCTA Button: ${ad.cta}`;
+  } else {
+    const primary = document.getElementById("meta_preview_primary_text") ? document.getElementById("meta_preview_primary_text").textContent : "";
+    const headline = document.getElementById("meta_preview_headline") ? document.getElementById("meta_preview_headline").textContent : "";
+    const cta = document.getElementById("meta_preview_cta") ? document.getElementById("meta_preview_cta").textContent : "Shop Now";
+    textToCopy = `${primary}\n\nHeadline: ${headline}\nCTA Button: ${cta}`;
+  }
+
+  navigator.clipboard.writeText(textToCopy).then(() => {
+    alert("Meta Ad Copy copied to clipboard!\n\nReady to paste directly into Meta Ads Manager.");
+  }).catch(() => {
+    prompt("Copy ad copy:", textToCopy);
+  });
+}
+
+function downloadCurrentMetaImage() {
+  const ad = metaAdState.currentAd;
+  if (!ad || !ad.image_url) {
+    alert("Please generate a creative first.");
+    return;
+  }
+  const link = document.createElement("a");
+  link.href = ad.image_url;
+  link.download = ad.filename || `meta_ad_${Date.now()}.png`;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
+function bridgeToMiniMaxFromMeta() {
+  const ad = metaAdState.currentAd;
+  if (!ad || !ad.image_url) {
+    alert("Please generate a creative first before animating.");
+    return;
+  }
+
+  // Switch to MiniMax Video Studio
+  switchMainView("minimax");
+  setMinimaxMode("fl2va_single");
+
+  // Pre-fill prompt
+  const mmPrompt = document.getElementById("minimax_prompt");
+  if (mmPrompt) {
+    mmPrompt.value = `Cinematic video commercial starting from this ad scene: ${ad.visual_prompt || ad.headline || "Smooth dynamic camera motion showcasing product"}`;
+  }
+
+  // Fetch image and set as single frame
+  fetch(ad.image_url)
+    .then(res => res.blob())
+    .then(blob => {
+      const file = new File([blob], ad.filename || "meta_creative.png", { type: blob.type || "image/png" });
+      minimaxState.singleFrame = file;
+      const preview = document.getElementById("preview_mm_single_frame");
+      const emptyState = document.getElementById("body_mm_single");
+      const clearBtn = document.getElementById("clear_mm_single_btn");
+      if (preview) { preview.src = ad.image_url; preview.style.display = "block"; }
+      if (emptyState) emptyState.style.display = "none";
+      if (clearBtn) clearBtn.style.display = "inline-flex";
+    })
+    .catch(err => console.warn("Failed to bridge image to MiniMax:", err));
+}
+
+function bridgeToOmniFromMeta() {
+  const ad = metaAdState.currentAd;
+  if (!ad || !ad.image_url) {
+    alert("Please generate a creative first before animating.");
+    return;
+  }
+
+  // Switch to Omni Flash Video Studio
+  switchMainView("omniflash");
+  setOmniMode("first_last_frame");
+
+  // Pre-fill prompt
+  const omniPrompt = document.getElementById("studio_prompt");
+  if (omniPrompt) {
+    omniPrompt.value = `Cinematic video ad motion starting from this creative: ${ad.visual_prompt || ad.headline || "Fluid motion with atmospheric lighting"}`;
+  }
+
+  // Fetch image and set as first frame
+  fetch(ad.image_url)
+    .then(res => res.blob())
+    .then(blob => {
+      const file = new File([blob], ad.filename || "meta_creative.png", { type: blob.type || "image/png" });
+      omniState.firstFrame = file;
+      const preview = document.getElementById("preview_first_frame");
+      const emptyState = document.getElementById("keyframe_body_first");
+      const clearBtn = document.getElementById("clear_first_frame_btn");
+      if (preview) { preview.src = ad.image_url; preview.style.display = "block"; }
+      if (emptyState) emptyState.style.display = "none";
+      if (clearBtn) clearBtn.style.display = "flex";
+    })
+    .catch(err => console.warn("Failed to bridge image to Omni Flash:", err));
+}
+
+function createMetaAdForScript(videoIndex) {
+  const ag = state.campaignData && state.campaignData.ad_groups[state.selectedAdGroupIndex];
+  if (!ag) return;
+  const video = ag.videos[videoIndex];
+
+  // Set angle selector
+  const angleSel = document.getElementById("meta_angle_select");
+  if (angleSel) {
+    angleSel.value = String(state.selectedAdGroupIndex);
+    onMetaAngleChange();
+  }
+
+  // Pre-fill directive with video hook and visual directions
+  const directiveInput = document.getElementById("meta_custom_directive");
+  if (directiveInput && video) {
+    directiveInput.value = `${video.hook_line}. Style: ${video.visual_directions.slice(0, 100)}`;
+  }
+
+  // Scroll to Meta Ad Studio card
+  const metaCard = document.getElementById("meta_ad_studio_card");
+  if (metaCard) {
+    metaCard.scrollIntoView({ behavior: "smooth" });
+  }
+}
+
+function renderMetaGallery() {
+  const section = document.getElementById("meta_gallery_section");
+  const grid = document.getElementById("meta_gallery_grid");
+  const countBadge = document.getElementById("meta_gallery_count");
+  if (!section || !grid) return;
+
+  if (metaAdState.history.length === 0) {
+    section.style.display = "none";
+    return;
+  }
+
+  section.style.display = "block";
+  if (countBadge) countBadge.textContent = metaAdState.history.length;
+
+  grid.innerHTML = metaAdState.history.map((item, idx) => `
+    <div class="meta-gallery-card ${item.image_url === (metaAdState.currentAd && metaAdState.currentAd.image_url) ? "active" : ""}" onclick="selectMetaGalleryItem(${idx})">
+      <img src="${item.image_url}" alt="Meta Ad ${idx + 1}" loading="lazy" />
+      <span class="meta-gallery-badge">${escapeHtml(item.angle || item.headline || `#${idx + 1}`)}</span>
+    </div>
+  `).join("");
+}
+
+function selectMetaGalleryItem(idx) {
+  const item = metaAdState.history[idx];
+  if (!item) return;
+  metaAdState.currentAd = item;
+  applyMetaAdToMockup(item);
+  renderMetaGallery();
+}
+
+async function loadMetaAdsHistory() {
+  try {
+    const res = await fetch("/api/campaign/meta-ads");
+    if (res.ok) {
+      const data = await res.json();
+      if (data.meta_ads && data.meta_ads.length > 0) {
+        data.meta_ads.forEach(item => {
+          if (!metaAdState.history.some(h => h.image_url === item.url)) {
+            metaAdState.history.push({
+              image_url: item.url,
+              filename: item.filename,
+              headline: "Saved Meta Creative",
+              primary_text: "High-converting Meta creative generated in previous session.",
+              cta: "Shop Now",
+              aspect_ratio: "4:5"
+            });
+          }
+        });
+        renderMetaGallery();
+      }
+    }
+  } catch (e) {
+    console.warn("Could not load meta ads history:", e);
+  }
+}

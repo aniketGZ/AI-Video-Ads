@@ -346,6 +346,236 @@ async def analyze_campaign(
         logger.error(f"Campaign analysis failed: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.post("/api/campaign/generate-meta-ad")
+async def generate_meta_image_ad(
+    brand_name: str = Form(...),
+    product_name: str = Form(...),
+    product_category: str = Form(""),
+    target_audience_persona: str = Form(""),
+    visual_style: str = Form(""),
+    product_visual_description: Optional[str] = Form(None),
+    angle_name: str = Form("Problem-Solution"),
+    angle_description: Optional[str] = Form(None),
+    aspect_ratio: str = Form("4:5"),
+    engine: str = Form("qwen"),
+    product_image_path: Optional[str] = Form(None),
+    product_image: Optional[UploadFile] = File(None),
+    custom_directive: Optional[str] = Form(None),
+    steps: int = Form(35),
+    seed: Optional[int] = Form(None),
+    x_api_key: Optional[str] = Header(None),
+    x_image_api_key: Optional[str] = Header(None)
+):
+    """
+    Generate high-converting Meta (Instagram & Facebook Feed + Stories) creative & copy package.
+    Synthesizes Primary Text, Headline, and CTA tailored to the analyzed target audience persona,
+    and produces an ultra-photorealistic image creative anchored to user-uploaded product photos.
+    """
+    try:
+        import uuid
+        client = get_client(x_api_key)
+
+        # 1. Synthesize Meta Ad Copy & Visual Generation Prompt with Gemini
+        meta_prompt_instructions = (
+            f"You are a top 1% Meta (Facebook & Instagram) Direct Response Creative Director and Copywriter.\n"
+            f"Craft high-converting Meta ad copy and a photorealistic visual generation prompt based on this analyzed brand data:\n"
+            f"- Brand Name: {brand_name}\n"
+            f"- Product Name: {product_name}\n"
+            f"- Product Category: {product_category}\n"
+            f"- Target Audience Persona: {target_audience_persona}\n"
+            f"- Visual Brand Style: {visual_style}\n"
+            f"- Physical Product Details: {product_visual_description or 'High-quality consumer product'}\n"
+            f"- Marketing Angle / Hook: {angle_name} - {angle_description or ''}\n"
+            f"- Ad Placement Format: {aspect_ratio} ({'Instagram/Facebook Feed' if aspect_ratio in ['1:1', '4:5'] else 'Instagram Stories/Reels'})\n"
+        )
+        if custom_directive and custom_directive.strip():
+            meta_prompt_instructions += f"- User Creative Directive: {custom_directive.strip()}\n"
+
+        meta_prompt_instructions += (
+            "\nReturn ONLY a valid JSON object with these EXACT keys:\n"
+            "{\n"
+            '  "primary_text": "Compelling Meta feed post caption (2-3 short punchy paragraphs, hook addressing audience pain point, clear transformation, subtle social proof, 2-3 clean emojis, closing CTA hook).",\n'
+            '  "headline": "High-CTR feed headline next to the CTA button (5-7 words max, bold and punchy, e.g. \'Say Goodbye to Muscle Fatigue 👋\')",\n'
+            '  "cta": "Standard Meta CTA button text (e.g. \'Shop Now\', \'Claim Offer\', \'Learn More\', \'Order Today\')",\n'
+            '  "visual_prompt": "Hyper-descriptive commercial photography prompt for AI image generation. Describe the product placed naturally in the aspirational lifestyle setting of the target audience persona (setting, natural lighting, elegant depth of field, premium materials, high stopping-power commercial composition, 8K ultra-sharp details). Do NOT include text, words, or watermarks in the prompt."\n'
+            "}"
+        )
+
+        primary_text = ""
+        headline = ""
+        cta = "Shop Now"
+        visual_prompt = ""
+
+        if client:
+            try:
+                copy_resp = client.models.generate_content(
+                    model="gemini-3.6-flash",
+                    contents=meta_prompt_instructions,
+                    config=types.GenerateContentConfig(
+                        response_mime_type="application/json"
+                    )
+                )
+                if copy_resp and copy_resp.text:
+                    parsed_copy = json.loads(copy_resp.text)
+                    primary_text = parsed_copy.get("primary_text", "").strip()
+                    headline = parsed_copy.get("headline", "").strip()
+                    cta = parsed_copy.get("cta", "Shop Now").strip()
+                    visual_prompt = parsed_copy.get("visual_prompt", "").strip()
+            except Exception as copy_err:
+                logger.warning(f"Gemini copy synthesis error: {copy_err}")
+
+        # Intelligent fallbacks if Gemini is offline or unavailable
+        if not primary_text:
+            primary_text = (
+                f"Still searching for the ultimate {product_category.lower() or 'upgrade'}?\n\n"
+                f"Meet {product_name} by {brand_name}. Engineered specifically for {target_audience_persona or 'daily high performers'}.\n\n"
+                f"✨ Experience the difference. Tap below to claim yours today."
+            )
+        if not headline:
+            headline = f"Discover {product_name} · Built For You"
+        if not visual_prompt:
+            visual_prompt = (
+                f"Award-winning commercial product photography of {product_name} by {brand_name}. "
+                f"{product_visual_description or ''}. "
+                f"Seamlessly placed in a stylish modern setting tailored for {target_audience_persona}. "
+                f"Natural soft window daylight, crisp reflections, shallow depth of field, 8K ultra-sharp detail, high-end editorial aesthetic."
+            )
+
+        # 2. Aspect Ratio Dimension Resolution
+        ratio_map = {
+            "1:1": (1024, 1024),
+            "4:5": (1024, 1280),
+            "9:16": (1024, 1792),
+            "16:9": (1792, 1024),
+        }
+        target_w, target_h = ratio_map.get(aspect_ratio, (1024, 1280))
+
+        # 3. Product Reference Image Resolution
+        product_bytes = None
+        product_data_uri = None
+        mime_type = "image/png"
+
+        # Check direct upload first
+        if product_image and product_image.filename:
+            product_bytes = await product_image.read()
+            if product_bytes:
+                ext = os.path.splitext(product_image.filename)[1].lower() or ".png"
+                mime_type = "image/jpeg" if ext in [".jpg", ".jpeg"] else ("image/webp" if ext == ".webp" else "image/png")
+                save_name = f"meta_ref_{uuid.uuid4().hex}{ext}"
+                save_path = os.path.join("static/generated", save_name)
+                with open(save_path, "wb") as f:
+                    f.write(product_bytes)
+                product_data_uri = image_bytes_to_data_uri(product_bytes, mime_type)
+        # Check referenced product_image_path from campaign analysis
+        elif product_image_path:
+            clean_path = product_image_path.lstrip("/").replace("\\", "/")
+            if os.path.exists(clean_path):
+                with open(clean_path, "rb") as f:
+                    product_bytes = f.read()
+                ext = os.path.splitext(clean_path)[1].lower() or ".png"
+                mime_type = "image/jpeg" if ext in [".jpg", ".jpeg"] else ("image/webp" if ext == ".webp" else "image/png")
+                product_data_uri = image_bytes_to_data_uri(product_bytes, mime_type)
+
+        # 4. Engine Dispatch (Qwen-Image-2.1 vs Gemini Nano Banana Pro)
+        image_bytes = None
+        used_model = "Qwen-Image-2.1 (Self-Hosted)"
+        engine_clean = (engine or "qwen").lower().strip()
+        is_banana = engine_clean in ["gemini", "banana", "nano-banana", "nano-banana-pro", "nanobanana"]
+        use_qwen = not is_banana and (engine_clean in ["qwen", "self-hosted"] or is_self_hosted_enabled())
+
+        if use_qwen:
+            try:
+                logger.info(
+                    f"[Meta Ad Studio] Dispatching to Qwen-Image-2.1: {target_w}x{target_h}, steps={steps}, has_ref={bool(product_data_uri)}"
+                )
+                image_bytes = await generate_image_async(
+                    prompt=visual_prompt,
+                    width=target_w,
+                    height=target_h,
+                    steps=steps,
+                    seed=seed,
+                    image_uri=product_data_uri,
+                    api_key=x_image_api_key or get_image_api_key(),
+                    timeout=600
+                )
+                used_model = "Qwen-Image-2.1 (Self-Hosted)"
+            except Exception as qwen_err:
+                logger.warning(f"[Meta Ad Studio] Qwen-Image-2.1 failed: {qwen_err}")
+                if should_fallback_to_gemini() and engine_clean not in ["qwen"]:
+                    logger.info("[Meta Ad Studio] Falling back to Gemini Nano Banana Pro...")
+                else:
+                    raise HTTPException(status_code=503, detail=str(qwen_err))
+
+        if not image_bytes:
+            if not client:
+                raise HTTPException(status_code=400, detail="Gemini API Key required for Nano Banana Pro generation.")
+            logger.info("[Meta Ad Studio] Generating with Gemini Nano Banana Pro (nano-banana-pro-preview)...")
+            contents = [visual_prompt]
+            if product_bytes:
+                contents.append(types.Part.from_bytes(data=product_bytes, mime_type=mime_type))
+
+            response = client.models.generate_content(
+                model="nano-banana-pro-preview",
+                contents=contents
+            )
+            if response.candidates:
+                for part in response.candidates[0].content.parts:
+                    if part.inline_data and part.inline_data.data:
+                        image_bytes = part.inline_data.data
+                        break
+            if not image_bytes:
+                raise HTTPException(status_code=500, detail="Model failed to return image bytes.")
+            used_model = "nano-banana-pro-preview"
+
+        # 5. Save generated Meta creative
+        out_filename = f"meta_ad_{uuid.uuid4().hex}.png"
+        out_path = os.path.join("static/generated", out_filename)
+        if isinstance(image_bytes, str):
+            image_bytes = image_bytes.encode('latin1')
+        with open(out_path, "wb") as f:
+            f.write(image_bytes)
+
+        logger.info(f"[Meta Ad Studio] Successfully generated Meta Image Ad: {out_path}")
+        return {
+            "status": "success",
+            "image_url": f"/static/generated/{out_filename}",
+            "filename": out_filename,
+            "primary_text": primary_text,
+            "headline": headline,
+            "cta": cta,
+            "brand_name": brand_name,
+            "product_name": product_name,
+            "angle": angle_name,
+            "aspect_ratio": aspect_ratio,
+            "width": target_w,
+            "height": target_h,
+            "model_used": used_model,
+            "engine": "banana" if ("banana" in used_model or is_banana) else "qwen",
+            "visual_prompt": visual_prompt,
+            "has_product_reference": bool(product_bytes)
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[Meta Ad Studio] Generation failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/campaign/meta-ads")
+async def get_meta_ads_history():
+    """Retrieve session generated Meta image ads."""
+    gen_dir = "static/generated"
+    items = []
+    if os.path.exists(gen_dir):
+        files = [f for f in os.listdir(gen_dir) if f.startswith("meta_ad_") and f.endswith(".png")]
+        files.sort(key=lambda x: os.path.getmtime(os.path.join(gen_dir, x)), reverse=True)
+        for f in files[:20]:
+            items.append({
+                "filename": f,
+                "url": f"/static/generated/{f}",
+                "created_at": os.path.getmtime(os.path.join(gen_dir, f))
+            })
+    return {"meta_ads": items}
+
 @app.post("/api/generate-storyboard")
 async def generate_storyboard(
     req: StoryboardRequest,

@@ -1217,6 +1217,229 @@
         </div>
       </div>
 
+      <!-- Meta Image Ad Creative Studio -->
+      <div class="glass-card meta-ad-card" id="meta_ad_studio_card">
+        <div class="card-heading meta-card-heading">
+          <div class="meta-heading-left">
+            <div class="card-heading-icon meta-icon-badge">
+              <i class="fa-brands fa-meta"></i>
+            </div>
+            <div>
+              <div class="meta-title-row">
+                <h2>Meta Image Ad Creative Studio</h2>
+                <span class="meta-sub-badge">
+                  <i class="fa-brands fa-instagram"></i> Instagram &amp; Facebook Feed + Stories
+                </span>
+              </div>
+              <p>Generates thumb-stopping visual creatives &amp; primary ad copy tailored to your target audience &amp; uploaded product photos</p>
+            </div>
+          </div>
+          <div class="meta-heading-right">
+            <div class="audience-pill" id="meta_ad_audience_pill" title="Target Audience Persona">
+              <i class="fa-solid fa-users"></i>
+              <span class="audience-pill-label">Audience:</span>
+              <span id="meta_pill_audience_text" class="audience-pill-text">Extracting audience...</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="meta-studio-layout">
+          <!-- Left Column: Controls & Angle Customizer -->
+          <div class="meta-controls-col">
+            <!-- 1. Ad Group Angle Selector -->
+            <div class="form-group">
+              <label class="form-label meta-form-label">
+                <span><i class="fa-solid fa-bullseye"></i> Campaign Angle &amp; Hook</span>
+                <span class="meta-label-tag">From URL Analysis</span>
+              </label>
+              <select id="meta_angle_select" class="form-input meta-select" onchange="onMetaAngleChange()">
+                <option value="">Select an analyzed angle...</option>
+              </select>
+              <div class="meta-angle-hint" id="meta_angle_hint">
+                Select an angle to align ad creative with specific audience motivation.
+              </div>
+            </div>
+
+            <!-- 2. Product Reference Selection -->
+            <div class="form-group">
+              <label class="form-label meta-form-label">
+                <span><i class="fa-solid fa-camera"></i> Product Reference Photo</span>
+                <span class="meta-label-tag" id="meta_product_count_badge">0 photos attached</span>
+              </label>
+              <div class="meta-product-picker" id="meta_product_picker">
+                <div class="meta-picker-empty" id="meta_picker_empty">
+                  <i class="fa-regular fa-image"></i>
+                  <span>No product photo attached yet</span>
+                </div>
+              </div>
+              <div class="meta-upload-custom-row">
+                <label for="meta_custom_product_input" class="btn btn-secondary btn-sm meta-btn-upload">
+                  <i class="fa-solid fa-cloud-arrow-up"></i> Upload / Change Product Photo
+                </label>
+                <input type="file" id="meta_custom_product_input" accept="image/*" style="display: none;" onchange="handleMetaCustomProductUpload(event)" />
+                <span class="meta-upload-note" id="meta_custom_product_note">Uses uploaded campaign photo by default</span>
+              </div>
+            </div>
+
+            <!-- 3. Format & Engine Row -->
+            <div class="meta-grid-2col">
+              <div class="form-group">
+                <label class="form-label meta-form-label"><i class="fa-solid fa-crop-simple"></i> Meta Format</label>
+                <div class="meta-pill-group" id="meta_ratio_group">
+                  <button type="button" class="meta-pill-btn active" data-ratio="4:5" onclick="setMetaRatio('4:5')">
+                    <strong>4:5</strong>
+                    <small>IG Feed (Best CTR)</small>
+                  </button>
+                  <button type="button" class="meta-pill-btn" data-ratio="1:1" onclick="setMetaRatio('1:1')">
+                    <strong>1:1</strong>
+                    <small>Square Feed</small>
+                  </button>
+                  <button type="button" class="meta-pill-btn" data-ratio="9:16" onclick="setMetaRatio('9:16')">
+                    <strong>9:16</strong>
+                    <small>Stories / Reels</small>
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label meta-form-label"><i class="fa-solid fa-microchip"></i> Generation Engine</label>
+                <div class="meta-pill-group" id="meta_engine_group">
+                  <button type="button" class="meta-pill-btn active" data-engine="qwen" onclick="setMetaEngine('qwen')">
+                    <span class="pill-engine-icon"><i class="fa-solid fa-server"></i></span>
+                    <div>
+                      <strong>Qwen-Image-2.1</strong>
+                      <small>Self-Hosted GCP · Placement</small>
+                    </div>
+                  </button>
+                  <button type="button" class="meta-pill-btn" data-engine="banana" onclick="setMetaEngine('banana')">
+                    <span class="pill-engine-icon"><i class="fa-solid fa-bolt"></i></span>
+                    <div>
+                      <strong>Nano Banana Pro</strong>
+                      <small>Gemini Multimodal</small>
+                    </div>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Optional Custom Hook or Directive Override -->
+            <div class="form-group" style="margin-bottom: 14px;">
+              <label class="form-label meta-form-label">
+                <span><i class="fa-solid fa-wand-magic-sparkles"></i> Custom Creative Directive (Optional)</span>
+                <span class="meta-label-tag">Fine-tune</span>
+              </label>
+              <input type="text" id="meta_custom_directive" class="form-input" placeholder="E.g. Place on sunlit wooden desk with matcha latte, crisp morning light..." />
+            </div>
+
+            <!-- Generate Button -->
+            <button class="btn btn-primary meta-btn-generate" id="btn_generate_meta_ad" onclick="generateMetaCreative()">
+              <i class="fa-brands fa-meta"></i> Generate Meta Creative &amp; Ad Copy
+            </button>
+          </div>
+
+          <!-- Right Column: Interactive Meta Ad Mockup (Facebook / Instagram Live Preview) -->
+          <div class="meta-preview-col">
+            <div class="meta-mockup-wrapper">
+              <div class="meta-mockup-header-bar">
+                <div class="mockup-tabs">
+                  <button type="button" class="mockup-tab active" id="tab_mockup_ig" onclick="setMockupPlatform('ig')">
+                    <i class="fa-brands fa-instagram"></i> Instagram Feed
+                  </button>
+                  <button type="button" class="mockup-tab" id="tab_mockup_fb" onclick="setMockupPlatform('fb')">
+                    <i class="fa-brands fa-facebook"></i> Facebook Feed
+                  </button>
+                </div>
+                <div class="mockup-actions">
+                  <button class="icon-action-btn" title="Copy Ad Copy" onclick="copyCurrentMetaCopy()">
+                    <i class="fa-regular fa-copy"></i>
+                  </button>
+                  <button class="icon-action-btn" title="Download Creative" onclick="downloadCurrentMetaImage()">
+                    <i class="fa-solid fa-download"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div class="meta-feed-card" id="meta_feed_card">
+                <!-- Feed Header: Profile & Sponsored -->
+                <div class="feed-header">
+                  <div class="feed-avatar" id="meta_preview_avatar">B</div>
+                  <div class="feed-account-info">
+                    <div class="feed-brand-title">
+                      <span id="meta_preview_brand">Brand Name</span>
+                      <i class="fa-solid fa-circle-check verified-badge"></i>
+                    </div>
+                    <div class="feed-sub-meta">Sponsored · <i class="fa-solid fa-earth-americas"></i> Paid partnership</div>
+                  </div>
+                  <button class="feed-more-btn" type="button"><i class="fa-solid fa-ellipsis"></i></button>
+                </div>
+
+                <!-- Primary Text (Post caption) -->
+                <div class="feed-primary-text" id="meta_preview_primary_text">
+                  Run campaign analysis to generate personalized Meta feed copy &amp; thumb-stopping visual creatives tailored to your audience.
+                </div>
+
+                <!-- Creative Media Frame -->
+                <div class="feed-media-frame ratio-4-5" id="meta_media_frame">
+                  <div class="feed-placeholder-wrap" id="meta_media_placeholder">
+                    <i class="fa-brands fa-meta meta-placeholder-icon"></i>
+                    <p class="meta-placeholder-text">Click <strong>Generate Meta Creative</strong> to synthesize an image ad tailored to this audience &amp; product.</p>
+                  </div>
+                  <img id="meta_preview_image" src="" alt="Meta Ad Creative" style="display: none;" />
+                  <div class="meta-media-loader" id="meta_media_loader" style="display: none;">
+                    <div class="spinner"></div>
+                    <span id="meta_loader_status">Synthesizing ad creative with AI...</span>
+                  </div>
+                </div>
+
+                <!-- Feed Bottom Action Bar (Link Headline + CTA) -->
+                <div class="feed-bottom-bar" id="meta_feed_bottom_bar">
+                  <div class="feed-link-info">
+                    <span class="feed-domain" id="meta_preview_domain">WWW.BRANDNAME.COM</span>
+                    <span class="feed-headline" id="meta_preview_headline">Elevate Your Daily Routine · Shop Now</span>
+                  </div>
+                  <button class="feed-cta-btn" id="meta_preview_cta" type="button">Shop Now</button>
+                </div>
+
+                <!-- Social engagement bar -->
+                <div class="feed-engagement-bar">
+                  <div class="feed-eng-left">
+                    <span><i class="fa-regular fa-heart"></i></span>
+                    <span><i class="fa-regular fa-comment"></i></span>
+                    <span><i class="fa-regular fa-paper-plane"></i></span>
+                  </div>
+                  <span><i class="fa-regular fa-bookmark"></i></span>
+                </div>
+              </div>
+
+              <!-- Meta Action Bridge Buttons -->
+              <div class="meta-creative-actions">
+                <button class="btn btn-secondary btn-sm" type="button" onclick="copyCurrentMetaCopy()">
+                  <i class="fa-regular fa-copy"></i> Copy Ad Copy
+                </button>
+                <button class="btn btn-secondary btn-sm" type="button" onclick="downloadCurrentMetaImage()">
+                  <i class="fa-solid fa-download"></i> Download PNG
+                </button>
+                <button class="btn btn-secondary btn-sm" type="button" onclick="bridgeToMiniMaxFromMeta()">
+                  <i class="fa-solid fa-video"></i> Animate (MiniMax)
+                </button>
+                <button class="btn btn-secondary btn-sm" type="button" onclick="bridgeToOmniFromMeta()">
+                  <i class="fa-solid fa-bolt"></i> Animate (Omni Flash)
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Session Gallery of Meta Ad Creatives -->
+        <div class="meta-gallery-section" id="meta_gallery_section" style="display: none;">
+          <div class="meta-gallery-header">
+            <h4><i class="fa-solid fa-images"></i> Generated Meta Creatives for this Campaign (<span id="meta_gallery_count">0</span>)</h4>
+            <span style="font-size: 11px; color: var(--text-muted);">Click any creative to load into the preview mockup</span>
+          </div>
+          <div class="meta-gallery-grid" id="meta_gallery_grid"></div>
+        </div>
+      </div>
+
       <!-- Ad Groups -->
       <div class="glass-card ad-groups-card">
         <div class="card-heading">
