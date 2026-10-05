@@ -26,69 +26,71 @@
     <div class="aurora-grid"></div>
   </div>
 
-  <!-- Top Navigation -->
-  <nav class="topbar">
-    <div class="topbar-inner">
-      <div class="logo-container">
-        <div class="logo-icon"><i class="fa-solid fa-bolt"></i></div>
-        <div class="logo-text">
-          <h1>Viral Studio</h1>
-          <span>AI Video Platform</span>
+  <!-- Top Navigation (Antigravity Floating Command Deck) -->
+  <header class="topbar-wrapper">
+    <nav class="topbar">
+      <div class="topbar-inner">
+        <!-- Logo with floating neon aura -->
+        <div class="logo-container" onclick="switchMainView('campaign')" style="cursor: pointer;" title="Viral Studio — Go to Ad Campaign">
+          <div class="logo-icon"><i class="fa-solid fa-bolt"></i></div>
+          <div class="logo-text">
+            <div class="logo-title-row">
+              <h1>Viral Studio</h1>
+              <span class="logo-version-badge">v2.5</span>
+            </div>
+            <span>Antigravity AI Platform</span>
+          </div>
         </div>
-      </div>
 
-      <!-- Flow Navigation Switcher -->
-      <div class="nav-switcher">
-        <button type="button" id="nav_tab_minimax" class="nav-tab-btn active" onclick="switchMainView('minimax')">
-          <i class="fa-solid fa-film"></i>
-          <span>MiniMax Video</span>
-          <span class="nav-tag-clean tag-blue">H3 Audio</span>
-        </button>
-        <button type="button" id="nav_tab_omniflash" class="nav-tab-btn" onclick="switchMainView('omniflash')">
-          <i class="fa-solid fa-wand-magic-sparkles"></i>
-          <span>Omni Flash</span>
-          <span class="nav-tag-clean tag-purple">Gemini 1.1</span>
-        </button>
-        <button type="button" id="nav_tab_qwen" class="nav-tab-btn" onclick="switchMainView('qwen')">
-          <i class="fa-solid fa-image"></i>
-          <span>Qwen Image</span>
-          <span class="nav-tag-clean tag-cyan">Qwen 2.1</span>
-        </button>
-        <button type="button" id="nav_tab_banana" class="nav-tab-btn" onclick="switchMainView('banana')">
-          <i class="fa-solid fa-sparkles"></i>
-          <span>Nano Banana</span>
-          <span class="nav-tag-clean tag-amber">Gemini Pro</span>
-        </button>
-        <button type="button" id="nav_tab_campaign" class="nav-tab-btn" onclick="switchMainView('campaign')">
-          <i class="fa-solid fa-bullhorn"></i>
-          <span>Ad Campaign</span>
-        </button>
-        <button type="button" id="nav_tab_moneyprinter" class="nav-tab-btn" onclick="switchMainView('moneyprinter')">
-          <i class="fa-solid fa-bolt"></i>
-          <span>MoneyPrinter</span>
-        </button>
-      </div>
+        <!-- Flow Navigation Switcher (Floating Segmented Capsule) -->
+        <div class="nav-switcher">
+          <button type="button" id="nav_tab_minimax" class="nav-tab-btn active" onclick="switchMainView('minimax')">
+            <i class="fa-solid fa-film"></i>
+            <span>MiniMax Video</span>
+            <span class="nav-tag-clean tag-blue">H3 Audio</span>
+          </button>
+          <button type="button" id="nav_tab_omniflash" class="nav-tab-btn" onclick="switchMainView('omniflash')">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+            <span>Omni Flash</span>
+            <span class="nav-tag-clean tag-purple">Gemini 1.1</span>
+          </button>
+          <button type="button" id="nav_tab_qwen" class="nav-tab-btn" onclick="switchMainView('qwen')">
+            <i class="fa-solid fa-image"></i>
+            <span>Qwen Image</span>
+            <span class="nav-tag-clean tag-cyan">Qwen 2.1</span>
+          </button>
+          <button type="button" id="nav_tab_banana" class="nav-tab-btn" onclick="switchMainView('banana')">
+            <i class="fa-solid fa-sparkles"></i>
+            <span>Nano Banana</span>
+            <span class="nav-tag-clean tag-amber">Gemini Pro</span>
+          </button>
+          <button type="button" id="nav_tab_campaign" class="nav-tab-btn" onclick="switchMainView('campaign')">
+            <i class="fa-solid fa-bullhorn"></i>
+            <span>Ad Campaign</span>
+            <span class="nav-tag-clean tag-meta">Meta Ads</span>
+          </button>
+          <button type="button" id="nav_tab_moneyprinter" class="nav-tab-btn" onclick="switchMainView('moneyprinter')">
+            <i class="fa-solid fa-bolt"></i>
+            <span>MoneyPrinter</span>
+          </button>
+        </div>
 
-      <div class="topbar-keys">
-        <button type="button" id="btn_gpu_status" class="gpu-status-btn" onclick="openSelfHostedModal()" title="View Self-Hosted GPU Servers (Qwen-Image-2.1 & MiniMax-H3)">
-          <span class="gpu-pulse-dot offline" id="gpu_status_dot"></span>
-          <span id="gpu_status_text">GPU Servers</span>
-        </button>
-        <div class="api-key-container">
-          <i class="fa-solid fa-key key-icon"></i>
-          <input type="password" id="api_key_input" class="api-key-input" placeholder="Gemini API key" autocomplete="off">
-        </div>
-        <div class="api-key-container">
-          <i class="fa-solid fa-key key-icon"></i>
-          <input type="password" id="kie_key_input" class="api-key-input" placeholder="Kie AI key (optional)" autocomplete="off">
-        </div>
-        <div class="api-key-container">
-          <i class="fa-solid fa-film key-icon"></i>
-          <input type="password" id="pixabay_key_input" class="api-key-input" placeholder="Pixabay key (optional)" autocomplete="off" title="Optional: Free Pixabay key for live HD B-roll stock footage">
+        <!-- Command Deck Right Actions -->
+        <div class="topbar-actions">
+          <button type="button" id="btn_gpu_status" class="topbar-btn gpu-status-btn" onclick="openSelfHostedModal()" title="View Self-Hosted GPU Servers (Qwen-Image-2.1 & MiniMax-H3)">
+            <span class="gpu-pulse-dot offline" id="gpu_status_dot"></span>
+            <span id="gpu_status_text">GPU Cloud</span>
+          </button>
+
+          <button type="button" id="btn_open_keys" class="topbar-btn keys-trigger-btn" onclick="openApiKeysModal()" title="Manage API Keys (Gemini, Kie AI, Pixabay, GPU Servers)">
+            <i class="fa-solid fa-key"></i>
+            <span>API Keys</span>
+            <span class="keys-status-indicator" id="keys_status_badge">Configure</span>
+          </button>
         </div>
       </div>
-    </div>
-  </nav>
+    </nav>
+  </header>
 
   <main class="container">
 
@@ -1675,6 +1677,101 @@
 
       </div>
 
+    </div>
+  </div>
+
+  <!-- ==================== ANTIGRAVITY API KEYS & CREDENTIALS MODAL ==================== -->
+  <div class="modal-backdrop" id="api_keys_modal" style="display: none;" onclick="if(event.target===this) closeApiKeysModal()">
+    <div class="glass-card modal-container antigravity-modal" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <div class="modal-title-wrap">
+          <div class="modal-title-icon" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(34, 211, 238, 0.3)); color: var(--accent-light);">
+            <i class="fa-solid fa-key"></i>
+          </div>
+          <div>
+            <h3>API Keys &amp; Credentials</h3>
+            <span class="modal-subtitle">Stored securely in your browser's LocalStorage · Never exposed</span>
+          </div>
+        </div>
+        <button type="button" class="modal-close-btn" onclick="closeApiKeysModal()" aria-label="Close Modal">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="modal-body" style="padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 14px;">
+        <!-- Gemini Key -->
+        <div class="key-credential-card">
+          <div class="key-card-header">
+            <div class="key-service-info">
+              <span class="key-icon-wrap" style="color: #c084fc; background: rgba(139, 92, 246, 0.15);"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+              <div>
+                <strong>Gemini API Key</strong>
+                <small>Powers URL Brand Analysis, Omni Flash 1.1, Nano Banana Pro &amp; Meta Ad Copy</small>
+              </div>
+            </div>
+            <span class="key-badge primary" id="badge_gemini_key">Recommended</span>
+          </div>
+          <div class="key-input-wrapper">
+            <input type="password" id="api_key_input" class="form-input key-field" placeholder="AIzaSy... (from Google AI Studio)" autocomplete="off">
+            <button type="button" class="btn-toggle-mask" onclick="toggleKeyMask('api_key_input', this)" title="Show/Hide"><i class="fa-regular fa-eye"></i></button>
+          </div>
+        </div>
+
+        <!-- Kie AI Key -->
+        <div class="key-credential-card">
+          <div class="key-card-header">
+            <div class="key-service-info">
+              <span class="key-icon-wrap" style="color: #60a5fa; background: rgba(59, 130, 246, 0.15);"><i class="fa-solid fa-video"></i></span>
+              <div>
+                <strong>Kie AI Key</strong>
+                <small>Optional · ByteDance Seedance 2 Mini Video Model</small>
+              </div>
+            </div>
+            <span class="key-badge neutral" id="badge_kie_key">Optional</span>
+          </div>
+          <div class="key-input-wrapper">
+            <input type="password" id="kie_key_input" class="form-input key-field" placeholder="Enter Kie AI key..." autocomplete="off">
+            <button type="button" class="btn-toggle-mask" onclick="toggleKeyMask('kie_key_input', this)" title="Show/Hide"><i class="fa-regular fa-eye"></i></button>
+          </div>
+        </div>
+
+        <!-- Pixabay Key -->
+        <div class="key-credential-card">
+          <div class="key-card-header">
+            <div class="key-service-info">
+              <span class="key-icon-wrap" style="color: #34d399; background: rgba(16, 185, 129, 0.15);"><i class="fa-solid fa-film"></i></span>
+              <div>
+                <strong>Pixabay API Key</strong>
+                <small>Optional · Free HD B-Roll stock footage matching in MoneyPrinter Turbo</small>
+              </div>
+            </div>
+            <span class="key-badge neutral" id="badge_pixabay_key">Free Tier</span>
+          </div>
+          <div class="key-input-wrapper">
+            <input type="password" id="pixabay_key_input" class="form-input key-field" placeholder="Enter Pixabay key..." autocomplete="off">
+            <button type="button" class="btn-toggle-mask" onclick="toggleKeyMask('pixabay_key_input', this)" title="Show/Hide"><i class="fa-regular fa-eye"></i></button>
+          </div>
+        </div>
+
+        <!-- GPU Cloud Shortcut Box -->
+        <div class="gpu-cloud-bridge-box" onclick="closeApiKeysModal(); openSelfHostedModal();" style="cursor: pointer;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div class="bridge-gpu-icon"><i class="fa-solid fa-server"></i></div>
+            <div>
+              <strong style="color: var(--text-white); font-size: 0.85rem;">Self-Hosted GPU Cloud (Qwen-Image-2.1 &amp; MiniMax-H3)</strong>
+              <small style="color: var(--text-muted); display: block; font-size: 0.72rem;">Manage dedicated GCP GPU API keys, monitor live server health &amp; IP allowlist</small>
+            </div>
+          </div>
+          <i class="fa-solid fa-chevron-right" style="color: var(--accent-light); font-size: 13px;"></i>
+        </div>
+      </div>
+
+      <div class="modal-footer-flex">
+        <button type="button" class="btn btn-secondary btn-sm" onclick="closeApiKeysModal()">Cancel</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="saveApiKeysFromModal()">
+          <i class="fa-solid fa-check"></i> Save &amp; Apply Credentials
+        </button>
+      </div>
     </div>
   </div>
 

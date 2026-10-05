@@ -726,6 +726,7 @@ function initAPIKeysPersistence() {
     
     apiKeyEl.addEventListener("input", (e) => {
       localStorage.setItem("gemini_api_key", e.target.value.trim());
+      updateKeysStatusBadge();
     });
   }
   
@@ -780,6 +781,74 @@ function initAPIKeysPersistence() {
     vidKeyModal.addEventListener("input", (e) => {
       localStorage.setItem("self_hosted_video_key", e.target.value.trim());
     });
+  }
+
+  updateKeysStatusBadge();
+}
+
+// ------------------------------------------------------------
+// Antigravity API Keys & Credentials Modal Controller
+// ------------------------------------------------------------
+
+function openApiKeysModal() {
+  const modal = document.getElementById("api_keys_modal");
+  if (modal) {
+    modal.style.display = "flex";
+    const apiKeyEl = document.getElementById("api_key_input");
+    const kieKeyEl = document.getElementById("kie_key_input");
+    const pixKeyEl = document.getElementById("pixabay_key_input");
+
+    if (apiKeyEl) apiKeyEl.value = localStorage.getItem("gemini_api_key") || "";
+    if (kieKeyEl) kieKeyEl.value = localStorage.getItem("kie_api_key") || "";
+    if (pixKeyEl) pixKeyEl.value = localStorage.getItem("pixabay_api_key") || "";
+
+    updateKeysStatusBadge();
+  }
+}
+
+function closeApiKeysModal() {
+  const modal = document.getElementById("api_keys_modal");
+  if (modal) modal.style.display = "none";
+}
+
+function saveApiKeysFromModal() {
+  const apiKeyEl = document.getElementById("api_key_input");
+  const kieKeyEl = document.getElementById("kie_key_input");
+  const pixKeyEl = document.getElementById("pixabay_key_input");
+
+  if (apiKeyEl) localStorage.setItem("gemini_api_key", apiKeyEl.value.trim());
+  if (kieKeyEl) localStorage.setItem("kie_api_key", kieKeyEl.value.trim());
+  if (pixKeyEl) {
+    localStorage.setItem("pixabay_api_key", pixKeyEl.value.trim());
+    const mptPixKey = document.getElementById("mpt_pixabay_key");
+    if (mptPixKey) mptPixKey.value = pixKeyEl.value.trim();
+  }
+
+  updateKeysStatusBadge();
+  closeApiKeysModal();
+  alert("Credentials successfully saved in browser LocalStorage!");
+}
+
+function toggleKeyMask(inputId, btnEl) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+  const isPass = input.type === "password";
+  input.type = isPass ? "text" : "password";
+  if (btnEl) {
+    btnEl.innerHTML = isPass ? '<i class="fa-regular fa-eye-slash"></i>' : '<i class="fa-regular fa-eye"></i>';
+  }
+}
+
+function updateKeysStatusBadge() {
+  const badge = document.getElementById("keys_status_badge");
+  if (!badge) return;
+  const geminiKey = localStorage.getItem("gemini_api_key") || (document.getElementById("api_key_input") ? document.getElementById("api_key_input").value : "");
+  if (geminiKey && geminiKey.trim().length > 5) {
+    badge.className = "keys-status-indicator configured";
+    badge.textContent = "Active";
+  } else {
+    badge.className = "keys-status-indicator";
+    badge.textContent = "Configure";
   }
 }
 
