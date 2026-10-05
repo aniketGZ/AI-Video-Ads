@@ -124,6 +124,113 @@ def wrap_text(text: str, font: ImageFont.FreeTypeFont, max_width: int, draw: Ima
         lines.append(" ".join(current_line))
     return lines
 
+# Native In-Image Typography & Layout Prompt Builder for Qwen & Nano Banana Pro
+def build_native_in_image_ad_prompt(
+    blueprint: Dict[str, Any],
+    brand_name: str,
+    product_name: str,
+    product_category: str = "",
+    target_audience_persona: str = "",
+    aspect_ratio: str = "4:5",
+    product_visual_description: str = "",
+    color_palette: str = "",
+    custom_directive: Optional[str] = None,
+) -> str:
+    """
+    Constructs an ultra-high-converting direct-response prompt for Qwen-Image-2.1
+    and Gemini Nano Banana Pro to render commercial typography, branding badges,
+    headlines, callouts, and layout DIRECTLY inside the creative image pixels.
+    """
+    brand = (brand_name or "BRAND").strip()
+    product = (product_name or "Product").strip()
+    category = (product_category or "Consumer Goods").strip()
+    persona = (target_audience_persona or "Modern consumers").strip()
+
+    f_key = blueprint.get("framework_key", "problem_solution")
+    hook_badge = blueprint.get("hook_badge", "SPECIAL OFFER").strip()
+    headline = blueprint.get("headline", f"Upgrade to {product}").strip()
+    subheadline = blueprint.get("subheadline", "").strip()
+    cta = blueprint.get("cta", "Shop Now").strip()
+    callouts = blueprint.get("callout_points", [])
+
+    scene_base = blueprint.get("visual_prompt", "").strip()
+    scene_base = (
+        scene_base.replace("Do not put text in prompt.", "")
+        .replace("Do NOT include text, words, or watermarks in the prompt.", "")
+        .strip()
+    )
+
+    ratio_desc = "vertical 4:5 Instagram & Facebook feed" if aspect_ratio == "4:5" else (
+        "square 1:1 feed" if aspect_ratio == "1:1" else (
+            "full-screen 9:16 story and reel" if aspect_ratio == "9:16" else f"{aspect_ratio} landscape"
+        )
+    )
+
+    framework_elements = []
+    if f_key == "social_proof":
+        quote = blueprint.get("testimonial_quote", "The results blew me away within days.")
+        author = blueprint.get("testimonial_author", "Verified Buyer")
+        framework_elements.append(
+            f'• Social Proof Graphic: In the lower third, render a stylized graphic review bubble with 5 golden stars "★★★★★", '
+            f'customer headline quote reading "{quote}", and verified author badge reading "— {author} ✓".'
+        )
+    elif f_key == "us_vs_them":
+        theirs = blueprint.get("comparison_theirs", "Harsh fillers & slow results")
+        ours = blueprint.get("comparison_ours", "100% pure active performance")
+        framework_elements.append(
+            f'• Comparison Matrix Layout: A sleek side-by-side graphic comparison panel. '
+            f'Left column with muted red pill reading "✕ TRADITIONAL: {theirs}". '
+            f'Right column with radiant emerald badge reading "✓ {brand.upper()}: {ours}".'
+        )
+    elif f_key == "feature_callout":
+        callout_lines = [f'"{c}"' for c in callouts[:3]] if callouts else ['"Clean Formula"', '"Instant Impact"', '"Proven Results"']
+        pills_str = " and ".join(callout_lines)
+        framework_elements.append(
+            f'• Feature Callout Matrix: Render 3 sleek floating graphic feature badges with checkmarks highlighting {pills_str}, '
+            f'arranged cleanly with subtle frosted glass containers pointing toward key product details.'
+        )
+    else:
+        callout_lines = [f'"{c}"' for c in callouts[:2]] if callouts else ['"Instant Visible Results"', '"Guaranteed Quality"']
+        pills_str = " and ".join(callout_lines)
+        framework_elements.append(
+            f'• Value Props Badges: Floating graphic trust pills reading {pills_str} with radiant accent styling.'
+        )
+
+    framework_desc = "\n".join(framework_elements)
+    colors_desc = f"Color palette emphasizing {color_palette}." if color_palette else "Cohesive brand color palette with premium contrast."
+    details_desc = f"Physical product details: {product_visual_description}." if product_visual_description else ""
+
+    prompt = (
+        f"A masterfully designed, award-winning direct-response Meta advertisement creative in {ratio_desc} format. "
+        f"Professional commercial graphic design combined seamlessly with ultra-photorealistic product photography.\n\n"
+        f"HERO PRODUCT SCENE:\n"
+        f"Centerstage hero product shot of {product} by {brand} ({category}). {details_desc} "
+        f"{scene_base or f'Studio lighting, dramatic rim light, crisp reflections, shallow depth of field, tailored for {persona}.'} "
+        f"{colors_desc}\n\n"
+        f"IN-IMAGE TYPOGRAPHY & GRAPHIC LAYOUT (RENDER ALL TEXT DIRECTLY IN THE CREATIVE PIXELS):\n"
+        f'• Top Header: At the top left, a crisp minimalist brand logo reading "{brand.upper()}", and at top right an official badge reading "OFFICIAL STORE ✓".\n'
+        f'• Hook Eyebrow: Above the main headline, a bold graphic pill badge reading "{hook_badge.upper()}".\n'
+        f'• Main Headline: Large, bold, high-contrast commercial typography prominently reading "{headline}". The headline letters must be ultra-sharp, large, perfectly readable, and styled with subtle drop shadows against the background for effortless contrast.\n'
+    )
+    if subheadline:
+        prompt += f'• Subheadline: Supporting clean subhead reading "{subheadline}" positioned below the main headline.\n'
+
+    if framework_desc:
+        prompt += f"{framework_desc}\n"
+
+    prompt += (
+        f'• Bottom Call-To-Action: At the bottom right, a bold graphic CTA button reading "{cta.upper()} ➔" with vibrant contrast. '
+        f'At the bottom left, trust text reading "30-DAY RISK-FREE TRIAL".\n\n'
+        f"DESIGN QUALITY & TYPOGRAPHY RULES:\n"
+        f"All text, typography, badges, and buttons must be generated directly inside the image by the model with flawless spelling, vector-sharp letterforms, high contrast against backgrounds, proper kerning, and editorial hierarchy. "
+        f"The visual composition must feel like an authentic, high-converting Meta feed ad created by a top tier agency. Masterpiece commercial layout, 8K ultra-sharp details."
+    )
+
+    if custom_directive and custom_directive.strip():
+        prompt += f"\nCustom directive: {custom_directive.strip()}."
+
+    return prompt
+
 # Creative Strategy Generator from URL & Audience Research
 def generate_meta_creative_blueprints(
     brand_data: Dict[str, Any],
@@ -178,7 +285,7 @@ def generate_meta_creative_blueprints(
                 "- comparison_ours (for us_vs_them: why our product wins)\n"
                 "- testimonial_quote (for social_proof: authentic punchy review)\n"
                 "- testimonial_author (for social_proof: e.g. 'Sarah M. · Verified Customer')\n"
-                "- visual_prompt (hyper-detailed commercial photography AI prompt describing composition, lighting, product hero placement, camera angle, high contrast, and depth of field. Do not put text in prompt.)\n"
+                "- visual_prompt (hyper-detailed commercial Meta ad visual & typography layout prompt for AI image generation. Instruct the AI image generator to natively render the product hero shot and in-image typography with crystal-clear spelling in quotation marks: including brand name, hook badge, bold headline, callouts, and CTA button. Specify typography placement, contrast, and layout.)\n"
                 "- layout_style (one of 'PROBLEM_SOLUTION_SPLIT', 'CALLOUT_POINTERS', 'TESTIMONIAL_HERO', 'US_VS_THEM_GRID', 'LIFESTYLE_IN_ACTION')\n\n"
                 "Return ONLY a valid JSON array of 5 objects matching this specification."
             )
@@ -220,7 +327,17 @@ def generate_meta_creative_blueprints(
                 "comparison_ours": f"{b1} with {b2}",
                 "testimonial_quote": f"I was skeptical until I tried {product_name}. The results blew me away.",
                 "testimonial_author": "Alex K. · Verified Customer",
-                "visual_prompt": f"Dramatic high-contrast commercial product photography of {product_name} by {brand_name}. {product_desc}. Hero angle placed centrally on a dark textured obsidian pedestal, radiant golden rim lighting, soft diffuse studio spotlight, crisp metallic reflections, 8K ultra-sharp detail, high stopping-power commercial layout.",
+                "visual_prompt": (
+                    f"Award-winning commercial Meta ad creative for {product_name} by {brand_name}. {product_desc}. "
+                    f"Centerstage hero angle on a dark textured obsidian pedestal, radiant golden rim lighting, soft diffuse studio spotlight, crisp metallic reflections. "
+                    f"Native in-image typography and layout: Top header brand reading \"{brand_name.upper()}\" with \"OFFICIAL STORE ✓\" badge. "
+                    f"Upper eyebrow badge reading \"TIRED OF THE USUAL COMPROMISE?\". "
+                    f"Bold high-contrast commercial headline in large modern typography reading \"Say Goodbye to Mediocre {category}\". "
+                    f"Subheadline reading \"Engineered by {brand_name} to deliver {b1.lower()} from day one.\". "
+                    f"Floating trust badges highlighting \"{b1}\" and \"{b2}\". "
+                    f"Bottom right graphic CTA button reading \"SHOP NOW ➔\". "
+                    f"Ultra-sharp direct-response advertising graphic design, 8K resolution."
+                ),
                 "layout_style": "PROBLEM_SOLUTION_SPLIT"
             },
             {
@@ -239,7 +356,16 @@ def generate_meta_creative_blueprints(
                 "comparison_ours": "100% active, pure bioavailable ingredients",
                 "testimonial_quote": "The ingredient transparency and engineering quality are unmatched.",
                 "testimonial_author": "Dr. Marcus T. · Industry Specialist",
-                "visual_prompt": f"Clean minimalist luxury studio product photography of {product_name} by {brand_name}. {product_desc}. Floating weightlessly in negative space, soft ambient studio gradient background, subtle architectural shadows, precision macro details of packaging and textures, Apple-style direct-response ad composition.",
+                "visual_prompt": (
+                    f"Clean minimalist luxury studio Meta ad creative for {product_name} by {brand_name}. {product_desc}. "
+                    f"Floating weightlessly in negative space, soft ambient studio gradient background, subtle architectural shadows, precision macro details of packaging and textures. "
+                    f"Native in-image typography: Top header with \"{brand_name.upper()}\" and trust stamp. "
+                    f"Eyebrow badge reading \"PRECISION ENGINEERED FORMULA\". "
+                    f"Large bold headline reading \"What Makes {product_name} Superior\". "
+                    f"Three sleek graphic feature callout pointers highlighting \"{b1}\", \"{b2}\", and \"{b3}\". "
+                    f"Bottom right high-contrast CTA button reading \"ORDER TODAY ➔\". "
+                    f"Apple-style direct-response ad typography and layout, 8K resolution."
+                ),
                 "layout_style": "CALLOUT_POINTERS"
             },
             {
@@ -258,7 +384,16 @@ def generate_meta_creative_blueprints(
                 "comparison_ours": "15,000+ ecstatic reviews & 30-day money-back guarantee",
                 "testimonial_quote": f"Within 3 days of using {product_name}, I was completely hooked. Essential purchase.",
                 "testimonial_author": "Sarah M. · Verified Buyer",
-                "visual_prompt": f"Warm editorial lifestyle product photography of {product_name} by {brand_name}. {product_desc}. Placed gracefully on an elegant marble countertop, soft warm morning window light, shallow depth of field with blurred aspirational interior, authentic social proof aesthetic, crisp reflections, commercial direct-response quality.",
+                "visual_prompt": (
+                    f"Warm editorial lifestyle Meta ad creative for {product_name} by {brand_name}. {product_desc}. "
+                    f"Placed gracefully on an elegant marble countertop, soft warm morning window light, shallow depth of field with blurred aspirational interior. "
+                    f"Native in-image typography: Top brand header \"{brand_name.upper()}\". "
+                    f"Eyebrow badge reading \"★★★★★ 4.9/5 (15,000+ REVIEWS)\". "
+                    f"Bold headline reading \"“I Wish I Had Found {product_name} Sooner”\". "
+                    f"Lower third graphic review bubble with 5 golden stars \"★★★★★\" and quote reading \"“Within 3 days, I was completely hooked.” — Sarah M. ✓\". "
+                    f"Bottom right CTA button reading \"CLAIM YOURS ➔\". "
+                    f"Ultra-photorealistic commercial direct-response graphic design, 8K resolution."
+                ),
                 "layout_style": "TESTIMONIAL_HERO"
             },
             {
@@ -277,7 +412,16 @@ def generate_meta_creative_blueprints(
                 "comparison_ours": f"{b1}, {b2}, direct-to-consumer value",
                 "testimonial_quote": "After seeing the comparison, switching was a no-brainer.",
                 "testimonial_author": "David L. · Verified Customer",
-                "visual_prompt": f"Split-perspective commercial studio shot of {product_name} by {brand_name}. {product_desc}. Elevated on a clean minimalist geometric pedestal with radiant modern lighting, clean background contrast, high-end editorial product presentation, vivid clarity, 8K commercial resolution.",
+                "visual_prompt": (
+                    f"Split-perspective commercial direct-response Meta ad for {product_name} by {brand_name}. {product_desc}. "
+                    f"Elevated on a clean minimalist geometric pedestal with radiant modern lighting, clean background contrast. "
+                    f"Native in-image typography: Top header reading \"{brand_name.upper()}\". "
+                    f"Eyebrow pill reading \"WHY THOUSANDS ARE SWITCHING\". "
+                    f"Bold headline reading \"Traditional {category} vs. {brand_name}\". "
+                    f"Side-by-side graphic comparison panel: Left red badge reading \"✕ TRADITIONAL: Slow results & fillers\", Right emerald badge reading \"✓ {brand_name.upper()}: {b1} with {b2}\". "
+                    f"Bottom right CTA button reading \"SWITCH & SAVE ➔\". "
+                    f"Commercial advertising visual hierarchy, 8K resolution."
+                ),
                 "layout_style": "US_VS_THEM_GRID"
             },
             {
@@ -296,14 +440,24 @@ def generate_meta_creative_blueprints(
                 "comparison_ours": "Seamless luxury performance designed for modern life",
                 "testimonial_quote": f"{product_name} elevated my entire routine. I feel the difference every single day.",
                 "testimonial_author": "Elena V. · Creative Director",
-                "visual_prompt": f"Cinematic aspirational lifestyle photography featuring {product_name} by {brand_name}. {product_desc}. Sunlit modern architectural space matching {persona}, golden-hour ambient rays, natural soft bokeh, premium textures, high-end Vogue/GQ editorial aesthetics, ultra-photorealistic commercial composition.",
+                "visual_prompt": (
+                    f"Cinematic aspirational lifestyle Meta ad creative featuring {product_name} by {brand_name}. {product_desc}. "
+                    f"Sunlit modern architectural space matching {persona}, golden-hour ambient rays, natural soft bokeh, premium textures. "
+                    f"Native in-image typography: Top header \"{brand_name.upper()}\". "
+                    f"Eyebrow badge reading \"YOUR NEW DAILY STANDARD\". "
+                    f"Large bold headline reading \"Elevate Your Daily Ritual with {product_name}\". "
+                    f"Secondary subhead reading \"Crafted for high performers who demand perfection.\". "
+                    f"Floating gold trust pills reading \"✨ Premium Materials\" and \"✨ Unrivaled Satisfaction\". "
+                    f"Bottom right graphic CTA button reading \"EXPERIENCE NOW ➔\". "
+                    f"High-end Vogue/GQ editorial aesthetics, ultra-photorealistic commercial composition, 8K resolution."
+                ),
                 "layout_style": "LIFESTYLE_IN_ACTION"
             }
         ]
 
     return blueprints
 
-# High-Converting Direct Response Graphic Compositor
+# Direct Response Creative Delivery Helper (Zero Overlay Layer)
 def render_meta_ad_composite(
     base_image_path: str,
     blueprint: Dict[str, Any],
@@ -313,12 +467,9 @@ def render_meta_ad_composite(
     aspect_ratio: str = "4:5"
 ) -> str:
     """
-    Renders a production-grade Meta ad creative combining:
-    - Base photographic scene / product placement
-    - Proper branding header & verified badges
-    - High-contrast hook eyebrow, typography hierarchy, and drop-shadows
-    - Framework-specific graphic badges (feature pills, 5-star ratings, comparison matrix)
-    - High-CTR CTA button sticker
+    Ensures the Meta creative image is properly dimensioned and saved for direct delivery.
+    All typography, branding badges, headlines, and layouts are natively synthesized into the pixels
+    by the AI models (Qwen-Image-2.1 or Gemini Nano Banana Pro), completely eliminating artificial overlay layers.
     """
     ratio_map = {
         "1:1": (1024, 1024),
@@ -327,265 +478,36 @@ def render_meta_ad_composite(
         "16:9": (1792, 1024),
     }
     target_w, target_h = ratio_map.get(aspect_ratio, (1024, 1280))
-
-    # 1. Load or initialize base canvas
-    if os.path.exists(base_image_path):
-        try:
-            base_img = Image.open(base_image_path).convert("RGBA")
-            # Resize and crop to fill target dimensions
-            img_w, img_h = base_img.size
-            scale = max(target_w / img_w, target_h / img_h)
-            new_w = int(img_w * scale)
-            new_h = int(img_h * scale)
-            resized = base_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
-            # Center crop
-            left = (new_w - target_w) // 2
-            top = (new_h - target_h) // 2
-            canvas = resized.crop((left, top, left + target_w, top + target_h))
-        except Exception as e:
-            logger.warning(f"Error loading base image {base_image_path}: {e}")
-            canvas = Image.new("RGBA", (target_w, target_h), (12, 16, 28, 255))
-    else:
-        canvas = Image.new("RGBA", (target_w, target_h), (12, 16, 28, 255))
-
-    # 2. Add subtle dark gradient scrims at top & bottom for 100% typography contrast
-    overlay = Image.new("RGBA", (target_w, target_h), (0, 0, 0, 0))
-    d_overlay = ImageDraw.Draw(overlay)
-
-    # Top scrim (0 to 300px)
-    for y in range(0, min(320, target_h)):
-        alpha = int(170 * (1.0 - (y / 320.0) ** 1.3))
-        d_overlay.line([(0, y), (target_w, y)], fill=(8, 10, 18, alpha))
-
-    # Bottom scrim (from target_h - 400 to target_h)
-    bottom_start = max(0, target_h - 420)
-    for y in range(bottom_start, target_h):
-        progress = (y - bottom_start) / 420.0
-        alpha = int(210 * (progress ** 1.2))
-        d_overlay.line([(0, y), (target_w, y)], fill=(6, 8, 16, alpha))
-
-    # Composite scrims
-    canvas = Image.alpha_composite(canvas, overlay)
-    draw = ImageDraw.Draw(canvas)
-
-    # Resolve typography fonts
-    f_brand = get_font(22, True)
-    f_badge = get_font(18, True)
-    f_headline = get_font(38 if target_w == 1024 else 44, True)
-    f_subhead = get_font(21, False)
-    f_callout = get_font(20, True)
-    f_stars = get_font(26, True)
-    f_cta = get_font(23, True)
-
-    pad_x = 44
-    usable_w = target_w - (pad_x * 2)
-
-    # --- TOP BRAND HEADER BAR ---
-    top_y = 36
-    brand_title = (brand_name or "BRAND").upper()
-    brand_bbox = draw.textbbox((0, 0), brand_title, font=f_brand)
-    brand_w = brand_bbox[2] - brand_bbox[0]
-    brand_pill_w = brand_w + 36
-    brand_pill_h = 38
-
-    # Frosted brand capsule
-    draw.rounded_rectangle(
-        [pad_x, top_y, pad_x + brand_pill_w, top_y + brand_pill_h],
-        radius=10,
-        fill=(14, 18, 30, 225),
-        outline=(255, 255, 255, 45),
-        width=1
-    )
-    draw.text((pad_x + 18, top_y + 8), brand_title, fill=(255, 255, 255), font=f_brand)
-
-    # Top right: Direct Response Trust Stamp
-    stamp_text = "OFFICIAL STORE ✓"
-    stamp_bbox = draw.textbbox((0, 0), stamp_text, font=f_badge)
-    stamp_w = stamp_bbox[2] - stamp_bbox[0]
-    stamp_x = target_w - pad_x - stamp_w - 24
-    draw.rounded_rectangle(
-        [stamp_x, top_y, target_w - pad_x, top_y + brand_pill_h],
-        radius=10,
-        fill=(16, 185, 129, 35),
-        outline=(16, 185, 129, 120),
-        width=1
-    )
-    draw.text((stamp_x + 12, top_y + 9), stamp_text, fill=(52, 211, 153), font=f_badge)
-
-    # --- HOOK EYEBROW & MAIN HEADLINE ---
-    headline_y = top_y + brand_pill_h + 20
-
-    # Eyebrow Hook Badge
-    hook_badge = blueprint.get("hook_badge", "SPECIAL OFFER").upper()
-    badge_color = (24, 119, 242, 235)  # Meta Blue default
-    badge_text_color = (255, 255, 255)
-    f_key = blueprint.get("framework_key", "")
-
-    if f_key == "social_proof":
-        badge_color = (245, 158, 11, 235)  # Amber
-    elif f_key == "us_vs_them":
-        badge_color = (139, 92, 246, 235)  # Purple
-    elif f_key == "problem_solution":
-        badge_color = (239, 68, 68, 235)   # Coral/Red
-
-    badge_bbox = draw.textbbox((0, 0), hook_badge, font=f_badge)
-    badge_w = badge_bbox[2] - badge_bbox[0] + 28
-    draw.rounded_rectangle(
-        [pad_x, headline_y, pad_x + badge_w, headline_y + 32],
-        radius=8,
-        fill=badge_color,
-        outline=(255, 255, 255, 80),
-        width=1
-    )
-    draw.text((pad_x + 14, headline_y + 6), hook_badge, fill=badge_text_color, font=f_badge)
-
-    headline_y += 42
-    headline_text = blueprint.get("headline", f"Upgrade to {product_name}")
-    head_lines = wrap_text(headline_text, f_headline, usable_w, draw)[:2]
-
-    # Draw headline lines with drop shadow for legibility
-    for hl in head_lines:
-        # Subtle dark shadow
-        draw.text((pad_x + 2, headline_y + 2), hl, fill=(0, 0, 0, 210), font=f_headline)
-        draw.text((pad_x, headline_y), hl, fill=(255, 255, 255), font=f_headline)
-        headline_y += 46
-
-    # Subheadline
-    subhead_text = blueprint.get("subheadline", "")
-    if subhead_text:
-        sub_lines = wrap_text(subhead_text, f_subhead, usable_w, draw)[:1]
-        for sl in sub_lines:
-            draw.text((pad_x + 1, headline_y + 1), sl, fill=(0, 0, 0, 180), font=f_subhead)
-            draw.text((pad_x, headline_y), sl, fill=(203, 213, 225), font=f_subhead)
-            headline_y += 30
-
-    # --- FRAMEWORK SPECIFIC GRAPHIC OVERLAYS ---
-    if f_key == "social_proof":
-        # 5-Star Rating Pill + Frosted Customer Quote Bubble
-        quote_box_y = target_h - 300
-        quote_box_h = 135
-        draw.rounded_rectangle(
-            [pad_x, quote_box_y, target_w - pad_x, quote_box_y + quote_box_h],
-            radius=16,
-            fill=(10, 14, 26, 225),
-            outline=(245, 158, 11, 110),
-            width=1
-        )
-        # Gold stars
-        draw.text((pad_x + 20, quote_box_y + 16), "★★★★★", fill=(245, 158, 11), font=f_stars)
-        draw.text((pad_x + 140, quote_box_y + 18), "VERIFIED 5-STAR REVIEW", fill=(251, 191, 36), font=f_badge)
-
-        quote = blueprint.get("testimonial_quote", "“This changed my entire routine.”")
-        q_lines = wrap_text(f"“{quote.strip('“”\"')}”", f_callout, usable_w - 40, draw)[:2]
-        qy = quote_box_y + 54
-        for ql in q_lines:
-            draw.text((pad_x + 20, qy), ql, fill=(255, 255, 255), font=f_callout)
-            qy += 26
-
-        author = blueprint.get("testimonial_author", "Verified Buyer")
-        draw.text((pad_x + 20, quote_box_y + 104), f"— {author} ✓", fill=(148, 163, 184), font=f_badge)
-
-    elif f_key == "us_vs_them":
-        # Dual Comparison Columns
-        comp_y = target_h - 290
-        comp_h = 125
-        col_w = (usable_w - 16) // 2
-
-        # Left Column: Others / The Old Way (Muted Red)
-        draw.rounded_rectangle(
-            [pad_x, comp_y, pad_x + col_w, comp_y + comp_h],
-            radius=14,
-            fill=(26, 12, 16, 220),
-            outline=(239, 68, 68, 80),
-            width=1
-        )
-        draw.text((pad_x + 16, comp_y + 14), "✕ TRADITIONAL", fill=(248, 113, 113), font=f_badge)
-        theirs_text = blueprint.get("comparison_theirs", "Harsh fillers & slow results")
-        th_lines = wrap_text(theirs_text, f_badge, col_w - 32, draw)[:2]
-        ty = comp_y + 44
-        for tl in th_lines:
-            draw.text((pad_x + 16, ty), f"• {tl}", fill=(203, 213, 225), font=f_badge)
-            ty += 24
-
-        # Right Column: Our Brand (Radiant Emerald)
-        right_x = pad_x + col_w + 16
-        draw.rounded_rectangle(
-            [right_x, comp_y, right_x + col_w, comp_y + comp_h],
-            radius=14,
-            fill=(10, 28, 20, 225),
-            outline=(16, 185, 129, 140),
-            width=1
-        )
-        draw.text((right_x + 16, comp_y + 14), f"✓ {brand_name.upper()}", fill=(52, 211, 153), font=f_badge)
-        ours_text = blueprint.get("comparison_ours", "100% Pure, fast visible results")
-        o_lines = wrap_text(ours_text, f_badge, col_w - 32, draw)[:2]
-        oy = comp_y + 44
-        for ol in o_lines:
-            draw.text((right_x + 16, oy), f"• {ol}", fill=(255, 255, 255), font=f_badge)
-            oy += 24
-
-    elif f_key == "feature_callout":
-        # 3 Floating Feature Callout Badges
-        callouts = blueprint.get("callout_points", [])[:3]
-        cy = target_h - 290
-        for idx, callout in enumerate(callouts):
-            draw.rounded_rectangle(
-                [pad_x, cy, target_w - pad_x, cy + 36],
-                radius=10,
-                fill=(12, 16, 28, 215),
-                outline=(24, 119, 242, 90),
-                width=1
-            )
-            draw.text((pad_x + 14, cy + 7), "✓", fill=(52, 211, 153), font=f_callout)
-            draw.text((pad_x + 38, cy + 7), callout, fill=(255, 255, 255), font=f_callout)
-            cy += 44
-
-    else:
-        # Default Problem-Solution / Lifestyle Transformation Bullets
-        callouts = blueprint.get("callout_points", [])[:3]
-        if callouts:
-            cy = target_h - 275
-            for callout in callouts[:2]:
-                draw.rounded_rectangle(
-                    [pad_x, cy, target_w - pad_x, cy + 38],
-                    radius=10,
-                    fill=(10, 14, 26, 220),
-                    outline=(255, 255, 255, 40),
-                    width=1
-                )
-                draw.text((pad_x + 16, cy + 8), "✨", fill=(251, 191, 36), font=f_badge)
-                draw.text((pad_x + 44, cy + 8), callout, fill=(255, 255, 255), font=f_callout)
-                cy += 46
-
-    # --- BOTTOM CTA RIBBON / BUTTON ---
-    cta_y = target_h - 105
-    cta_h = 62
-    cta_btn_w = 260
-    cta_btn_x = target_w - pad_x - cta_btn_w
-
-    # Left: Trust seal / Guarantee
-    draw.text((pad_x, cta_y + 12), "30-DAY RISK-FREE TRIAL", fill=(148, 163, 184), font=f_badge)
-    draw.text((pad_x, cta_y + 34), "Free Expedited Shipping Included", fill=(100, 116, 139), font=f_badge)
-
-    # Right: High-Contrast CTA Button
-    cta_text = f"{blueprint.get('cta', 'SHOP NOW').upper()}  ➔"
-    draw.rounded_rectangle(
-        [cta_btn_x, cta_y, target_w - pad_x, cta_y + cta_h],
-        radius=14,
-        fill=(24, 119, 242, 255),
-        outline=(255, 255, 255, 120),
-        width=1
-    )
-    # Centered CTA text
-    cta_bbox = draw.textbbox((0, 0), cta_text, font=f_cta)
-    cta_w = cta_bbox[2] - cta_bbox[0]
-    draw.text((cta_btn_x + (cta_btn_w - cta_w) // 2, cta_y + 18), cta_text, fill=(255, 255, 255), font=f_cta)
-
-    # 3. Save final composite image
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
-    canvas.convert("RGB").save(output_path, "PNG", quality=95)
-    logger.info(f"[Meta Compositor] Rendered direct response ad: {output_path}")
-    return output_path
+
+    if os.path.exists(base_image_path):
+        if HAS_PIL and Image:
+            try:
+                with Image.open(base_image_path) as base_img:
+                    img_w, img_h = base_img.size
+                    if (img_w, img_h) == (target_w, target_h):
+                        base_img.save(output_path, "PNG", quality=95)
+                    else:
+                        scale = max(target_w / img_w, target_h / img_h)
+                        new_w = int(img_w * scale)
+                        new_h = int(img_h * scale)
+                        resized = base_img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+                        left = (new_w - target_w) // 2
+                        top = (new_h - target_h) // 2
+                        canvas = resized.crop((left, top, left + target_w, top + target_h))
+                        canvas.save(output_path, "PNG", quality=95)
+                logger.info(f"[Meta Delivery] Verified native AI creative at: {output_path}")
+                return output_path
+            except Exception as e:
+                logger.debug(f"PIL image resize skipped, falling back to direct copy: {e}")
+        import shutil
+        shutil.copyfile(base_image_path, output_path)
+        return output_path
+    else:
+        if HAS_PIL and Image:
+            canvas = Image.new("RGB", (target_w, target_h), (12, 16, 28))
+            canvas.save(output_path, "PNG", quality=95)
+        return output_path
 
 async def generate_single_meta_creative(
     blueprint: Dict[str, Any],
@@ -606,9 +528,10 @@ async def generate_single_meta_creative(
     image_api_key: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Renders a single high-converting Meta creative:
-    1. Synthesizes photorealistic commercial scene matching the framework visual prompt.
-    2. Runs direct response graphic compositor with branding, typography hierarchy, badges, and CTA.
+    Renders a single high-converting Meta creative with native in-image typography:
+    1. Synthesizes a direct-response ad prompt instructing Qwen/Nano Banana Pro to render
+       typography, layout, badges, headlines, and product visuals directly in the pixels.
+    2. Dispatches to the AI image model and saves the native creative.
     """
     from self_hosted_engine import (
         generate_image_async,
@@ -628,9 +551,16 @@ async def generate_single_meta_creative(
     }
     target_w, target_h = ratio_map.get(aspect_ratio, (1024, 1280))
 
-    visual_prompt = blueprint.get("visual_prompt", "")
-    if custom_directive and custom_directive.strip():
-        visual_prompt += f" Additional creative direction: {custom_directive.strip()}."
+    visual_prompt = build_native_in_image_ad_prompt(
+        blueprint=blueprint,
+        brand_name=brand_name,
+        product_name=product_name,
+        product_category=product_category,
+        target_audience_persona=target_audience_persona,
+        aspect_ratio=aspect_ratio,
+        product_visual_description="",
+        custom_directive=custom_directive,
+    )
 
     # Product reference resolution
     product_data_uri = None

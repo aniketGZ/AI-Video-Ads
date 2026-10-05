@@ -3255,8 +3255,8 @@ function applyMetaAdToMockup(ad, mode) {
   }
 
   if (toggleBtn && toggleLabel) {
-    toggleBtn.classList.toggle("active", useComposite);
-    toggleLabel.textContent = useComposite ? "Direct Ad" : "Clean Photo";
+    toggleBtn.classList.toggle("active", true);
+    toggleLabel.textContent = "AI Ad Creative";
   }
 }
 
@@ -3480,14 +3480,11 @@ function renderMetaFrameworksDeck() {
             </div>
           </div>
 
-          <!-- View Mode Toggle Bar (Once Rendered) -->
+          <!-- View Mode Badge (Once Rendered) -->
           <div class="suite-view-toggle-bar" id="suite_toggle_bar_${cid}" style="${rendered ? 'display: flex;' : 'display: none;'}">
-            <button type="button" class="suite-toggle-pill ${mode === 'composite' ? 'active' : ''}" onclick="setSuiteCardView(${cid}, 'composite')">
-              <i class="fa-solid fa-wand-magic-sparkles"></i> Direct Ad
-            </button>
-            <button type="button" class="suite-toggle-pill ${mode === 'raw' ? 'active' : ''}" onclick="setSuiteCardView(${cid}, 'raw')">
-              <i class="fa-solid fa-camera"></i> Clean Photo
-            </button>
+            <span class="suite-toggle-pill active" title="Native in-image typography and layout">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> AI Ad Creative
+            </span>
           </div>
         </div>
 

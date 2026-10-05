@@ -32,6 +32,7 @@ from meta_creative_engine import (
     generate_meta_creative_blueprints,
     render_meta_ad_composite,
     generate_single_meta_creative,
+    build_native_in_image_ad_prompt,
 )
 
 # Load configuration from .env file
@@ -411,9 +412,9 @@ async def generate_meta_image_ad(
             "\nReturn ONLY a valid JSON object with these EXACT keys:\n"
             "{\n"
             '  "primary_text": "Compelling Meta feed post caption (2-3 short punchy paragraphs, hook addressing audience pain point, clear transformation, subtle social proof, 2-3 clean emojis, closing CTA hook).",\n'
-            '  "headline": "High-CTR feed headline next to the CTA button (5-7 words max, bold and punchy, e.g. \'Say Goodbye to Muscle Fatigue 👋\')",\n'
+            '  "headline": "High-CTR feed headline (5-7 words max, bold and punchy, e.g. \'Say Goodbye to Muscle Fatigue 👋\')",\n'
             '  "cta": "Standard Meta CTA button text (e.g. \'Shop Now\', \'Claim Offer\', \'Learn More\', \'Order Today\')",\n'
-            '  "visual_prompt": "Hyper-descriptive commercial photography prompt for AI image generation. Describe the product placed naturally in the aspirational lifestyle setting of the target audience persona (setting, natural lighting, elegant depth of field, premium materials, high stopping-power commercial composition, 8K ultra-sharp details). Do NOT include text, words, or watermarks in the prompt."\n'
+            '  "visual_prompt": "Hyper-descriptive commercial Meta ad photography and layout prompt for AI image generation. Describe the hero product in its aspirational setting, and instruct the AI to render in-image typography directly into the creative pixels: including brand header, hook badge, bold headline, and CTA button. Specify typography placement, contrast, and layout structure."\n'
             "}"
         )
 
@@ -492,6 +493,30 @@ async def generate_meta_image_ad(
                 mime_type = "image/jpeg" if ext in [".jpg", ".jpeg"] else ("image/webp" if ext == ".webp" else "image/png")
                 product_data_uri = image_bytes_to_data_uri(product_bytes, mime_type)
 
+        # Build comprehensive native in-image prompt incorporating copies, typography, and visual layout
+        single_blueprint = {
+            "creative_id": 1,
+            "framework_key": "problem_solution",
+            "framework_name": angle_name,
+            "hook_badge": angle_name.upper(),
+            "headline": headline,
+            "subheadline": f"Engineered by {brand_name} for daily high performance.",
+            "primary_text": primary_text,
+            "cta": cta,
+            "callout_points": [headline, "100% Quality Guaranteed", "Fast Expedited Shipping"],
+            "visual_prompt": visual_prompt
+        }
+        native_visual_prompt = build_native_in_image_ad_prompt(
+            blueprint=single_blueprint,
+            brand_name=brand_name,
+            product_name=product_name,
+            product_category=product_category,
+            target_audience_persona=target_audience_persona,
+            aspect_ratio=aspect_ratio,
+            product_visual_description=product_visual_description or "",
+            custom_directive=custom_directive
+        )
+
         # 4. Engine Dispatch (Qwen-Image-2.1 vs Gemini Nano Banana Pro)
         image_bytes = None
         used_model = "Qwen-Image-2.1 (Self-Hosted)"
@@ -502,10 +527,10 @@ async def generate_meta_image_ad(
         if use_qwen:
             try:
                 logger.info(
-                    f"[Meta Ad Studio] Dispatching to Qwen-Image-2.1: {target_w}x{target_h}, steps={steps}, has_ref={bool(product_data_uri)}"
+                    f"[Meta Ad Studio] Dispatching to Qwen-Image-2.1 with in-image typography: {target_w}x{target_h}, steps={steps}, has_ref={bool(product_data_uri)}"
                 )
                 image_bytes = await generate_image_async(
-                    prompt=visual_prompt,
+                    prompt=native_visual_prompt,
                     width=target_w,
                     height=target_h,
                     steps=steps,
@@ -526,7 +551,7 @@ async def generate_meta_image_ad(
             if not client:
                 raise HTTPException(status_code=400, detail="Gemini API Key required for Nano Banana Pro generation.")
             logger.info("[Meta Ad Studio] Generating with Gemini Nano Banana Pro (nano-banana-pro-preview)...")
-            contents = [visual_prompt]
+            contents = [native_visual_prompt]
             if product_bytes:
                 contents.append(types.Part.from_bytes(data=product_bytes, mime_type=mime_type))
 
@@ -553,22 +578,11 @@ async def generate_meta_image_ad(
 
         logger.info(f"[Meta Ad Studio] Successfully generated Meta Image Ad: {out_path}")
 
-        # 6. Render high-converting Direct Response composite ad
+        # 6. Ensure composite file exists without overlay layer
         composite_filename = f"meta_ad_composite_{uuid.uuid4().hex}.png"
         composite_path = os.path.join("static/generated", composite_filename)
         final_image_url = f"/static/generated/{out_filename}"
         try:
-            single_blueprint = {
-                "creative_id": 1,
-                "framework_key": "problem_solution",
-                "framework_name": angle_name,
-                "hook_badge": "VERIFIED SOLUTION",
-                "headline": headline,
-                "subheadline": f"Engineered by {brand_name} for daily high performance.",
-                "primary_text": primary_text,
-                "cta": cta,
-                "callout_points": [headline, "100% Quality Guaranteed", "Fast Expedited Shipping"],
-            }
             render_meta_ad_composite(
                 base_image_path=out_path,
                 blueprint=single_blueprint,
@@ -579,7 +593,7 @@ async def generate_meta_image_ad(
             )
             final_image_url = f"/static/generated/{composite_filename}"
         except Exception as comp_err:
-            logger.warning(f"Composite overlay generation fallback: {comp_err}")
+            logger.warning(f"Composite image copy fallback: {comp_err}")
 
         return {
             "status": "success",
@@ -598,7 +612,7 @@ async def generate_meta_image_ad(
             "height": target_h,
             "model_used": used_model,
             "engine": "banana" if ("banana" in used_model or is_banana) else "qwen",
-            "visual_prompt": visual_prompt,
+            "visual_prompt": native_visual_prompt,
             "has_product_reference": bool(product_bytes)
         }
     except HTTPException:
