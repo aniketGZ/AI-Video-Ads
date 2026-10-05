@@ -8,3 +8,4 @@ jinja2
 beautifulsoup4
 edge-tts
 imageio-ffmpeg
+Pillow>=10.0.0

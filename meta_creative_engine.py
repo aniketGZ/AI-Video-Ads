@@ -4,7 +4,14 @@ import json
 import logging
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel
-from PIL import Image, ImageDraw, ImageFont
+try:
+    from PIL import Image, ImageDraw, ImageFont
+    HAS_PIL = True
+except ImportError:
+    Image = None
+    ImageDraw = None
+    ImageFont = None
+    HAS_PIL = False
 
 logger = logging.getLogger(__name__)
 
@@ -43,21 +50,51 @@ class MetaCreativeSuiteRequest(BaseModel):
     custom_directive: Optional[str] = None
     creatives_to_render: Optional[List[int]] = None
 
-# Typography Helper
-def get_font(size: int, bold: bool = True) -> ImageFont.FreeTypeFont:
-    """Retrieve optimal Windows TrueType font with graceful fallback."""
-    font_names = (
+# Typography Helper (Cross-Platform: Windows, Linux/Render.com)
+def get_font(size: int, bold: bool = True):
+    """Retrieve optimal TrueType font across Windows & Linux with graceful fallback."""
+    if not HAS_PIL or not ImageFont:
+        return None
+
+    candidates = []
+
+    # Windows candidate font paths
+    win_names = (
         ["segoeuib.ttf", "arialbd.ttf", "calibrib.ttf"]
         if bold
         else ["segoeui.ttf", "arial.ttf", "calibri.ttf"]
     )
-    for name in font_names:
-        path = os.path.join("C:/Windows/Fonts", name)
+    for name in win_names:
+        candidates.append(os.path.join("C:/Windows/Fonts", name))
+
+    # Linux (Ubuntu/Debian on Render.com) candidate font paths
+    linux_paths = [
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/truetype/freefont/FreeSansBold.ttf" if bold else "/usr/share/fonts/truetype/freefont/FreeSans.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/TTF/DejaVuSans.ttf",
+    ]
+    candidates.extend(linux_paths)
+
+    for path in candidates:
         if os.path.exists(path):
             try:
                 return ImageFont.truetype(path, size)
             except Exception:
                 pass
+
+    # Generic family name lookup with Pillow
+    generic_names = (
+        ["DejaVuSans-Bold", "Arial-Bold", "Helvetica-Bold", "FreeSans-Bold"]
+        if bold
+        else ["DejaVuSans", "Arial", "Helvetica", "FreeSans"]
+    )
+    for name in generic_names:
+        try:
+            return ImageFont.truetype(name, size)
+        except Exception:
+            pass
+
     try:
         return ImageFont.load_default()
     except Exception:
