@@ -1484,10 +1484,12 @@ async def generate_image_ad(
                 product_data_uri = image_bytes_to_data_uri(product_bytes, mime_type)
                 logger.info(f"[Image Studio] Product image attached ({len(product_bytes)} bytes) for product remix/placement.")
 
-        # 4. Engine dispatch (Qwen-Image-2.1 vs Gemini)
+        # 4. Engine dispatch (Qwen-Image-2.1 vs Gemini Nano Banana Pro)
         image_bytes = None
         used_model = "Qwen-Image-2.1 (Self-Hosted)"
-        use_qwen = (engine == "qwen") or (engine != "gemini" and is_self_hosted_enabled())
+        engine_clean = (engine or "qwen").lower().strip()
+        is_banana = engine_clean in ["gemini", "banana", "nano-banana", "nano-banana-pro", "nanobanana"]
+        use_qwen = not is_banana and (engine_clean in ["qwen", "self-hosted"] or is_self_hosted_enabled())
         
         if use_qwen:
             try:
@@ -1508,7 +1510,7 @@ async def generate_image_ad(
                 used_model = "Qwen-Image-2.1 (Self-Hosted)"
             except Exception as qwen_err:
                 logger.warning(f"[Image Studio] Qwen-Image-2.1 server error: {qwen_err}")
-                if should_fallback_to_gemini():
+                if should_fallback_to_gemini() and engine_clean not in ["qwen"]:
                     logger.info("[Image Studio] Attempting fallback to Gemini Nano Banana Pro...")
                 else:
                     raise HTTPException(status_code=503, detail=str(qwen_err))
@@ -1518,9 +1520,9 @@ async def generate_image_ad(
             if not client:
                 raise HTTPException(
                     status_code=400,
-                    detail="Gemini API Key is required when using Gemini engine or when self-hosted server is offline."
+                    detail="Gemini API Key is required for Gemini Nano Banana Pro."
                 )
-            logger.info("[Image Studio] Generating with Gemini Nano Banana Pro...")
+            logger.info("[Image Studio] Generating with Gemini Nano Banana Pro (nano-banana-pro-preview)...")
             contents = [enriched_prompt]
             if product_bytes:
                 contents.append(types.Part.from_bytes(data=product_bytes, mime_type=mime_type))
@@ -1539,8 +1541,9 @@ async def generate_image_ad(
                 raise HTTPException(status_code=500, detail="Gemini model did not return any image data.")
             used_model = "nano-banana-pro-preview"
 
-        # 5. Save generated image
-        out_filename = f"image_ad_{uuid.uuid4().hex}.png"
+        # 5. Save generated image with model-specific prefix
+        prefix = "banana_ad_" if ("banana" in used_model or is_banana) else "qwen_ad_"
+        out_filename = f"{prefix}{uuid.uuid4().hex}.png"
         out_path = os.path.join("static/generated", out_filename)
         if isinstance(image_bytes, str):
             image_bytes = image_bytes.encode('latin1')
@@ -1553,6 +1556,7 @@ async def generate_image_ad(
             "image_url": f"/static/generated/{out_filename}",
             "filename": out_filename,
             "model_used": used_model,
+            "engine": "banana" if ("banana" in used_model or is_banana) else "qwen",
             "aspect_ratio": aspect_ratio,
             "width": target_w,
             "height": target_h,
@@ -1568,17 +1572,29 @@ async def generate_image_ad(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/image-studio/history")
-async def get_image_studio_history():
-    """Retrieve recent generated image ads from static/generated."""
+async def get_image_studio_history(engine: Optional[str] = None):
+    """Retrieve recent generated image ads filtered by engine (qwen vs banana)."""
     gen_dir = "static/generated"
     items = []
     if os.path.exists(gen_dir):
-        files = [f for f in os.listdir(gen_dir) if f.startswith("image_ad_") and f.endswith(".png")]
+        files = [f for f in os.listdir(gen_dir) if f.endswith(".png")]
+        if engine:
+            e = engine.lower().strip()
+            if e in ["qwen", "self-hosted"]:
+                files = [f for f in files if (f.startswith("qwen_ad_") or f.startswith("image_ad_")) and not f.startswith("banana_ad_")]
+            elif e in ["banana", "gemini", "nano-banana", "nano-banana-pro"]:
+                files = [f for f in files if f.startswith("banana_ad_") or f.startswith("gemini_ad_")]
+        else:
+            files = [f for f in files if f.startswith("qwen_ad_") or f.startswith("banana_ad_") or f.startswith("image_ad_")]
+            
         files.sort(key=lambda x: os.path.getmtime(os.path.join(gen_dir, x)), reverse=True)
         for f in files[:24]:
+            is_b = f.startswith("banana_ad_")
             items.append({
                 "filename": f,
                 "url": f"/static/generated/{f}",
+                "model_used": "nano-banana-pro-preview" if is_b else "Qwen-Image-2.1",
+                "engine": "banana" if is_b else "qwen",
                 "created_at": os.path.getmtime(os.path.join(gen_dir, f))
             })
     return {"images": items}
