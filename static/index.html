@@ -44,33 +44,28 @@
 
         <!-- Flow Navigation Switcher (Floating Segmented Capsule) -->
         <div class="nav-switcher">
-          <button type="button" id="nav_tab_minimax" class="nav-tab-btn active" onclick="switchMainView('minimax')">
+          <button type="button" id="nav_tab_minimax" class="nav-tab-btn active" onclick="switchMainView('minimax')" title="MiniMax-H3 Video & Synchronized Audio">
             <i class="fa-solid fa-film"></i>
             <span>MiniMax Video</span>
-            <span class="nav-tag-clean tag-blue">H3 Audio</span>
           </button>
-          <button type="button" id="nav_tab_omniflash" class="nav-tab-btn" onclick="switchMainView('omniflash')">
+          <button type="button" id="nav_tab_omniflash" class="nav-tab-btn" onclick="switchMainView('omniflash')" title="Omni Flash Gemini 1.1 Fast Video">
             <i class="fa-solid fa-wand-magic-sparkles"></i>
             <span>Omni Flash</span>
-            <span class="nav-tag-clean tag-purple">Gemini 1.1</span>
           </button>
-          <button type="button" id="nav_tab_qwen" class="nav-tab-btn" onclick="switchMainView('qwen')">
+          <button type="button" id="nav_tab_qwen" class="nav-tab-btn" onclick="switchMainView('qwen')" title="Qwen-Image-2.1 Self-Hosted GPU Studio">
             <i class="fa-solid fa-image"></i>
             <span>Qwen Image</span>
-            <span class="nav-tag-clean tag-cyan">Qwen 2.1</span>
           </button>
-          <button type="button" id="nav_tab_banana" class="nav-tab-btn" onclick="switchMainView('banana')">
-            <i class="fa-solid fa-sparkles"></i>
+          <button type="button" id="nav_tab_banana" class="nav-tab-btn" onclick="switchMainView('banana')" title="Nano Banana Pro Multimodal Studio">
+            <i class="fa-solid fa-bolt"></i>
             <span>Nano Banana</span>
-            <span class="nav-tag-clean tag-amber">Gemini Pro</span>
           </button>
-          <button type="button" id="nav_tab_campaign" class="nav-tab-btn" onclick="switchMainView('campaign')">
+          <button type="button" id="nav_tab_campaign" class="nav-tab-btn" onclick="switchMainView('campaign')" title="Meta Ad Campaign Builder & Creative Studio">
             <i class="fa-solid fa-bullhorn"></i>
             <span>Ad Campaign</span>
-            <span class="nav-tag-clean tag-meta">Meta Ads</span>
           </button>
-          <button type="button" id="nav_tab_moneyprinter" class="nav-tab-btn" onclick="switchMainView('moneyprinter')">
-            <i class="fa-solid fa-bolt"></i>
+          <button type="button" id="nav_tab_moneyprinter" class="nav-tab-btn" onclick="switchMainView('moneyprinter')" title="MoneyPrinter Turbo B-Roll Video Generator">
+            <i class="fa-solid fa-video"></i>
             <span>MoneyPrinter</span>
           </button>
         </div>
@@ -1306,44 +1301,57 @@
               </div>
             </div>
 
-            <!-- 3. Format & Engine Row -->
-            <div class="meta-grid-2col">
-              <div class="form-group">
-                <label class="form-label meta-form-label"><i class="fa-solid fa-crop-simple"></i> Meta Format</label>
-                <div class="meta-pill-group" id="meta_ratio_group">
-                  <button type="button" class="meta-pill-btn active" data-ratio="4:5" onclick="setMetaRatio('4:5')">
-                    <strong>4:5</strong>
-                    <small>IG Feed (Best CTR)</small>
-                  </button>
-                  <button type="button" class="meta-pill-btn" data-ratio="1:1" onclick="setMetaRatio('1:1')">
-                    <strong>1:1</strong>
-                    <small>Square Feed</small>
-                  </button>
-                  <button type="button" class="meta-pill-btn" data-ratio="9:16" onclick="setMetaRatio('9:16')">
-                    <strong>9:16</strong>
+            <!-- 3. Format & Engine Controls -->
+            <div class="form-group meta-format-section">
+              <label class="form-label meta-form-label">
+                <span><i class="fa-solid fa-crop-simple"></i> Meta Format &amp; Aspect Ratio</span>
+                <span class="meta-label-tag">Feed vs Stories</span>
+              </label>
+              <div class="meta-ratio-grid" id="meta_ratio_group">
+                <button type="button" class="meta-pill-btn meta-ratio-card active" data-ratio="4:5" onclick="setMetaRatio('4:5')">
+                  <div class="ratio-icon-wrap"><i class="fa-brands fa-instagram"></i></div>
+                  <div class="ratio-card-info">
+                    <strong>4:5 Feed</strong>
+                    <small>Best CTR</small>
+                  </div>
+                </button>
+                <button type="button" class="meta-pill-btn meta-ratio-card" data-ratio="1:1" onclick="setMetaRatio('1:1')">
+                  <div class="ratio-icon-wrap"><i class="fa-solid fa-square"></i></div>
+                  <div class="ratio-card-info">
+                    <strong>1:1 Square</strong>
+                    <small>Carousel</small>
+                  </div>
+                </button>
+                <button type="button" class="meta-pill-btn meta-ratio-card" data-ratio="9:16" onclick="setMetaRatio('9:16')">
+                  <div class="ratio-icon-wrap"><i class="fa-solid fa-mobile-screen"></i></div>
+                  <div class="ratio-card-info">
+                    <strong>9:16 Vertical</strong>
                     <small>Stories / Reels</small>
-                  </button>
-                </div>
+                  </div>
+                </button>
               </div>
+            </div>
 
-              <div class="form-group">
-                <label class="form-label meta-form-label"><i class="fa-solid fa-microchip"></i> Generation Engine</label>
-                <div class="meta-pill-group" id="meta_engine_group">
-                  <button type="button" class="meta-pill-btn active" data-engine="qwen" onclick="setMetaEngine('qwen')">
-                    <span class="pill-engine-icon"><i class="fa-solid fa-server"></i></span>
-                    <div>
-                      <strong>Qwen-Image-2.1</strong>
-                      <small>Self-Hosted GCP · Placement</small>
-                    </div>
-                  </button>
-                  <button type="button" class="meta-pill-btn" data-engine="banana" onclick="setMetaEngine('banana')">
-                    <span class="pill-engine-icon"><i class="fa-solid fa-bolt"></i></span>
-                    <div>
-                      <strong>Nano Banana Pro</strong>
-                      <small>Gemini Multimodal</small>
-                    </div>
-                  </button>
-                </div>
+            <div class="form-group meta-engine-section">
+              <label class="form-label meta-form-label">
+                <span><i class="fa-solid fa-microchip"></i> Generation Engine</span>
+                <span class="meta-label-tag">GPU vs Cloud API</span>
+              </label>
+              <div class="meta-engine-grid" id="meta_engine_group">
+                <button type="button" class="meta-pill-btn meta-engine-card active" data-engine="qwen" onclick="setMetaEngine('qwen')">
+                  <span class="pill-engine-icon qwen-pill-icon"><i class="fa-solid fa-server"></i></span>
+                  <div class="engine-card-text">
+                    <strong>Qwen-Image-2.1</strong>
+                    <small>Self-Hosted GCP · Placement</small>
+                  </div>
+                </button>
+                <button type="button" class="meta-pill-btn meta-engine-card" data-engine="banana" onclick="setMetaEngine('banana')">
+                  <span class="pill-engine-icon banana-pill-icon"><i class="fa-solid fa-bolt"></i></span>
+                  <div class="engine-card-text">
+                    <strong>Nano Banana Pro</strong>
+                    <small>Gemini Multimodal · Fast</small>
+                  </div>
+                </button>
               </div>
             </div>
 

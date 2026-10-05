@@ -306,17 +306,12 @@ function selectAdGroup(index) {
           </div>
         </div>
       </div>
-      <div class="script-card-footer" style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
-        <div style="display: flex; gap: 8px;">
-          <button class="btn btn-primary btn-sm" style="flex: 1;" onclick="openStudio(${vIdx})">
-            <i class="fa-solid fa-clapperboard"></i> Creator Studio (10s)
-          </button>
-          <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="openStudio(${vIdx})">
-            <i class="fa-solid fa-image"></i> Storyboard
-          </button>
-        </div>
+      <div class="script-card-footer">
+        <button class="btn btn-primary btn-sm script-open-btn" onclick="openStudio(${vIdx})">
+          <i class="fa-solid fa-clapperboard"></i> Creator Studio · 10s Video &amp; Storyboard
+        </button>
         <div class="script-image-ad-strip">
-          <span class="script-img-ad-label"><i class="fa-brands fa-meta"></i> Image Ad:</span>
+          <span class="script-img-ad-label"><i class="fa-brands fa-meta"></i> Meta Image Ad:</span>
           <div class="script-img-ad-chips">
             <button class="chip-btn-engine" onclick="createMetaAdForScript(${vIdx}, 'qwen')" title="Create Meta Image Ad with Qwen-Image-2.1 (Self-Hosted GPU)">
               <i class="fa-solid fa-server"></i> Qwen 2.1
