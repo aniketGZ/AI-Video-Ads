@@ -1,0 +1,61 @@
+{
+  "video": "runs\\_example\\media\\bombay-shaving-company\\1040777455430188.mp4",
+  "duration_s": 21.61,
+  "width": 360,
+  "height": 640,
+  "aspect_ratio": "9:16",
+  "has_audio": true,
+  "hook_frames": [
+    {
+      "t": 0,
+      "file": "hook_00_0s.jpg"
+    },
+    {
+      "t": 0.5,
+      "file": "hook_00_5s.jpg"
+    },
+    {
+      "t": 1.0,
+      "file": "hook_01_0s.jpg"
+    },
+    {
+      "t": 1.5,
+      "file": "hook_01_5s.jpg"
+    },
+    {
+      "t": 2.0,
+      "file": "hook_02_0s.jpg"
+    },
+    {
+      "t": 2.5,
+      "file": "hook_02_5s.jpg"
+    },
+    {
+      "t": 3.0,
+      "file": "hook_03_0s.jpg"
+    }
+  ],
+  "scene_frames": [
+    {
+      "t": 8.9,
+      "file": "scene_01.jpg"
+    },
+    {
+      "t": 10.5,
+      "file": "scene_02.jpg"
+    },
+    {
+      "t": 13.8,
+      "file": "scene_03.jpg"
+    },
+    {
+      "t": 15.47,
+      "file": "scene_04.jpg"
+    },
+    {
+      "t": 21.57,
+      "file": "scene_05.jpg"
+    }
+  ],
+  "frames_dir": "runs\\_example\\frames\\1040777455430188"
+}

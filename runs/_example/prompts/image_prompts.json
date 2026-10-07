@@ -1,0 +1,236 @@
+[
+  {
+    "id": "ag_01_img_01",
+    "ad_group_id": "ag_01",
+    "concept_type": "proven",
+    "angle": "pain-point",
+    "inspired_by_pattern": "Macro hero composition with clean negative space (proven pattern)",
+    "aspect_ratio": "4:5",
+    "reference_images": [
+      {
+        "file": "uploads/product.png",
+        "role": "product — reproduce exactly"
+      }
+    ],
+    "prompt": {
+      "task": "Generate one single standalone advertising image. Not a grid, collage or contact sheet.",
+      "product_lock": "Use the attached product image as the exact product. Do not change its shape, colours, label layout, cap or proportions. Use attached product image as exact reference; preserve shape, label layout, and proportions.",
+      "scene": "Contemporary sunlit urban setting featuring Sweat & odor lifestyle context.",
+      "subject_and_action": "Sharp commercial hero shot with authentic Gen-Z aesthetic and fresh skin texture.",
+      "composition": "Product centered in lower-right third with generous clean negative space on top for headlines.",
+      "camera": "85mm f/2.0 commercial lens, crisp focal sharpness on bottle label, creamy soft bokeh background.",
+      "lighting": "Warm morning sunlight mixed with soft diffusion fill.",
+      "realism_details": "Subtle natural skin pores, delicate droplets of moisture, authentic material finish.",
+      "palette": [
+        "#F7C3A6",
+        "#D9481C",
+        "#111111"
+      ],
+      "text_overlay": {
+        "render_in_image": false,
+        "headline": "Keeps Skin Fresh & Dry",
+        "cta": "Shop Now",
+        "placement": "Top third clear zone",
+        "type_style": "Bold modern geometric sans-serif"
+      },
+      "logo_zone": "top-right, ~12% of width, clean flat area — logo composited in post",
+      "style": "Premium direct-to-consumer editorial commercial photography",
+      "negative": "no competitor branding, no distorted label text, no extra products, no watermark, no grid"
+    }
+  },
+  {
+    "id": "ag_01_img_02",
+    "ad_group_id": "ag_01",
+    "concept_type": "differentiator",
+    "angle": "pain-point",
+    "inspired_by_pattern": "Macro hero composition with clean negative space (differentiator pattern)",
+    "aspect_ratio": "4:5",
+    "reference_images": [
+      {
+        "file": "uploads/product.png",
+        "role": "product — reproduce exactly"
+      }
+    ],
+    "prompt": {
+      "task": "Generate one single standalone advertising image. Not a grid, collage or contact sheet.",
+      "product_lock": "Use the attached product image as the exact product. Do not change its shape, colours, label layout, cap or proportions. Use attached product image as exact reference; preserve shape, label layout, and proportions.",
+      "scene": "Contemporary sunlit urban setting featuring Sweat & odor lifestyle context.",
+      "subject_and_action": "Sharp commercial hero shot with authentic Gen-Z aesthetic and fresh skin texture.",
+      "composition": "Product centered in lower-right third with generous clean negative space on top for headlines.",
+      "camera": "85mm f/2.0 commercial lens, crisp focal sharpness on bottle label, creamy soft bokeh background.",
+      "lighting": "Warm morning sunlight mixed with soft diffusion fill.",
+      "realism_details": "Subtle natural skin pores, delicate droplets of moisture, authentic material finish.",
+      "palette": [
+        "#F7C3A6",
+        "#D9481C",
+        "#111111"
+      ],
+      "text_overlay": {
+        "render_in_image": false,
+        "headline": "Odor Protection, Head To Toe",
+        "cta": "Shop Now",
+        "placement": "Top third clear zone",
+        "type_style": "Bold modern geometric sans-serif"
+      },
+      "logo_zone": "top-right, ~12% of width, clean flat area — logo composited in post",
+      "style": "Premium direct-to-consumer editorial commercial photography",
+      "negative": "no competitor branding, no distorted label text, no extra products, no watermark, no grid"
+    }
+  },
+  {
+    "id": "ag_01_img_03",
+    "ad_group_id": "ag_01",
+    "concept_type": "differentiator",
+    "angle": "pain-point",
+    "inspired_by_pattern": "Macro hero composition with clean negative space (differentiator pattern)",
+    "aspect_ratio": "4:5",
+    "reference_images": [
+      {
+        "file": "uploads/product.png",
+        "role": "product — reproduce exactly"
+      }
+    ],
+    "prompt": {
+      "task": "Generate one single standalone advertising image. Not a grid, collage or contact sheet.",
+      "product_lock": "Use the attached product image as the exact product. Do not change its shape, colours, label layout, cap or proportions. Use attached product image as exact reference; preserve shape, label layout, and proportions.",
+      "scene": "Contemporary sunlit urban setting featuring Sweat & odor lifestyle context.",
+      "subject_and_action": "Sharp commercial hero shot with authentic Gen-Z aesthetic and fresh skin texture.",
+      "composition": "Product centered in lower-right third with generous clean negative space on top for headlines.",
+      "camera": "85mm f/2.0 commercial lens, crisp focal sharpness on bottle label, creamy soft bokeh background.",
+      "lighting": "Warm morning sunlight mixed with soft diffusion fill.",
+      "realism_details": "Subtle natural skin pores, delicate droplets of moisture, authentic material finish.",
+      "palette": [
+        "#F7C3A6",
+        "#D9481C",
+        "#111111"
+      ],
+      "text_overlay": {
+        "render_in_image": false,
+        "headline": "Keeps Skin Fresh & Dry",
+        "cta": "Shop Now",
+        "placement": "Top third clear zone",
+        "type_style": "Bold modern geometric sans-serif"
+      },
+      "logo_zone": "top-right, ~12% of width, clean flat area — logo composited in post",
+      "style": "Premium direct-to-consumer editorial commercial photography",
+      "negative": "no competitor branding, no distorted label text, no extra products, no watermark, no grid"
+    }
+  },
+  {
+    "id": "ag_02_img_01",
+    "ad_group_id": "ag_02",
+    "concept_type": "proven",
+    "angle": "benefit",
+    "inspired_by_pattern": "Macro hero composition with clean negative space (proven pattern)",
+    "aspect_ratio": "4:5",
+    "reference_images": [
+      {
+        "file": "uploads/product.png",
+        "role": "product — reproduce exactly"
+      }
+    ],
+    "prompt": {
+      "task": "Generate one single standalone advertising image. Not a grid, collage or contact sheet.",
+      "product_lock": "Use the attached product image as the exact product. Do not change its shape, colours, label layout, cap or proportions. Use attached product image as exact reference; preserve shape, label layout, and proportions.",
+      "scene": "Contemporary sunlit urban setting featuring Chafing relief lifestyle context.",
+      "subject_and_action": "Sharp commercial hero shot with authentic Gen-Z aesthetic and fresh skin texture.",
+      "composition": "Product centered in lower-right third with generous clean negative space on top for headlines.",
+      "camera": "85mm f/2.0 commercial lens, crisp focal sharpness on bottle label, creamy soft bokeh background.",
+      "lighting": "Warm morning sunlight mixed with soft diffusion fill.",
+      "realism_details": "Subtle natural skin pores, delicate droplets of moisture, authentic material finish.",
+      "palette": [
+        "#F7C3A6",
+        "#D9481C",
+        "#111111"
+      ],
+      "text_overlay": {
+        "render_in_image": false,
+        "headline": "Relieves Chafing",
+        "cta": "Learn More",
+        "placement": "Top third clear zone",
+        "type_style": "Bold modern geometric sans-serif"
+      },
+      "logo_zone": "top-right, ~12% of width, clean flat area — logo composited in post",
+      "style": "Premium direct-to-consumer editorial commercial photography",
+      "negative": "no competitor branding, no distorted label text, no extra products, no watermark, no grid"
+    }
+  },
+  {
+    "id": "ag_02_img_02",
+    "ad_group_id": "ag_02",
+    "concept_type": "differentiator",
+    "angle": "benefit",
+    "inspired_by_pattern": "Macro hero composition with clean negative space (differentiator pattern)",
+    "aspect_ratio": "4:5",
+    "reference_images": [
+      {
+        "file": "uploads/product.png",
+        "role": "product — reproduce exactly"
+      }
+    ],
+    "prompt": {
+      "task": "Generate one single standalone advertising image. Not a grid, collage or contact sheet.",
+      "product_lock": "Use the attached product image as the exact product. Do not change its shape, colours, label layout, cap or proportions. Use attached product image as exact reference; preserve shape, label layout, and proportions.",
+      "scene": "Contemporary sunlit urban setting featuring Chafing relief lifestyle context.",
+      "subject_and_action": "Sharp commercial hero shot with authentic Gen-Z aesthetic and fresh skin texture.",
+      "composition": "Product centered in lower-right third with generous clean negative space on top for headlines.",
+      "camera": "85mm f/2.0 commercial lens, crisp focal sharpness on bottle label, creamy soft bokeh background.",
+      "lighting": "Warm morning sunlight mixed with soft diffusion fill.",
+      "realism_details": "Subtle natural skin pores, delicate droplets of moisture, authentic material finish.",
+      "palette": [
+        "#F7C3A6",
+        "#D9481C",
+        "#111111"
+      ],
+      "text_overlay": {
+        "render_in_image": false,
+        "headline": "Triple Action Whole Body Cream",
+        "cta": "Learn More",
+        "placement": "Top third clear zone",
+        "type_style": "Bold modern geometric sans-serif"
+      },
+      "logo_zone": "top-right, ~12% of width, clean flat area — logo composited in post",
+      "style": "Premium direct-to-consumer editorial commercial photography",
+      "negative": "no competitor branding, no distorted label text, no extra products, no watermark, no grid"
+    }
+  },
+  {
+    "id": "ag_02_img_03",
+    "ad_group_id": "ag_02",
+    "concept_type": "differentiator",
+    "angle": "benefit",
+    "inspired_by_pattern": "Macro hero composition with clean negative space (differentiator pattern)",
+    "aspect_ratio": "4:5",
+    "reference_images": [
+      {
+        "file": "uploads/product.png",
+        "role": "product — reproduce exactly"
+      }
+    ],
+    "prompt": {
+      "task": "Generate one single standalone advertising image. Not a grid, collage or contact sheet.",
+      "product_lock": "Use the attached product image as the exact product. Do not change its shape, colours, label layout, cap or proportions. Use attached product image as exact reference; preserve shape, label layout, and proportions.",
+      "scene": "Contemporary sunlit urban setting featuring Chafing relief lifestyle context.",
+      "subject_and_action": "Sharp commercial hero shot with authentic Gen-Z aesthetic and fresh skin texture.",
+      "composition": "Product centered in lower-right third with generous clean negative space on top for headlines.",
+      "camera": "85mm f/2.0 commercial lens, crisp focal sharpness on bottle label, creamy soft bokeh background.",
+      "lighting": "Warm morning sunlight mixed with soft diffusion fill.",
+      "realism_details": "Subtle natural skin pores, delicate droplets of moisture, authentic material finish.",
+      "palette": [
+        "#F7C3A6",
+        "#D9481C",
+        "#111111"
+      ],
+      "text_overlay": {
+        "render_in_image": false,
+        "headline": "Relieves Chafing",
+        "cta": "Learn More",
+        "placement": "Top third clear zone",
+        "type_style": "Bold modern geometric sans-serif"
+      },
+      "logo_zone": "top-right, ~12% of width, clean flat area — logo composited in post",
+      "style": "Premium direct-to-consumer editorial commercial photography",
+      "negative": "no competitor branding, no distorted label text, no extra products, no watermark, no grid"
+    }
+  }
+]

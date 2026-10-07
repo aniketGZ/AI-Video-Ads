@@ -3,1937 +3,351 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Viral Studio — AI Video Ad Generator</title>
-  <meta name="description" content="Turn any brand link into scroll-stopping Meta video ad campaigns with Gemini AI, Nano Banana Pro storyboards and one-click video generation.">
+  <title>Ad Studio</title>
+  <meta name="description" content="Turn a brand link into a researched Meta campaign: finished image ads with Nano Banana Pro and video ads with Omni Flash.">
 
-  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
-
-  <!-- FontAwesome Icons -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-  <!-- Stylesheet -->
-  <link rel="stylesheet" href="css/style.css?v=2.0.1">
+  <link rel="stylesheet" href="css/style.css?v=3.0.7">
 </head>
 <body>
 
-  <!-- Ambient background -->
-  <div class="aurora" aria-hidden="true">
-    <div class="aurora-blob aurora-1"></div>
-    <div class="aurora-blob aurora-2"></div>
-    <div class="aurora-grid"></div>
-  </div>
-
-  <!-- Top Navigation (Antigravity Floating Command Deck) -->
-  <header class="topbar-wrapper">
-    <nav class="topbar">
-      <div class="topbar-inner">
-        <!-- Logo with floating neon aura -->
-        <div class="logo-container" onclick="switchMainView('campaign')" style="cursor: pointer;" title="Viral Studio — Go to Ad Campaign">
-          <div class="logo-icon"><i class="fa-solid fa-bolt"></i></div>
-          <div class="logo-text">
-            <div class="logo-title-row">
-              <h1>Viral Studio</h1>
-              <span class="logo-version-badge">v2.5</span>
-            </div>
-            <span>Antigravity AI Platform</span>
-          </div>
-        </div>
-
-        <!-- Flow Navigation Switcher (Floating Segmented Capsule) -->
-        <div class="nav-switcher">
-          <button type="button" id="nav_tab_minimax" class="nav-tab-btn active" onclick="switchMainView('minimax')" title="MiniMax-H3 Video & Synchronized Audio">
-            <i class="fa-solid fa-film"></i>
-            <span>MiniMax Video</span>
-          </button>
-          <button type="button" id="nav_tab_omniflash" class="nav-tab-btn" onclick="switchMainView('omniflash')" title="Omni Flash Gemini 1.1 Fast Video">
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-            <span>Omni Flash</span>
-          </button>
-          <button type="button" id="nav_tab_qwen" class="nav-tab-btn" onclick="switchMainView('qwen')" title="Qwen-Image-2.1 Self-Hosted GPU Studio">
-            <i class="fa-solid fa-image"></i>
-            <span>Qwen Image</span>
-          </button>
-          <button type="button" id="nav_tab_banana" class="nav-tab-btn" onclick="switchMainView('banana')" title="Nano Banana Pro Multimodal Studio">
-            <i class="fa-solid fa-bolt"></i>
-            <span>Nano Banana</span>
-          </button>
-          <button type="button" id="nav_tab_campaign" class="nav-tab-btn" onclick="switchMainView('campaign')" title="Meta Ad Campaign Builder & Creative Studio">
-            <i class="fa-solid fa-bullhorn"></i>
-            <span>Ad Campaign</span>
-          </button>
-          <button type="button" id="nav_tab_moneyprinter" class="nav-tab-btn" onclick="switchMainView('moneyprinter')" title="MoneyPrinter Turbo B-Roll Video Generator">
-            <i class="fa-solid fa-video"></i>
-            <span>MoneyPrinter</span>
-          </button>
-        </div>
-
-        <!-- Command Deck Right Actions -->
-        <div class="topbar-actions">
-          <button type="button" id="btn_gpu_status" class="topbar-btn gpu-status-btn" onclick="openSelfHostedModal()" title="View Self-Hosted GPU Servers (Qwen-Image-2.1 & MiniMax-H3)">
-            <span class="gpu-pulse-dot offline" id="gpu_status_dot"></span>
-            <span id="gpu_status_text">GPU Cloud</span>
-          </button>
-
-          <button type="button" id="btn_open_keys" class="topbar-btn keys-trigger-btn" onclick="openApiKeysModal()" title="Manage API Keys (Gemini, Kie AI, Pixabay, GPU Servers)">
-            <i class="fa-solid fa-key"></i>
-            <span>API Keys</span>
-            <span class="keys-status-indicator" id="keys_status_badge">Configure</span>
-          </button>
-        </div>
-      </div>
-    </nav>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand"><div class="brand-mark"><i class="fa-solid fa-bolt"></i></div><span>Ad Studio</span></div>
+      <nav class="nav" aria-label="Main">
+        <button type="button" class="nav-btn active" data-view="campaign"><i class="fa-solid fa-bullhorn"></i><span class="nav-label">Campaign</span></button>
+        <button type="button" class="nav-btn" data-view="image"><i class="fa-regular fa-image"></i><span class="nav-label">Image studio</span></button>
+        <button type="button" class="nav-btn" data-view="video"><i class="fa-solid fa-film"></i><span class="nav-label">Video studio</span></button>
+      </nav>
+      <button type="button" class="btn btn-sm key-btn" id="key_btn"><span class="key-dot" id="key_dot"></span> API key</button>
+    </div>
   </header>
 
-  <main class="container">
-
-    <!-- ==================== FLOW 1: MINIMAX-H3 VIDEO STUDIO (SELF-HOSTED GPU) ==================== -->
-    <section id="view_minimax_studio" class="studio-workspace-section active">
-      <!-- MiniMax Subheader Bar -->
-      <div class="studio-toolbar-strip">
-        <div class="studio-status-wrap">
-          <div class="studio-pill-status" style="border-color: rgba(59, 130, 246, 0.4); background: rgba(59, 130, 246, 0.1);">
-            <span class="pulse-dot" style="background: #3b82f6;"></span>
-            <strong>MiniMax-H3</strong> · Self-Hosted GPU Video &amp; Audio Engine
-          </div>
-          <span class="studio-tagline">High-definition AI video synthesis with synchronized stereo audio directly on GCP GPU</span>
-        </div>
-        <div class="studio-engine-pills">
-          <span class="engine-badge" style="color: #60a5fa; border-color: rgba(59, 130, 246, 0.35);"><i class="fa-solid fa-volume-high"></i> Synchronized Audio</span>
-          <span class="engine-badge"><i class="fa-solid fa-sliders"></i> 480p / 768p / 1344p</span>
-          <span class="engine-badge"><i class="fa-solid fa-stopwatch"></i> 4s – 15s Duration</span>
-        </div>
+  <!-- ================================================================== -->
+  <!-- Campaign: one guided page                                          -->
+  <!-- ================================================================== -->
+  <main class="page" id="view_campaign" data-view-panel="campaign">
+    <div class="page-head">
+      <div>
+        <h1>Build a Meta campaign from a link</h1>
+        <p>We research your brand, its audience and competitors' live ads, then write and render image and video ads for your bullseye customer.</p>
       </div>
-
-      <div class="studio-grid-layout">
-        <!-- Left: MiniMax Controls & Inputs -->
-        <div class="glass-card studio-control-panel">
-          <!-- Generation Mode Selector Tabs -->
-          <div class="mode-tabs-container">
-            <button type="button" class="mode-tab-btn active" id="btn_mm_mode_t2va" onclick="setMinimaxMode('t2va')">
-              <i class="fa-solid fa-font"></i>
-              <span>Text-to-Video</span>
-            </button>
-            <button type="button" class="mode-tab-btn" id="btn_mm_mode_single" onclick="setMinimaxMode('fl2va_single')">
-              <i class="fa-solid fa-image"></i>
-              <span>Image-to-Video</span>
-            </button>
-            <button type="button" class="mode-tab-btn" id="btn_mm_mode_dual" onclick="setMinimaxMode('fl2va_dual')">
-              <i class="fa-solid fa-arrows-left-right-to-line"></i>
-              <span>Start &amp; End Frame</span>
-            </button>
-          </div>
-
-          <!-- Image-to-Video: Single Keyframe Upload Area -->
-          <div class="studio-mode-pane" id="pane_mm_single_frame" style="display: none;">
-            <div class="field-label-row">
-              <label class="field-label"><i class="fa-solid fa-image"></i> Starting Frame <span class="field-subtext">(Animates starting from this picture)</span></label>
-            </div>
-            <div class="keyframe-card">
-              <div class="keyframe-header">
-                <span class="keyframe-badge" style="color: #60a5fa;"><i class="fa-solid fa-play"></i> First Frame (t=0s)</span>
-                <button type="button" class="btn-clear-frame" id="clear_mm_single_btn" style="display:none;" onclick="clearMinimaxSingleFrame()"><i class="fa-solid fa-trash"></i> Remove</button>
-              </div>
-              <div class="keyframe-dropzone" id="dropzone_mm_single" onclick="document.getElementById('input_mm_single_frame').click()">
-                <div class="empty-frame-state" id="body_mm_single">
-                  <i class="fa-solid fa-cloud-arrow-up" style="color: #60a5fa;"></i>
-                  <span>Upload start frame or product picture</span>
-                </div>
-                <img id="preview_mm_single_frame" class="keyframe-preview-img" style="display:none;" alt="Start frame">
-              </div>
-              <input type="file" id="input_mm_single_frame" accept="image/*" style="display:none;" onchange="handleMinimaxSingleUpload(event)">
-            </div>
-          </div>
-
-          <!-- Dual Keyframes: Start & End Frame Area -->
-          <div class="studio-mode-pane" id="pane_mm_dual_frame" style="display: none;">
-            <div class="field-label-row">
-              <label class="field-label"><i class="fa-solid fa-arrows-left-right-to-line"></i> Boundary Frames <span class="field-subtext">(Frame 0 &amp; Frame -1)</span></label>
-            </div>
-            <div class="keyframes-grid">
-              <!-- Start Frame -->
-              <div class="keyframe-card">
-                <div class="keyframe-header">
-                  <span class="keyframe-badge" style="color: #60a5fa;"><i class="fa-solid fa-play"></i> Start Frame</span>
-                  <button type="button" class="btn-clear-frame" id="clear_mm_first_btn" style="display:none;" onclick="clearMinimaxDualFrame('first')"><i class="fa-solid fa-trash"></i></button>
-                </div>
-                <div class="keyframe-dropzone" id="dropzone_mm_first" onclick="document.getElementById('input_mm_first_frame').click()">
-                  <div class="empty-frame-state" id="body_mm_first">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <span>Frame 0</span>
-                  </div>
-                  <img id="preview_mm_first_frame" class="keyframe-preview-img" style="display:none;" alt="First frame">
-                </div>
-                <input type="file" id="input_mm_first_frame" accept="image/*" style="display:none;" onchange="handleMinimaxDualUpload(event, 'first')">
-              </div>
-
-              <!-- End Frame -->
-              <div class="keyframe-card">
-                <div class="keyframe-header">
-                  <span class="keyframe-badge" style="color: #60a5fa;"><i class="fa-solid fa-stop"></i> End Frame</span>
-                  <button type="button" class="btn-clear-frame" id="clear_mm_last_btn" style="display:none;" onclick="clearMinimaxDualFrame('last')"><i class="fa-solid fa-trash"></i></button>
-                </div>
-                <div class="keyframe-dropzone" id="dropzone_mm_last" onclick="document.getElementById('input_mm_last_frame').click()">
-                  <div class="empty-frame-state" id="body_mm_last">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <span>Frame -1</span>
-                  </div>
-                  <img id="preview_mm_last_frame" class="keyframe-preview-img" style="display:none;" alt="Last frame">
-                </div>
-                <input type="file" id="input_mm_last_frame" accept="image/*" style="display:none;" onchange="handleMinimaxDualUpload(event, 'last')">
-              </div>
-            </div>
-          </div>
-
-          <!-- Prompt Input Section -->
-          <div class="studio-field-group">
-            <div class="field-label-row">
-              <label class="field-label" for="minimax_prompt">
-                <i class="fa-solid fa-feather-pointed"></i> <span id="minimax_prompt_label">Scene Prompt &amp; Motion Directions</span>
-              </label>
-            </div>
-            
-            <textarea id="minimax_prompt" class="studio-textarea" rows="3" placeholder="Describe the scene action, motion dynamics, visual atmosphere, and audio style in detail..."></textarea>
-
-            <!-- Camera / Motion preset chips -->
-            <div class="camera-preset-chips">
-              <span class="preset-label"><i class="fa-solid fa-video"></i> Camera:</span>
-              <button type="button" class="chip-preset" onclick="appendMinimaxKeyword('Slow cinematic push-in tracking shot, shallow depth of field')">🎥 Push In</button>
-              <button type="button" class="chip-preset" onclick="appendMinimaxKeyword('360 degree smooth orbit camera movement around subject')">🔄 Orbit</button>
-              <button type="button" class="chip-preset" onclick="appendMinimaxKeyword('Sweeping aerial drone shot with dramatic lighting')">🚁 Drone</button>
-              <button type="button" class="chip-preset" onclick="appendMinimaxKeyword('Macro close-up focus pull, crisp surface details')">🔍 Macro</button>
-              <button type="button" class="chip-preset" onclick="appendMinimaxKeyword('Natural handheld camera motion with subtle micro-drift')">🤳 Handheld</button>
-            </div>
-          </div>
-
-          <!-- MiniMax-H3 Parameters -->
-          <div class="studio-specs-compact">
-            <!-- Aspect Ratio -->
-            <div class="spec-row">
-              <span class="spec-inline-label"><i class="fa-solid fa-crop-simple"></i> Aspect:</span>
-              <div class="pill-group" id="minimax_aspect_selector">
-                <button type="button" class="pill-btn active" data-ratio="9:16" onclick="setMinimaxAspectRatio('9:16')">
-                  <i class="fa-solid fa-mobile-screen"></i> 9:16 <span class="pill-sub">Vertical</span>
-                </button>
-                <button type="button" class="pill-btn" data-ratio="16:9" onclick="setMinimaxAspectRatio('16:9')">
-                  <i class="fa-solid fa-tv"></i> 16:9 <span class="pill-sub">Wide</span>
-                </button>
-                <button type="button" class="pill-btn" data-ratio="auto" onclick="setMinimaxAspectRatio('auto')">
-                  <i class="fa-solid fa-expand"></i> auto <span class="pill-sub">Auto</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Short Edge Resolution -->
-            <div class="spec-row">
-              <span class="spec-inline-label"><i class="fa-solid fa-wand-magic"></i> Short Edge:</span>
-              <div class="pill-group" id="minimax_res_selector">
-                <button type="button" class="pill-btn" data-edge="480" onclick="setMinimaxResolution(480)">480 <span class="pill-sub">Fast</span></button>
-                <button type="button" class="pill-btn active" data-edge="768" onclick="setMinimaxResolution(768)">768 <span class="pill-sub">Standard</span></button>
-                <button type="button" class="pill-btn" data-edge="1344" onclick="setMinimaxResolution(1344)">1344 <span class="pill-sub">High Def</span></button>
-              </div>
-            </div>
-
-            <!-- Duration (4 to 15 seconds) -->
-            <div class="spec-row">
-              <span class="spec-inline-label"><i class="fa-solid fa-clock"></i> Duration:</span>
-              <div class="pill-group" id="minimax_dur_selector">
-                <button type="button" class="pill-btn" data-dur="4" onclick="setMinimaxDuration(4)">4s</button>
-                <button type="button" class="pill-btn active" data-dur="5" onclick="setMinimaxDuration(5)">5s</button>
-                <button type="button" class="pill-btn" data-dur="6" onclick="setMinimaxDuration(6)">6s</button>
-                <button type="button" class="pill-btn" data-dur="8" onclick="setMinimaxDuration(8)">8s</button>
-                <button type="button" class="pill-btn" data-dur="10" onclick="setMinimaxDuration(10)">10s</button>
-                <button type="button" class="pill-btn" data-dur="12" onclick="setMinimaxDuration(12)">12s</button>
-                <button type="button" class="pill-btn" data-dur="15" onclick="setMinimaxDuration(15)">15s</button>
-              </div>
-            </div>
-
-            <!-- Inference Steps & Seed -->
-            <div class="spec-dual-row">
-              <div class="spec-dual-col">
-                <span class="spec-inline-label"><i class="fa-solid fa-gauge-high"></i> Steps:</span>
-                <div class="pill-group" id="minimax_steps_selector">
-                  <button type="button" class="pill-btn" data-steps="20" onclick="setMinimaxSteps(20)">20</button>
-                  <button type="button" class="pill-btn active" data-steps="30" onclick="setMinimaxSteps(30)">30</button>
-                  <button type="button" class="pill-btn" data-steps="40" onclick="setMinimaxSteps(40)">40</button>
-                  <button type="button" class="pill-btn" data-steps="50" onclick="setMinimaxSteps(50)">50</button>
-                </div>
-              </div>
-
-              <div class="spec-dual-col">
-                <span class="spec-inline-label"><i class="fa-solid fa-dice"></i> Seed:</span>
-                <input type="number" id="minimax_seed" class="text-input" placeholder="Random" style="padding: 0.35rem 0.6rem; font-size: 0.8rem; border-radius: var(--radius-sm); width: 100%;">
-              </div>
-            </div>
-          </div>
-
-          <!-- Generate CTA Button -->
-          <button type="button" id="minimax_generate_btn" class="btn btn-primary btn-xl studio-submit-btn" style="background: linear-gradient(135deg, #2563eb 0%, #3b82f6 50%, #60a5fa 100%);" onclick="submitMiniMaxStudioVideo()">
-            <i class="fa-solid fa-play"></i>
-            <span>Generate Video + Audio (MiniMax-H3)</span>
-          </button>
-        </div>
-
-        <!-- Right: MiniMax Output Canvas Deck & History -->
-        <div class="studio-canvas-deck">
-          <!-- Main Preview Player Card -->
-          <div class="glass-card studio-player-card">
-            <div class="player-card-header">
-              <div class="player-title-info">
-                <h3><i class="fa-solid fa-clapperboard" style="color: #60a5fa;"></i> MiniMax Video Player</h3>
-                <div class="player-meta-badges">
-                  <span class="meta-tag" id="minimax_meta_res">9:16 Vertical · 768p</span>
-                  <span class="meta-tag" id="minimax_meta_dur">5s</span>
-                  <span class="meta-tag" style="background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.35); color: #93c5fd;"><i class="fa-solid fa-volume-high"></i> Stereo Audio</span>
-                  <span class="engine-tag" style="background: rgba(59, 130, 246, 0.2); border-color: rgba(59, 130, 246, 0.4); color: #60a5fa;"><i class="fa-solid fa-microchip"></i> MiniMax-H3</span>
-                </div>
-              </div>
-              <div class="player-actions" id="minimax_player_actions" style="display: none;">
-                <a id="download_minimax_btn" class="btn btn-secondary btn-sm" download="minimax_video.mp4">
-                  <i class="fa-solid fa-download"></i> Download MP4 (with Audio)
-                </a>
-              </div>
-            </div>
-
-            <!-- Video Player Stage Viewport -->
-            <div class="player-stage-viewport ratio-9-16" id="minimax_viewport">
-              <!-- Empty State -->
-              <div class="player-empty-state" id="minimax_empty_state">
-                <div class="glow-orb" style="background: radial-gradient(circle, rgba(59, 130, 246, 0.35) 0%, transparent 70%);"></div>
-                <div class="flow-icon-wrap" style="color: #60a5fa;"><i class="fa-solid fa-play"></i></div>
-                <h4>Ready to generate with MiniMax-H3</h4>
-                <p>Configure prompt, keyframes, and duration (4-15s). The output will include generated video and synchronized stereo audio.</p>
-              </div>
-
-              <!-- Loading State Overlay -->
-              <div class="player-loading-state" id="minimax_loading_state" style="display: none;">
-                <div class="spinner-glow" style="border-top-color: #60a5fa;"></div>
-                <h4 id="minimax_loading_title">Synthesizing with MiniMax-H3</h4>
-                <p id="minimax_loading_sub">Job queued on self-hosted GPU server...</p>
-                <div class="loading-progress-bar"><div class="loading-progress-fill" id="minimax_progress_bar" style="background: linear-gradient(90deg, #2563eb, #60a5fa);"></div></div>
-                <span id="minimax_elapsed_timer" style="font-size: 0.76rem; color: var(--text-muted); margin-top: 0.5rem; font-family: var(--font-mono);">0s elapsed · Polling server</span>
-              </div>
-
-              <!-- Video Player Element -->
-              <video id="minimax_video_player" class="studio-rendered-video" controls autoplay loop playsinline style="display: none;"></video>
-            </div>
-          </div>
-
-          <!-- MiniMax History Reel -->
-          <div class="glass-card studio-history-card">
-            <div class="history-card-header">
-              <h4><i class="fa-solid fa-clock-rotate-left"></i> MiniMax Generations</h4>
-              <span class="history-counter" id="minimax_history_count">0 videos</span>
-            </div>
-            <div class="history-reel" id="minimax_history_reel">
-              <div class="history-empty" id="minimax_history_empty_msg">MiniMax video clips in this session will appear here for instant replay and comparison.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================== FLOW 2: GEMINI OMNI FLASH 1.1 STUDIO ==================== -->
-    <section id="view_omniflash_studio" class="studio-workspace-section" style="display: none;">
-      <!-- Studio Subheader Bar -->
-      <div class="studio-toolbar-strip">
-        <div class="studio-status-wrap">
-          <div class="studio-pill-status">
-            <span class="pulse-dot"></span>
-            <strong>Omni Flash 1.1</strong> · Multimodal Video Engine
-          </div>
-          <span class="studio-tagline">Prompt-to-video, multi-reference consistency, keyframe transition &amp; video-to-video editing</span>
-        </div>
-        <div class="studio-engine-pills">
-          <span class="engine-badge"><i class="fa-solid fa-sparkles"></i> 4K / 1080p / 720p</span>
-          <span class="engine-badge"><i class="fa-solid fa-layer-group"></i> Up to 3 Image Refs</span>
-        </div>
-      </div>
-
-      <div class="studio-grid-layout">
-        <!-- Left: Controls & Inputs -->
-        <div class="glass-card studio-control-panel">
-          <!-- Generation Mode Selector Tabs -->
-          <div class="mode-tabs-container">
-            <button type="button" class="mode-tab-btn active" data-mode="prompt_images" onclick="setStudioMode('prompt_images')">
-              <i class="fa-solid fa-image"></i>
-              <span>Text &amp; References</span>
-            </button>
-            <button type="button" class="mode-tab-btn" data-mode="first_last_frame" onclick="setStudioMode('first_last_frame')">
-              <i class="fa-solid fa-arrows-left-right-to-line"></i>
-              <span>Start &amp; End Frame</span>
-            </button>
-            <button type="button" class="mode-tab-btn" data-mode="edit_video" onclick="setStudioMode('edit_video')">
-              <i class="fa-solid fa-film"></i>
-              <span>Edit Video</span>
-            </button>
-          </div>
-
-          <!-- Mode 1: Reference Images Upload Area -->
-          <div class="studio-mode-pane active" id="pane_prompt_images">
-            <div class="field-label-row">
-              <label class="field-label"><i class="fa-solid fa-images"></i> Consistency References <span class="field-subtext">(Character, Product, Style)</span></label>
-              <span class="field-hint" id="ref_count_badge">0 / 3</span>
-            </div>
-            
-            <div class="ref-slots-row">
-              <!-- Slot 1 -->
-              <div class="ref-slot" id="ref_slot_0" onclick="triggerRefUpload(0)">
-                <div class="slot-empty" id="slot_empty_0">
-                  <i class="fa-solid fa-plus"></i>
-                  <span>Ref 1</span>
-                </div>
-                <img id="slot_img_0" class="slot-img" style="display:none;" alt="Ref 1">
-                <button type="button" class="slot-del-btn" id="slot_del_0" style="display:none;" onclick="event.stopPropagation(); removeSlotRef(0)"><i class="fa-solid fa-xmark"></i></button>
-              </div>
-
-              <!-- Slot 2 -->
-              <div class="ref-slot" id="ref_slot_1" onclick="triggerRefUpload(1)">
-                <div class="slot-empty" id="slot_empty_1">
-                  <i class="fa-solid fa-plus"></i>
-                  <span>Ref 2</span>
-                </div>
-                <img id="slot_img_1" class="slot-img" style="display:none;" alt="Ref 2">
-                <button type="button" class="slot-del-btn" id="slot_del_1" style="display:none;" onclick="event.stopPropagation(); removeSlotRef(1)"><i class="fa-solid fa-xmark"></i></button>
-              </div>
-
-              <!-- Slot 3 -->
-              <div class="ref-slot" id="ref_slot_2" onclick="triggerRefUpload(2)">
-                <div class="slot-empty" id="slot_empty_2">
-                  <i class="fa-solid fa-plus"></i>
-                  <span>Ref 3</span>
-                </div>
-                <img id="slot_img_2" class="slot-img" style="display:none;" alt="Ref 3">
-                <button type="button" class="slot-del-btn" id="slot_del_2" style="display:none;" onclick="event.stopPropagation(); removeSlotRef(2)"><i class="fa-solid fa-xmark"></i></button>
-              </div>
-
-              <input type="file" id="studio_ref_input_hidden" accept="image/*" style="display: none;" onchange="handleSingleSlotUpload(event)">
-            </div>
-          </div>
-
-          <!-- Mode 2: First & End Frame Upload Area -->
-          <div class="studio-mode-pane" id="pane_first_last_frame" style="display: none;">
-            <div class="field-label-row">
-              <label class="field-label"><i class="fa-solid fa-arrows-split-up-and-left"></i> Keyframe Transition Framing</label>
-              <span class="field-hint">Interpolates motion smoothly between frames</span>
-            </div>
-            <div class="keyframes-compact-row">
-              <div class="keyframe-compact-card" onclick="document.getElementById('studio_first_frame_input').click()">
-                <div class="keyframe-top-tag">Start Frame (0s)</div>
-                <div class="keyframe-compact-body" id="keyframe_body_first">
-                  <i class="fa-regular fa-image"></i>
-                  <span>Select start image</span>
-                </div>
-                <img id="preview_first_frame" class="keyframe-img-preview" style="display:none;" alt="Start frame">
-                <button type="button" class="keyframe-remove-btn" id="clear_first_frame_btn" style="display:none;" onclick="event.stopPropagation(); clearKeyframe('first')"><i class="fa-solid fa-xmark"></i></button>
-                <input type="file" id="studio_first_frame_input" accept="image/*" style="display:none;" onchange="handleKeyframeUpload(event, 'first')">
-              </div>
-
-              <div class="keyframe-arrow-divider">
-                <i class="fa-solid fa-arrow-right-long"></i>
-              </div>
-
-              <div class="keyframe-compact-card" onclick="document.getElementById('studio_last_frame_input').click()">
-                <div class="keyframe-top-tag">End Frame (Final)</div>
-                <div class="keyframe-compact-body" id="keyframe_body_last">
-                  <i class="fa-regular fa-image"></i>
-                  <span>Select end image</span>
-                </div>
-                <img id="preview_last_frame" class="keyframe-img-preview" style="display:none;" alt="End frame">
-                <button type="button" class="keyframe-remove-btn" id="clear_last_frame_btn" style="display:none;" onclick="event.stopPropagation(); clearKeyframe('last')"><i class="fa-solid fa-xmark"></i></button>
-                <input type="file" id="studio_last_frame_input" accept="image/*" style="display:none;" onchange="handleKeyframeUpload(event, 'last')">
-              </div>
-            </div>
-          </div>
-
-          <!-- Mode 3: Video-to-Video Edit Area -->
-          <div class="studio-mode-pane" id="pane_edit_video" style="display: none;">
-            <div class="field-label-row">
-              <label class="field-label"><i class="fa-solid fa-video"></i> Source Video to Edit</label>
-              <span class="field-hint">MP4, WebM, MOV</span>
-            </div>
-            <div class="video-compact-box" onclick="document.getElementById('studio_video_input').click()">
-              <div id="video_empty_state" class="video-empty-compact">
-                <i class="fa-solid fa-film"></i>
-                <div>
-                  <strong>Upload source video to modify</strong>
-                  <span>Click or drag &amp; drop video clip</span>
-                </div>
-              </div>
-              <div id="video_preview_container" style="display:none;" class="video-preview-compact">
-                <video id="preview_source_video" controls muted></video>
-                <button type="button" class="btn-del-video" onclick="event.stopPropagation(); clearSourceVideo()"><i class="fa-solid fa-trash"></i> Remove</button>
-              </div>
-              <input type="file" id="studio_video_input" accept="video/*" style="display:none;" onchange="handleSourceVideoUpload(event)">
-            </div>
-          </div>
-
-          <!-- Prompt Input Section -->
-          <div class="studio-field-group">
-            <div class="field-label-row">
-              <label class="field-label" for="studio_prompt">
-                <i class="fa-solid fa-feather-pointed"></i> <span id="prompt_label_text">Scene Prompt &amp; Motion Directions</span>
-              </label>
-            </div>
-            
-            <textarea id="studio_prompt" class="studio-textarea" rows="3" placeholder="Describe the scene action, camera motion, atmosphere, and styling in detail..."></textarea>
-
-            <!-- Camera / Motion preset chips -->
-            <div class="camera-preset-chips">
-              <span class="preset-label"><i class="fa-solid fa-video"></i> Camera:</span>
-              <button type="button" class="chip-preset" onclick="appendPromptKeyword('Slow cinematic push-in tracking shot, shallow depth of field')">🎥 Push In</button>
-              <button type="button" class="chip-preset" onclick="appendPromptKeyword('360 degree smooth orbit camera movement around subject')">🔄 Orbit</button>
-              <button type="button" class="chip-preset" onclick="appendPromptKeyword('Sweeping aerial drone shot with golden hour lighting')">🚁 Drone</button>
-              <button type="button" class="chip-preset" onclick="appendPromptKeyword('Macro close-up focus pull, crisp texture detail')">🔍 Macro</button>
-              <button type="button" class="chip-preset" onclick="appendPromptKeyword('Natural handheld UGC camera motion with subtle micro-drift')">🤳 Handheld</button>
-            </div>
-          </div>
-
-          <!-- Format Controls -->
-          <div class="studio-specs-compact">
-            <!-- Aspect Ratio -->
-            <div class="spec-row">
-              <span class="spec-inline-label"><i class="fa-solid fa-crop-simple"></i> Ratio:</span>
-              <div class="pill-group" id="omni_aspect_ratio_selector">
-                <button type="button" class="pill-btn active" data-ratio="9:16" onclick="setOmniAspectRatio('9:16')">
-                  <i class="fa-solid fa-mobile-screen"></i> 9:16 <span class="pill-sub">Vertical</span>
-                </button>
-                <button type="button" class="pill-btn" data-ratio="16:9" onclick="setOmniAspectRatio('16:9')">
-                  <i class="fa-solid fa-tv"></i> 16:9 <span class="pill-sub">Wide</span>
-                </button>
-                <button type="button" class="pill-btn" data-ratio="1:1" onclick="setOmniAspectRatio('1:1')">
-                  <i class="fa-regular fa-square"></i> 1:1 <span class="pill-sub">Square</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Resolution & Duration in one balanced row -->
-            <div class="spec-dual-row">
-              <div class="spec-dual-col">
-                <span class="spec-inline-label"><i class="fa-solid fa-wand-magic"></i> Resolution:</span>
-                <div class="pill-group" id="omni_resolution_selector">
-                  <button type="button" class="pill-btn active" data-res="720p" onclick="setOmniResolution('720p')">720p</button>
-                  <button type="button" class="pill-btn" data-res="1080p" onclick="setOmniResolution('1080p')">1080p</button>
-                  <button type="button" class="pill-btn" data-res="4K" onclick="setOmniResolution('4K')">4K</button>
-                </div>
-              </div>
-
-              <div class="spec-dual-col">
-                <span class="spec-inline-label"><i class="fa-solid fa-clock"></i> Duration:</span>
-                <div class="pill-group" id="omni_duration_selector">
-                  <button type="button" class="pill-btn" data-dur="4" onclick="setOmniDuration(4)">4s</button>
-                  <button type="button" class="pill-btn active" data-dur="6" onclick="setOmniDuration(6)">6s</button>
-                  <button type="button" class="pill-btn" data-dur="8" onclick="setOmniDuration(8)">8s</button>
-                  <button type="button" class="pill-btn" data-dur="10" onclick="setOmniDuration(10)">10s</button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Collapsible Negative Prompt -->
-          <details class="negative-prompt-details">
-            <summary><i class="fa-solid fa-ban"></i> Negative Prompt (Optional)</summary>
-            <textarea id="omni_negative_prompt" class="studio-textarea-sm" rows="2" placeholder="watermark, blur, jerky motion, distorted hands, cartoonish, low resolution..."></textarea>
-          </details>
-
-          <!-- Generate CTA Button -->
-          <button type="button" id="omni_generate_btn" class="btn btn-primary btn-xl studio-submit-btn" onclick="submitOmniStudioVideo()">
-            <i class="fa-solid fa-play"></i>
-            <span>Generate Video with Omni Flash 1.1</span>
-          </button>
-        </div>
-
-        <!-- Right: Omni Flash Playback Canvas & History Reel -->
-        <div class="studio-canvas-deck">
-          <!-- Main Preview Player Card -->
-          <div class="glass-card studio-player-card">
-            <div class="player-card-header">
-              <div class="player-title-info">
-                <h3><i class="fa-solid fa-clapperboard"></i> Omni Flash Player</h3>
-                <div class="player-meta-badges">
-                  <span class="meta-tag" id="omni_player_res_badge">9:16 Vertical · 720p</span>
-                  <span class="meta-tag" id="omni_player_dur_badge">6s</span>
-                  <span class="engine-tag"><i class="fa-solid fa-bolt"></i> Omni Flash 1.1</span>
-                </div>
-              </div>
-              <div class="player-actions" id="omni_player_actions" style="display: none;">
-                <a id="download_omni_video_btn" class="btn btn-secondary btn-sm" download="omni_flash_video.mp4">
-                  <i class="fa-solid fa-download"></i> Download MP4
-                </a>
-              </div>
-            </div>
-
-            <!-- Video Player Stage -->
-            <div class="player-stage-viewport ratio-9-16" id="omni_player_viewport">
-              <!-- Empty State -->
-              <div class="player-empty-state" id="omni_player_empty_state">
-                <div class="glow-orb"></div>
-                <div class="flow-icon-wrap"><i class="fa-solid fa-play"></i></div>
-                <h4>Ready to generate</h4>
-                <p>Configure prompt, references, and format, then click Generate to render with Omni Flash 1.1.</p>
-              </div>
-
-              <!-- Loading State Overlay -->
-              <div class="player-loading-state" id="omni_player_loading_state" style="display: none;">
-                <div class="spinner-glow"></div>
-                <h4 id="omni_loading_title">Synthesizing with Omni Flash 1.1</h4>
-                <p id="omni_loading_sub">Rendering frames and interpolating motion...</p>
-                <div class="loading-progress-bar"><div class="loading-progress-fill" id="omni_progress_bar"></div></div>
-              </div>
-
-              <!-- Video Player Element -->
-              <video id="omni_video_player" class="studio-rendered-video" controls autoplay loop playsinline style="display: none;"></video>
-            </div>
-          </div>
-
-          <!-- Generation History Reel -->
-          <div class="glass-card studio-history-card">
-            <div class="history-card-header">
-              <h4><i class="fa-solid fa-clock-rotate-left"></i> Omni Flash Generations</h4>
-              <span class="history-counter" id="omni_history_count">0 videos</span>
-            </div>
-            <div class="history-reel" id="omni_history_reel">
-              <div class="history-empty" id="omni_history_empty_msg">Generated clips in this session will appear here for instant replay and comparison.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================== FLOW 3: QWEN-IMAGE-2.1 STUDIO (SELF-HOSTED GPU) ==================== -->
-    <section id="view_qwen_studio" class="studio-workspace-section" style="display: none;">
-      <!-- Qwen Subheader Bar -->
-      <div class="studio-toolbar-strip">
-        <div class="studio-status-wrap">
-          <div class="studio-pill-status" style="border-color: rgba(6, 182, 212, 0.35); background: rgba(6, 182, 212, 0.08);">
-            <span class="pulse-dot" style="background: #06b6d4;"></span>
-            <strong>Qwen-Image-2.1</strong> · Self-Hosted GPU Studio
-          </div>
-          <span class="studio-tagline">High-fidelity commercial image ads, product photo placement &amp; luxury ecommerce hero visuals</span>
-        </div>
-        <div class="studio-engine-pills">
-          <span class="engine-badge" style="color: #38bdf8; border-color: rgba(56, 189, 248, 0.25);"><i class="fa-solid fa-camera"></i> Up to 2K Master</span>
-          <span class="engine-badge"><i class="fa-solid fa-box-open"></i> Product Remix</span>
-          <span class="engine-badge"><i class="fa-solid fa-clapperboard"></i> Animate in MiniMax</span>
-        </div>
-      </div>
-
-      <div class="studio-grid-layout">
-        <!-- Left: Qwen Controls & Inputs -->
-        <div class="glass-card studio-control-panel">
-          <!-- Creation Mode Selector Tabs -->
-          <div class="mode-tabs-container">
-            <button type="button" class="mode-tab-btn active" id="btn_qwen_mode_text" onclick="setQwenMode('text')">
-              <i class="fa-solid fa-feather-pointed"></i>
-              <span>Text-to-Ad</span>
-            </button>
-            <button type="button" class="mode-tab-btn" id="btn_qwen_mode_product" onclick="setQwenMode('product')">
-              <i class="fa-solid fa-box-open"></i>
-              <span>Product Photo Remix</span>
-            </button>
-          </div>
-
-          <!-- Product Photo Upload Dropzone (shown when in Product Remix mode) -->
-          <div id="qwen_product_upload_pane" style="display: none; margin-bottom: 0.85rem;">
-            <div class="field-label-row">
-              <label class="field-label"><i class="fa-solid fa-upload"></i> Tangible Product Photo <span class="field-subtext">(Sneaker, Bottle, Packaging)</span></label>
-            </div>
-            <div class="image-product-dropzone" id="qwen_dropzone" onclick="document.getElementById('qwen_product_file').click()">
-              <div id="qwen_dropzone_empty" class="image-dropzone-content">
-                <i class="fa-solid fa-cloud-arrow-up dropzone-icon" style="color: #06b6d4;"></i>
-                <div>
-                  <strong>Drop product image here or click to browse</strong>
-                  <span>PNG, JPG, WEBP — Qwen preserves your product identity in the scene</span>
-                </div>
-              </div>
-              <div id="qwen_dropzone_preview_wrap" style="display: none;" class="image-dropzone-preview-wrap">
-                <img id="qwen_product_preview" class="image-product-preview-thumb" alt="Product preview">
-                <button type="button" class="btn-clear-frame" onclick="event.stopPropagation(); clearQwenProductImage()"><i class="fa-solid fa-xmark"></i> Remove</button>
-              </div>
-              <input type="file" id="qwen_product_file" accept="image/*" style="display:none;" onchange="handleQwenProductUpload(event)">
-            </div>
-          </div>
-
-          <!-- Prompt Input Section -->
-          <div class="studio-field-group">
-            <div class="field-label-row">
-              <label class="field-label" for="qwen_prompt">
-                <i class="fa-solid fa-wand-magic-sparkles" style="color: #06b6d4;"></i> <span>Ad Creative Concept &amp; Scene Prompt</span>
-              </label>
-            </div>
-            
-            <textarea id="qwen_prompt" class="studio-textarea" rows="3" placeholder="Describe the ad creative: product appearance, background setting, lighting, atmosphere, colors..."></textarea>
-
-            <!-- Quick Visual Booster Chips -->
-            <div class="camera-preset-chips" style="margin-top: 0.45rem;">
-              <span class="preset-label"><i class="fa-solid fa-sparkles"></i> Boosters:</span>
-              <button type="button" class="chip-preset" onclick="appendQwenPromptBooster('dramatic studio rim lighting, subtle volumetric depth, premium reflections')">✨ Studio Light</button>
-              <button type="button" class="chip-preset" onclick="appendQwenPromptBooster('crystal clear water droplets and morning mist on surface')">💧 Water Dew</button>
-              <button type="button" class="chip-preset" onclick="appendQwenPromptBooster('warm golden hour sunbeams, soft cinematic bokeh')">🌅 Golden Hour</button>
-              <button type="button" class="chip-preset" onclick="appendQwenPromptBooster('ultra-clean Apple-style minimalist negative space, pastel backdrop')">📐 Apple Minimal</button>
-              <button type="button" class="chip-preset" onclick="appendQwenPromptBooster('macro close-up texture, razor-sharp 8k commercial detail')">🔍 Macro 8K</button>
-            </div>
-          </div>
-
-          <!-- One-Click Ad Style Presets -->
-          <div class="studio-field-group" style="margin-top: 0.85rem;">
-            <div class="field-label-row">
-              <label class="field-label"><i class="fa-solid fa-palette"></i> Style Presets</label>
-              <button type="button" class="btn-link-reset" onclick="setQwenPreset('')">Reset</button>
-            </div>
-            <div class="style-presets-grid" id="qwen_presets_grid">
-              <button type="button" class="preset-card-btn active" data-preset="luxury_podium" onclick="setQwenPreset('luxury_podium')">
-                <i class="fa-solid fa-chess-queen" style="color: #06b6d4;"></i>
-                <div class="preset-card-text">
-                  <strong>Luxury Podium</strong>
-                  <span>Marble &amp; Rim Light</span>
-                </div>
-              </button>
-              <button type="button" class="preset-card-btn" data-preset="ugc_lifestyle" onclick="setQwenPreset('ugc_lifestyle')">
-                <i class="fa-solid fa-mobile-screen"></i>
-                <div class="preset-card-text">
-                  <strong>UGC Lifestyle</strong>
-                  <span>Natural cafe table</span>
-                </div>
-              </button>
-              <button type="button" class="preset-card-btn" data-preset="neon_cyber" onclick="setQwenPreset('neon_cyber')">
-                <i class="fa-solid fa-bolt-lightning"></i>
-                <div class="preset-card-text">
-                  <strong>Cyber Neon</strong>
-                  <span>High-energy glow</span>
-                </div>
-              </button>
-              <button type="button" class="preset-card-btn" data-preset="nature_botanical" onclick="setQwenPreset('nature_botanical')">
-                <i class="fa-solid fa-leaf"></i>
-                <div class="preset-card-text">
-                  <strong>Botanical</strong>
-                  <span>Moss &amp; Tropical foliage</span>
-                </div>
-              </button>
-              <button type="button" class="preset-card-btn" data-preset="dramatic_splash" onclick="setQwenPreset('dramatic_splash')">
-                <i class="fa-solid fa-droplet"></i>
-                <div class="preset-card-text">
-                  <strong>Dynamic Splash</strong>
-                  <span>Frozen liquid droplets</span>
-                </div>
-              </button>
-              <button type="button" class="preset-card-btn" data-preset="minimal_dtc" onclick="setQwenPreset('minimal_dtc')">
-                <i class="fa-solid fa-shapes"></i>
-                <div class="preset-card-text">
-                  <strong>Minimal DTC</strong>
-                  <span>Clean pastel aesthetic</span>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <!-- Format & Parameters -->
-          <div class="studio-specs-compact" style="margin-top: 0.85rem;">
-            <!-- Ad Aspect Ratio -->
-            <div class="spec-row">
-              <span class="spec-inline-label"><i class="fa-solid fa-crop-simple"></i> Ratio:</span>
-              <div class="pill-group" id="qwen_aspect_ratio_selector">
-                <button type="button" class="pill-btn active" data-ratio="1:1" onclick="setQwenAspectRatio('1:1')">
-                  <i class="fa-regular fa-square"></i> 1:1 <span class="pill-sub">Feed</span>
-                </button>
-                <button type="button" class="pill-btn" data-ratio="9:16" onclick="setQwenAspectRatio('9:16')">
-                  <i class="fa-solid fa-mobile-screen"></i> 9:16 <span class="pill-sub">Story</span>
-                </button>
-                <button type="button" class="pill-btn" data-ratio="4:5" onclick="setQwenAspectRatio('4:5')">
-                  <i class="fa-solid fa-image"></i> 4:5 <span class="pill-sub">Portrait</span>
-                </button>
-                <button type="button" class="pill-btn" data-ratio="16:9" onclick="setQwenAspectRatio('16:9')">
-                  <i class="fa-solid fa-tv"></i> 16:9 <span class="pill-sub">Banner</span>
-                </button>
-              </div>
-            </div>
-
-            <!-- Steps & Seed in balanced row -->
-            <div class="spec-dual-row">
-              <div class="spec-dual-col">
-                <span class="spec-inline-label"><i class="fa-solid fa-gauge-high"></i> Steps:</span>
-                <div class="pill-group" id="qwen_steps_selector">
-                  <button type="button" class="pill-btn" data-steps="25" onclick="setQwenSteps(25)">25</button>
-                  <button type="button" class="pill-btn active" data-steps="35" onclick="setQwenSteps(35)">35</button>
-                  <button type="button" class="pill-btn" data-steps="45" onclick="setQwenSteps(45)">45</button>
-                </div>
-              </div>
-
-              <div class="spec-dual-col">
-                <span class="spec-inline-label"><i class="fa-solid fa-dice"></i> Seed:</span>
-                <input type="number" id="qwen_seed" class="text-input" placeholder="Random" style="padding: 0.35rem 0.6rem; font-size: 0.8rem; border-radius: var(--radius-sm); width: 100%;">
-              </div>
-            </div>
-          </div>
-
-          <!-- Negative Prompt Accordion -->
-          <details class="negative-prompt-details" style="margin-top: 0.75rem;">
-            <summary><i class="fa-solid fa-ban"></i> Negative Prompt (Optional)</summary>
-            <textarea id="qwen_negative_prompt" class="studio-textarea-sm" rows="2" placeholder="watermark, ugly, distorted product label, low quality, blurry, warped hands..."></textarea>
-          </details>
-
-          <!-- Generate CTA Button -->
-          <button type="button" id="qwen_generate_btn" class="btn btn-primary btn-xl studio-submit-btn" style="margin-top: 0.85rem; background: linear-gradient(135deg, #0284c7 0%, #06b6d4 100%);" onclick="generateQwenImageAd()">
-            <i class="fa-solid fa-wand-magic-sparkles"></i>
-            <span>Generate Image Ad (Qwen-Image-2.1)</span>
-          </button>
-        </div>
-
-        <!-- Right: Qwen Image Canvas Deck & History -->
-        <div class="studio-canvas-deck">
-          <!-- Main Preview Player/Image Card -->
-          <div class="glass-card studio-player-card">
-            <div class="player-card-header">
-              <div class="player-title-info">
-                <h3><i class="fa-solid fa-image" style="color: #06b6d4;"></i> Qwen Ad Canvas</h3>
-                <div class="player-meta-badges">
-                  <span class="meta-tag" id="qwen_player_res_badge">1:1 Square · 1024x1024</span>
-                  <span class="meta-tag" id="qwen_player_preset_badge">Luxury Podium</span>
-                  <span class="engine-tag" style="background: rgba(6, 182, 212, 0.15); border-color: rgba(6, 182, 212, 0.35); color: #38bdf8;"><i class="fa-solid fa-microchip"></i> Qwen-Image-2.1</span>
-                </div>
-              </div>
-              <div class="player-actions" id="qwen_player_actions" style="display: none; gap: 0.5rem;">
-                <a id="btn_download_qwen_ad" class="btn btn-secondary btn-sm" download="qwen_image_ad.png">
-                  <i class="fa-solid fa-download"></i> Download PNG
-                </a>
-                <button type="button" id="btn_animate_qwen_ad" class="btn btn-primary btn-sm" onclick="animateQwenImageAd()">
-                  <i class="fa-solid fa-clapperboard"></i> Animate in MiniMax
-                </button>
-              </div>
-            </div>
-
-            <!-- Image Stage Viewport -->
-            <div class="player-stage-viewport ratio-1-1" id="qwen_stage_viewport">
-              <!-- Empty State -->
-              <div class="player-empty-state" id="qwen_empty_state">
-                <div class="glow-orb" style="background: radial-gradient(circle, rgba(6, 182, 212, 0.35) 0%, transparent 70%);"></div>
-                <div class="flow-icon-wrap" style="color: #06b6d4;"><i class="fa-solid fa-image"></i></div>
-                <h4>Ready to synthesize with Qwen-Image-2.1</h4>
-                <p>Type your ad idea or choose a style preset, then click Generate to render on self-hosted GPU.</p>
-              </div>
-
-              <!-- Loading State Overlay -->
-              <div class="player-loading-state" id="qwen_loading_state" style="display: none;">
-                <div class="spinner-glow" style="border-top-color: #06b6d4;"></div>
-                <h4 id="qwen_loading_title">Synthesizing with Qwen-Image-2.1</h4>
-                <p id="qwen_loading_sub">Running diffusion steps on GCP GPU (approx 60-90s)...</p>
-                <div class="loading-progress-bar"><div class="loading-progress-fill" id="qwen_progress_bar" style="background: linear-gradient(90deg, #0284c7, #06b6d4);"></div></div>
-                <span id="qwen_elapsed_timer" style="font-size: 0.76rem; color: var(--text-muted); margin-top: 0.5rem; font-family: var(--font-mono);">0s elapsed</span>
-              </div>
-
-              <!-- Rendered Image Element -->
-              <img id="qwen_ad_display" class="studio-rendered-image" alt="Generated Ad Image" style="display: none;">
-            </div>
-          </div>
-
-          <!-- Generation History Reel -->
-          <div class="glass-card studio-history-card">
-            <div class="history-card-header">
-              <h4><i class="fa-solid fa-clock-rotate-left"></i> Qwen Image Generations</h4>
-              <span class="history-counter" id="qwen_history_count">0 images</span>
-            </div>
-            <div class="history-reel" id="qwen_history_reel">
-              <div class="history-empty" id="qwen_history_empty_msg">Qwen image ads in this session will appear here for instant preview, download, and video animation.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================== FLOW 4: GEMINI NANO BANANA PRO STUDIO ==================== -->
-    <section id="view_banana_studio" class="studio-workspace-section" style="display: none;">
-      <!-- Banana Subheader Bar -->
-      <div class="studio-toolbar-strip">
-        <div class="studio-status-wrap">
-          <div class="studio-pill-status" style="border-color: rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08);">
-            <span class="pulse-dot" style="background: #f59e0b;"></span>
-            <strong>Nano Banana Pro</strong> · Gemini Multimodal Engine
-          </div>
-          <span class="studio-tagline">High-speed multimodal ad generation with character, style &amp; product consistency</span>
-        </div>
-        <div class="studio-engine-pills">
-          <span class="engine-badge" style="color: #fbbf24; border-color: rgba(251, 191, 36, 0.3);"><i class="fa-solid fa-bolt"></i> Instant Generation</span>
-          <span class="engine-badge"><i class="fa-solid fa-layer-group"></i> Multimodal Guidance</span>
-          <span class="engine-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> Animate in Omni Flash</span>
-        </div>
-      </div>
-
-      <div class="studio-grid-layout">
-        <!-- Left: Banana Controls & Inputs -->
-        <div class="glass-card studio-control-panel">
-          <!-- Creation Mode Selector Tabs -->
-          <div class="mode-tabs-container">
-            <button type="button" class="mode-tab-btn active" id="btn_banana_mode_text" onclick="setBananaMode('text')">
-              <i class="fa-solid fa-feather-pointed"></i>
-              <span>Text-to-Ad</span>
-            </button>
-            <button type="button" class="mode-tab-btn" id="btn_banana_mode_product" onclick="setBananaMode('product')">
-              <i class="fa-solid fa-box-open"></i>
-              <span>Consistency Reference</span>
-            </button>
-          </div>
-
-          <!-- Product Photo Upload Dropzone (shown when in Product mode) -->
-          <div id="banana_product_upload_pane" style="display: none; margin-bottom: 0.85rem;">
-            <div class="field-label-row">
-              <label class="field-label"><i class="fa-solid fa-upload"></i> Consistency Reference Photo <span class="field-subtext">(Product, Character, Style)</span></label>
-            </div>
-            <div class="image-product-dropzone" id="banana_dropzone" onclick="document.getElementById('banana_product_file').click()">
-              <div id="banana_dropzone_empty" class="image-dropzone-content">
-                <i class="fa-solid fa-cloud-arrow-up dropzone-icon" style="color: #f59e0b;"></i>
-                <div>
-                  <strong>Drop reference image here or click to browse</strong>
-                  <span>Gemini multimodal vision conditions the generation with this reference</span>
-                </div>
-              </div>
-              <div id="banana_dropzone_preview_wrap" style="display: none;" class="image-dropzone-preview-wrap">
-                <img id="banana_product_preview" class="image-product-preview-thumb" alt="Reference preview">
-                <button type="button" class="btn-clear-frame" onclick="event.stopPropagation(); clearBananaProductImage()"><i class="fa-solid fa-xmark"></i> Remove</button>
-              </div>
-              <input type="file" id="banana_product_file" accept="image/*" style="display:none;" onchange="handleBananaProductUpload(event)">
-            </div>
-          </div>
-
-          <!-- Prompt Input Section -->
-          <div class="studio-field-group">
-            <div class="field-label-row">
-              <label class="field-label" for="banana_prompt">
-                <i class="fa-solid fa-wand-magic-sparkles" style="color: #f59e0b;"></i> <span>Ad Creative Concept &amp; Scene Prompt</span>
-              </label>
-            </div>
-            
-            <textarea id="banana_prompt" class="studio-textarea" rows="3" placeholder="Describe the ad creative: product appearance, background setting, lighting, atmosphere, colors..."></textarea>
-
-            <!-- Quick Visual Booster Chips -->
-            <div class="camera-preset-chips" style="margin-top: 0.45rem;">
-              <span class="preset-label"><i class="fa-solid fa-sparkles"></i> Boosters:</span>
-              <button type="button" class="chip-preset" onclick="appendBananaPromptBooster('dramatic studio rim lighting, subtle volumetric depth, premium reflections')">✨ Studio Light</button>
-              <button type="button" class="chip-preset" onclick="appendBananaPromptBooster('crystal clear water droplets and morning mist on surface')">💧 Water Dew</button>
-              <button type="button" class="chip-preset" onclick="appendBananaPromptBooster('warm golden hour sunbeams, soft cinematic bokeh')">🌅 Golden Hour</button>
-              <button type="button" class="chip-preset" onclick="appendBananaPromptBooster('ultra-clean Apple-style minimalist negative space, pastel backdrop')">📐 Apple Minimal</button>
-              <button type="button" class="chip-preset" onclick="appendBananaPromptBooster('macro close-up texture, razor-sharp commercial detail')">🔍 Macro Detail</button>
-            </div>
-          </div>
-
-          <!-- One-Click Ad Style Presets -->
-          <div class="studio-field-group" style="margin-top: 0.85rem;">
-            <div class="field-label-row">
-              <label class="field-label"><i class="fa-solid fa-palette"></i> Style Presets</label>
-              <button type="button" class="btn-link-reset" onclick="setBananaPreset('')">Reset</button>
-            </div>
-            <div class="style-presets-grid" id="banana_presets_grid">
-              <button type="button" class="preset-card-btn active" data-preset="luxury_podium" onclick="setBananaPreset('luxury_podium')">
-                <i class="fa-solid fa-chess-queen" style="color: #f59e0b;"></i>
-                <div class="preset-card-text">
-                  <strong>Luxury Podium</strong>
-                  <span>Marble &amp; Rim Light</span>
-                </div>
-              </button>
-              <button type="button" class="preset-card-btn" data-preset="ugc_lifestyle" onclick="setBananaPreset('ugc_lifestyle')">
-                <i class="fa-solid fa-mobile-screen"></i>
-                <div class="preset-card-text">
-                  <strong>UGC Lifestyle</strong>
-                  <span>Natural cafe table</span>
-                </div>
-              </button>
-              <button type="button" class="preset-card-btn" data-preset="neon_cyber" onclick="setBananaPreset('neon_cyber')">
-                <i class="fa-solid fa-bolt-lightning"></i>
-                <div class="preset-card-text">
-                  <strong>Cyber Neon</strong>
-                  <span>High-energy glow</span>
-                </div>
-              </button>
-              <button type="button" class="preset-card-btn" data-preset="nature_botanical" onclick="setBananaPreset('nature_botanical')">
-                <i class="fa-solid fa-leaf"></i>
-                <div class="preset-card-text">
-                  <strong>Botanical</strong>
-                  <span>Moss &amp; Tropical foliage</span>
-                </div>
-              </button>
-              <button type="button" class="preset-card-btn" data-preset="dramatic_splash" onclick="setBananaPreset('dramatic_splash')">
-                <i class="fa-solid fa-droplet"></i>
-                <div class="preset-card-text">
-                  <strong>Dynamic Splash</strong>
-                  <span>Frozen liquid droplets</span>
-                </div>
-              </button>
-              <button type="button" class="preset-card-btn" data-preset="minimal_dtc" onclick="setBananaPreset('minimal_dtc')">
-                <i class="fa-solid fa-shapes"></i>
-                <div class="preset-card-text">
-                  <strong>Minimal DTC</strong>
-                  <span>Clean pastel aesthetic</span>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <!-- Format & Parameters -->
-          <div class="studio-specs-compact" style="margin-top: 0.85rem;">
-            <!-- Ad Aspect Ratio -->
-            <div class="spec-row">
-              <span class="spec-inline-label"><i class="fa-solid fa-crop-simple"></i> Ratio:</span>
-              <div class="pill-group" id="banana_aspect_ratio_selector">
-                <button type="button" class="pill-btn active" data-ratio="1:1" onclick="setBananaAspectRatio('1:1')">
-                  <i class="fa-regular fa-square"></i> 1:1 <span class="pill-sub">Feed</span>
-                </button>
-                <button type="button" class="pill-btn" data-ratio="9:16" onclick="setBananaAspectRatio('9:16')">
-                  <i class="fa-solid fa-mobile-screen"></i> 9:16 <span class="pill-sub">Story</span>
-                </button>
-                <button type="button" class="pill-btn" data-ratio="4:5" onclick="setBananaAspectRatio('4:5')">
-                  <i class="fa-solid fa-image"></i> 4:5 <span class="pill-sub">Portrait</span>
-                </button>
-                <button type="button" class="pill-btn" data-ratio="16:9" onclick="setBananaAspectRatio('16:9')">
-                  <i class="fa-solid fa-tv"></i> 16:9 <span class="pill-sub">Banner</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- Negative Prompt Accordion -->
-          <details class="negative-prompt-details" style="margin-top: 0.75rem;">
-            <summary><i class="fa-solid fa-ban"></i> Negative Prompt (Optional)</summary>
-            <textarea id="banana_negative_prompt" class="studio-textarea-sm" rows="2" placeholder="watermark, ugly, distorted product label, low quality, blurry, warped hands..."></textarea>
-          </details>
-
-          <!-- Generate CTA Button -->
-          <button type="button" id="banana_generate_btn" class="btn btn-primary btn-xl studio-submit-btn" style="margin-top: 0.85rem; background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%);" onclick="generateBananaImageAd()">
-            <i class="fa-solid fa-bolt"></i>
-            <span>Generate with Nano Banana Pro</span>
-          </button>
-        </div>
-
-        <!-- Right: Banana Image Canvas Deck & History -->
-        <div class="studio-canvas-deck">
-          <!-- Main Preview Player/Image Card -->
-          <div class="glass-card studio-player-card">
-            <div class="player-card-header">
-              <div class="player-title-info">
-                <h3><i class="fa-solid fa-image" style="color: #f59e0b;"></i> Banana Pro Canvas</h3>
-                <div class="player-meta-badges">
-                  <span class="meta-tag" id="banana_player_res_badge">1:1 Square</span>
-                  <span class="meta-tag" id="banana_player_preset_badge">Luxury Podium</span>
-                  <span class="engine-tag" style="background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.35); color: #fbbf24;"><i class="fa-solid fa-bolt"></i> Nano Banana Pro</span>
-                </div>
-              </div>
-              <div class="player-actions" id="banana_player_actions" style="display: none; gap: 0.5rem;">
-                <a id="btn_download_banana_ad" class="btn btn-secondary btn-sm" download="banana_image_ad.png">
-                  <i class="fa-solid fa-download"></i> Download PNG
-                </a>
-                <button type="button" id="btn_animate_banana_ad" class="btn btn-primary btn-sm" onclick="animateBananaImageAd()">
-                  <i class="fa-solid fa-clapperboard"></i> Animate in Omni Flash
-                </button>
-              </div>
-            </div>
-
-            <!-- Image Stage Viewport -->
-            <div class="player-stage-viewport ratio-1-1" id="banana_stage_viewport">
-              <!-- Empty State -->
-              <div class="player-empty-state" id="banana_empty_state">
-                <div class="glow-orb" style="background: radial-gradient(circle, rgba(245, 158, 11, 0.35) 0%, transparent 70%);"></div>
-                <div class="flow-icon-wrap" style="color: #f59e0b;"><i class="fa-solid fa-image"></i></div>
-                <h4>Ready to synthesize with Nano Banana Pro</h4>
-                <p>Type your ad idea or choose a style preset, then click Generate for fast multimodal rendering.</p>
-              </div>
-
-              <!-- Loading State Overlay -->
-              <div class="player-loading-state" id="banana_loading_state" style="display: none;">
-                <div class="spinner-glow" style="border-top-color: #f59e0b;"></div>
-                <h4 id="banana_loading_title">Synthesizing with Nano Banana Pro</h4>
-                <p id="banana_loading_sub">Rendering with Gemini multimodal vision...</p>
-                <div class="loading-progress-bar"><div class="loading-progress-fill" id="banana_progress_bar" style="background: linear-gradient(90deg, #d97706, #f59e0b);"></div></div>
-                <span id="banana_elapsed_timer" style="font-size: 0.76rem; color: var(--text-muted); margin-top: 0.5rem; font-family: var(--font-mono);">0s elapsed</span>
-              </div>
-
-              <!-- Rendered Image Element -->
-              <img id="banana_ad_display" class="studio-rendered-image" alt="Generated Ad Image" style="display: none;">
-            </div>
-          </div>
-
-          <!-- Generation History Reel -->
-          <div class="glass-card studio-history-card">
-            <div class="history-card-header">
-              <h4><i class="fa-solid fa-clock-rotate-left"></i> Nano Banana Generations</h4>
-              <span class="history-counter" id="banana_history_count">0 images</span>
-            </div>
-            <div class="history-reel" id="banana_history_reel">
-              <div class="history-empty" id="banana_history_empty_msg">Nano Banana image ads in this session will appear here for instant preview, download, and video animation.</div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ==================== FLOW 2: AD CAMPAIGN BUILDER (SECONDARY) ==================== -->
-    <div id="view_ad_campaign" class="campaign-app-view" style="display: none;">
-    <!-- Hero + Command Input -->
-    <section class="hero" id="hero_section">
-      <div class="hero-badge">
-        <span class="pulse-dot"></span>
-        Qwen-Image-2.1 · Nano Banana Pro · MiniMax-H3 · Omni Flash
-      </div>
-      <h2 class="hero-title">Turn any link into<br><span class="gradient-text">high-converting Meta image &amp; video ads</span></h2>
-      <p class="hero-sub">Paste a landing page, app store link, or product URL. Get a complete Meta campaign — 6 audience angles, 18 video scripts, Meta Image Ads (Qwen 2.1 &amp; Nano Banana Pro), storyboards, and finished videos.</p>
-
-      <div class="command-card glass-card">
-        <form id="campaign_form" onsubmit="event.preventDefault();">
-
-          <div class="url-row">
-            <div class="url-field">
-              <i class="fa-solid fa-link url-icon"></i>
-              <input type="url" id="brand_url" class="input-text" placeholder="https://yourbrand.com — or Play Store / App Store link" required>
-            </div>
-            <button type="submit" id="generate_campaign_btn" class="btn btn-primary btn-lg" onclick="startCampaignAnalysis()">
-              <i class="fa-solid fa-wand-magic-sparkles"></i>
-              <span>Generate Campaign</span>
-            </button>
-          </div>
-
-          <!-- Tangible product toggle -->
-          <div class="tangible-toggle-container" onclick="toggleTangibleProduct()">
-            <input type="checkbox" id="is_tangible" hidden>
-            <div class="switch" id="checkbox_ui"><div class="switch-knob"></div></div>
-            <div class="toggle-copy">
-              <span class="toggle-title">Physical product?</span>
-              <span class="toggle-sub">Upload reference photos so the product stays pixel-consistent across every shot.</span>
-            </div>
-          </div>
-
-          <!-- Upload zone -->
-          <div class="upload-zone" id="upload_zone" onclick="document.getElementById('product_images').click()">
-            <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
-            <h3>Upload product images</h3>
-            <p>Drag &amp; drop or click to browse — multiple angles help consistency</p>
-            <input type="file" id="product_images" multiple accept="image/*" style="display: none;" onchange="handleFileSelect(event)">
-            <div class="upload-thumbnails" id="upload_thumbnails"></div>
-          </div>
-
-        </form>
-      </div>
-
-      <!-- Sample links -->
-      <div class="samples-row">
-        <span class="samples-label">Try it with</span>
-        <span class="quick-link-chip" onclick="quickFill('https://www.preranawellness.com')"><i class="fa-solid fa-leaf"></i> Prerana Wellness</span>
-        <span class="quick-link-chip" onclick="quickFill('https://www.forestessentialsindia.com')"><i class="fa-solid fa-spa"></i> Forest Essentials</span>
-        <span class="quick-link-chip" onclick="quickFill('https://play.google.com/store/apps/details?id=com.spotify.music')"><i class="fa-brands fa-spotify"></i> Spotify</span>
-        <span class="quick-link-chip" onclick="quickFill('https://apps.apple.com/us/app/duolingo-language-lessons/id570060128')"><i class="fa-solid fa-language"></i> Duolingo</span>
-        <span class="quick-link-chip" onclick="quickFill('https://www.apple.com/iphone-15-pro/')"><i class="fa-brands fa-apple"></i> iPhone 15 Pro</span>
-      </div>
-
-      <!-- Pipeline steps strip -->
-      <div class="pipeline-strip">
-        <div class="pipeline-step"><div class="pipeline-num">1</div><span>Brand research<br><em>Search grounding &amp; DNA</em></span></div>
-        <div class="pipeline-step"><div class="pipeline-num">2</div><span>6 angles &amp; 18 scripts<br><em>Strategic hooks &amp; styles</em></span></div>
-        <div class="pipeline-step"><div class="pipeline-num">3</div><span>Meta image ads<br><em>Qwen 2.1 or Nano Banana</em></span></div>
-        <div class="pipeline-step"><div class="pipeline-num">4</div><span>Animated videos<br><em>MiniMax-H3 or Omni Flash</em></span></div>
-      </div>
-    </section>
-
-    <!-- Generation Loader -->
-    <div class="loader-overlay glass-card" id="loader_overlay">
-      <div class="spinner-glow"></div>
-      <h2 class="loader-title">Building your campaign</h2>
-      <p class="loader-sub">Gemini is researching the brand and writing custom scripts — usually under 60 seconds.</p>
-
-      <div class="loader-steps">
-        <div class="loader-step" id="step_scrape">
-          <div class="step-indicator"><i class="fa-solid fa-check step-check"></i><span class="step-num">1</span></div>
-          <span>Scraping landing page &amp; app details</span>
-        </div>
-        <div class="loader-step" id="step_ground">
-          <div class="step-indicator"><i class="fa-solid fa-check step-check"></i><span class="step-num">2</span></div>
-          <span>Search grounding &amp; audience analysis</span>
-        </div>
-        <div class="loader-step" id="step_adgroups">
-          <div class="step-indicator"><i class="fa-solid fa-check step-check"></i><span class="step-num">3</span></div>
-          <span>Structuring 6 ad group angles</span>
-        </div>
-        <div class="loader-step" id="step_scripts">
-          <div class="step-indicator"><i class="fa-solid fa-check step-check"></i><span class="step-num">4</span></div>
-          <span>Writing vertical video scripts</span>
-        </div>
-      </div>
+      <button type="button" class="btn btn-ghost" id="btn_new_campaign" hidden><i class="fa-solid fa-plus"></i> New campaign</button>
     </div>
 
-    <!-- Campaign Dashboard -->
-    <section class="dashboard-container" id="dashboard_container">
-
-      <!-- Campaign Format Quick-Switcher Bar -->
-      <div class="campaign-format-bar glass-card" id="campaign_format_bar">
-        <div class="format-bar-left">
-          <span class="format-bar-title"><i class="fa-solid fa-layer-group"></i> Campaign Focus:</span>
-          <div class="format-pills-group" id="campaign_view_pills">
-            <button type="button" class="format-pill active" data-filter="all" onclick="setCampaignViewFilter('all')">
-              <i class="fa-solid fa-table-cells-large"></i> All Assets
-            </button>
-            <button type="button" class="format-pill" data-filter="image_ads" onclick="setCampaignViewFilter('image_ads')">
-              <i class="fa-brands fa-meta"></i> Meta Image Ads (Qwen &amp; Nano Banana)
-            </button>
-            <button type="button" class="format-pill" data-filter="video_ads" onclick="setCampaignViewFilter('video_ads')">
-              <i class="fa-solid fa-clapperboard"></i> Video Scripts (MiniMax &amp; Omni)
-            </button>
+    <div class="steps">
+      <!-- Step 1: brand -->
+      <section class="step" id="step_brand" data-state="active">
+        <header class="step-head">
+          <span class="step-num">1</span>
+          <div class="step-title">
+            <h2>Your brand</h2>
+            <p id="brand_summary">Paste the product page and add reference images.</p>
           </div>
-        </div>
-        <div class="format-bar-right">
-          <button class="btn btn-secondary btn-sm" onclick="scrollToMetaImageStudio()">
-            <i class="fa-solid fa-wand-magic-sparkles"></i> Launch Image Ad Generator
-          </button>
-        </div>
-      </div>
-
-      <!-- Brand DNA -->
-      <div class="glass-card brand-dna-card">
-        <div class="card-heading">
-          <div class="card-heading-icon"><i class="fa-solid fa-dna"></i></div>
-          <div>
-            <h2>Brand DNA</h2>
-            <p>Extracted identity that anchors every storyboard and video</p>
-          </div>
-        </div>
-
-        <div class="dna-grid">
-          <div class="dna-item">
-            <div class="dna-label">Brand</div>
-            <div class="dna-value dna-value-lg" id="dna_brand_name">—</div>
-          </div>
-          <div class="dna-item">
-            <div class="dna-label">Product</div>
-            <div class="dna-value dna-value-lg" id="dna_product_name">—</div>
-          </div>
-          <div class="dna-item">
-            <div class="dna-label">Category</div>
-            <div class="dna-value" id="dna_category">—</div>
-          </div>
-          <div class="dna-item">
-            <div class="dna-label">Visual style</div>
-            <div class="dna-value dna-style-badge" id="dna_visual_style">—</div>
-          </div>
-          <div class="dna-item dna-span-2">
-            <div class="dna-label">Target audience</div>
-            <div class="dna-value dna-value-soft" id="dna_audience">—</div>
-          </div>
-          <div class="dna-item dna-span-2">
-            <div class="dna-label">On-screen talent</div>
-            <div class="dna-value dna-value-soft" id="dna_talent">—</div>
-          </div>
-          <div class="dna-item">
-            <div class="dna-label">Mood</div>
-            <div class="chip-container" id="dna_mood_chips"></div>
-          </div>
-          <div class="dna-item">
-            <div class="dna-label">Palette</div>
-            <div class="chip-container" id="dna_palette_chips"></div>
-          </div>
-          <div class="dna-item">
-            <div class="dna-label">Logo anchor</div>
-            <div class="dna-value dna-mono" id="dna_logo_text">—</div>
-          </div>
-          <div class="dna-item dna-span-3">
-            <div class="dna-label">Product description</div>
-            <div class="dna-value dna-value-soft" id="dna_description">—</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Meta Image Ad Creative Studio -->
-      <div class="glass-card meta-ad-card" id="meta_ad_studio_card">
-        <div class="card-heading meta-card-heading">
-          <div class="meta-heading-left">
-            <div class="card-heading-icon meta-icon-badge">
-              <i class="fa-brands fa-meta"></i>
+          <button type="button" class="btn btn-sm btn-ghost" id="btn_edit_brand" hidden>Edit</button>
+        </header>
+        <div class="step-body" id="brand_body">
+          <div class="field">
+            <label class="label" for="brand_url">Brand or product URL</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-link"></i>
+              <input type="url" id="brand_url" class="input input-lg" placeholder="https://yourbrand.com/product" autocomplete="url">
             </div>
+          </div>
+          <div class="field">
+            <span class="label">Reference images <span class="muted">· optional, up to 4 · product photos, packaging or app screens</span></span>
+            <div class="dropzone" id="brand_drop" role="button" tabindex="0" aria-label="Add reference images">
+              <div class="dropzone-cta"><i class="fa-solid fa-cloud-arrow-up"></i><span>Drop images or click to browse</span></div>
+              <div class="thumbs" id="brand_thumbs"></div>
+              <input type="file" id="brand_files" accept="image/*" multiple hidden>
+            </div>
+          </div>
+          <div class="field">
+            <span class="label">Logo <span class="muted">· optional · otherwise taken from the website</span></span>
+            <div class="dropzone dropzone-sm" id="logo_drop" role="button" tabindex="0" aria-label="Add your logo">
+              <div class="dropzone-cta"><i class="fa-solid fa-signature"></i><span>Drop a PNG logo or click to browse</span></div>
+              <div class="thumbs" id="logo_thumbs"></div>
+              <input type="file" id="logo_file" accept="image/png,image/webp,image/jpeg" hidden>
+            </div>
+          </div>
+          <div class="step-actions">
+            <button type="button" class="btn btn-primary btn-lg" id="btn_continue">Continue <i class="fa-solid fa-arrow-right"></i></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Step 2: research -->
+      <section class="step" id="step_research" data-state="locked">
+        <header class="step-head">
+          <span class="step-num">2</span>
+          <div class="step-title">
+            <h2>Research</h2>
+            <p>Competitors' top 50 live Meta ads, plus your brand, audience and bullseye customer.</p>
+          </div>
+          <span class="badge" id="research_badge" hidden></span>
+        </header>
+        <div class="step-body" id="research_body" hidden>
+          <!-- discovering -->
+          <div class="inline-status" id="research_discovering"><span class="spinner"></span> Finding your competitors…</div>
+
+          <!-- confirm competitors -->
+          <div id="research_confirm" hidden>
+            <p class="brand-line" id="research_brand_line"></p>
+            <div class="comp-list" id="comp_list"></div>
+            <form class="comp-add" id="comp_add_form">
+              <input type="text" class="input" id="comp_add_input" placeholder="Add a competitor brand" aria-label="Add a competitor brand">
+              <button type="submit" class="btn btn-sm">Add</button>
+            </form>
+            <div class="step-actions">
+              <button type="button" class="btn btn-primary btn-lg" id="btn_start_research"><i class="fa-solid fa-magnifying-glass-chart"></i> Start research</button>
+              <button type="button" class="btn-link" id="btn_skip_competitors">Skip competitors, analyse my brand only</button>
+            </div>
+          </div>
+
+          <!-- agent running -->
+          <div class="progress-card" id="research_running" hidden>
             <div>
-              <div class="meta-title-row">
-                <h2>Meta Image Ad Creative Studio</h2>
-                <span class="meta-sub-badge">
-                  <i class="fa-brands fa-instagram"></i> Instagram &amp; Facebook Feed + Stories
-                </span>
+              <div class="meter-row">
+                <span class="meter-label">Top competitor ads selected</span>
+                <span class="meter-value" id="meter_value">0 <small>/ 50</small></span>
               </div>
-              <p>Generates thumb-stopping visual creatives &amp; primary ad copy tailored to your target audience &amp; uploaded product photos</p>
+              <div class="meter"><div id="meter_fill" style="width: 0%"></div></div>
             </div>
+            <ol class="stages" id="stages">
+              <li class="stage" data-stage="0">Read brand</li>
+              <li class="stage" data-stage="1">Find competitor ads</li>
+              <li class="stage" data-stage="2">Pick top 50</li>
+              <li class="stage" data-stage="3">Download creatives</li>
+              <li class="stage" data-stage="4">Analyse ads</li>
+              <li class="stage" data-stage="5">Write insights</li>
+            </ol>
+            <div class="log-line" id="research_log">Starting…</div>
+            <div><button type="button" class="btn btn-sm btn-ghost" id="btn_stop_research"><i class="fa-solid fa-stop"></i> Stop research</button></div>
           </div>
-          <div class="meta-heading-right">
-            <div class="audience-pill" id="meta_ad_audience_pill" title="Target Audience Persona">
-              <i class="fa-solid fa-users"></i>
-              <span class="audience-pill-label">Audience:</span>
-              <span id="meta_pill_audience_text" class="audience-pill-text">Extracting audience...</span>
-            </div>
-          </div>
+
+          <!-- brand analysis -->
+          <div class="inline-status" id="research_analysing" hidden><span class="spinner"></span> Analysing brand sentiment, audience and bullseye customer…</div>
+          <div class="inline-status error" id="research_error" hidden></div>
+
+          <!-- results -->
+          <div class="intel" id="research_results" hidden></div>
         </div>
+      </section>
 
-        <!-- ==================== 5-CREATIVE DIRECT-RESPONSE META SUITE ==================== -->
-        <div class="meta-suite-section" id="meta_suite_section">
-          <div class="meta-suite-banner">
-            <div class="meta-suite-banner-left">
-              <div class="meta-suite-pill-badge">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> URL-Grounded Direct-Response Strategy
+      <!-- Step 3: ads -->
+      <section class="step" id="step_ads" data-state="locked">
+        <header class="step-head">
+          <span class="step-num">3</span>
+          <div class="step-title">
+            <h2>Ads</h2>
+            <p>25 finished image ads (Nano Banana Pro) and 25 video ads (Omni Flash).</p>
+          </div>
+          <span class="badge" id="ads_badge" hidden></span>
+        </header>
+        <div class="step-body" id="ads_body" hidden>
+          <div class="toolbar">
+            <div class="segmented" role="tablist" aria-label="Ad type">
+              <button type="button" class="active" data-ads-tab="images" role="tab"><i class="fa-regular fa-image"></i> Images <span class="count" id="count_images">0</span></button>
+              <button type="button" data-ads-tab="videos" role="tab"><i class="fa-solid fa-film"></i> Videos <span class="count" id="count_videos">0</span></button>
+            </div>
+            <div class="toolbar-group" id="image_tools">
+              <div class="segmented" id="aspect_group" aria-label="Image size">
+                <button type="button" data-ratio="1:1">1:1</button>
+                <button type="button" class="active" data-ratio="4:5">4:5</button>
+                <button type="button" data-ratio="9:16">9:16</button>
               </div>
-              <h3 class="meta-suite-title">5 High-Converting Meta Creative Frameworks</h3>
-              <p class="meta-suite-subtitle" id="meta_suite_subtitle">
-                Synthesized from brand URL analysis to communicate &amp; resonate with your target audience across 5 proven conversion drivers: Problem-Solution, Feature Callouts, 5-Star Social Proof, Us vs. Them Comparison, and Lifestyle Transformation.
-              </p>
+              <button type="button" class="btn btn-sm" id="btn_render_all"><i class="fa-solid fa-images"></i> Render all</button>
             </div>
-            <div class="meta-suite-banner-right">
-              <button type="button" class="btn btn-primary meta-suite-batch-btn" id="btn_render_all_creatives" onclick="renderAllMetaCreatives()">
-                <i class="fa-solid fa-bolt"></i> Render All 5 Creatives (Batch Suite)
-              </button>
-            </div>
+            <span class="muted small" id="video_tools" hidden>Videos render one at a time when you click Render.</span>
           </div>
-
-          <!-- Suite Cards Deck Grid -->
-          <div class="meta-frameworks-deck" id="meta_frameworks_deck">
-            <!-- Dynamically populated from URL analysis blueprints or initial templates -->
-          </div>
+          <div class="inline-status status-line" id="ads_status"></div>
+          <div class="ad-grid" id="image_grid"></div>
+          <div class="ad-grid" id="video_grid" hidden></div>
         </div>
-
-        <div class="meta-studio-layout">
-          <!-- Left Column: Controls & Angle Customizer -->
-          <div class="meta-controls-col">
-            <!-- 1. Ad Group Angle Selector -->
-            <div class="form-group">
-              <label class="form-label meta-form-label">
-                <span><i class="fa-solid fa-bullseye"></i> Campaign Angle &amp; Hook</span>
-                <span class="meta-label-tag">From URL Analysis</span>
-              </label>
-              <select id="meta_angle_select" class="form-input meta-select" onchange="onMetaAngleChange()">
-                <option value="">Select an analyzed angle...</option>
-              </select>
-              <div class="meta-angle-hint" id="meta_angle_hint">
-                Select an angle to align ad creative with specific audience motivation.
-              </div>
-            </div>
-
-            <!-- 2. Product Reference Selection -->
-            <div class="form-group">
-              <label class="form-label meta-form-label">
-                <span><i class="fa-solid fa-camera"></i> Product Reference Photo</span>
-                <span class="meta-label-tag" id="meta_product_count_badge">0 photos attached</span>
-              </label>
-              <div class="meta-product-picker" id="meta_product_picker">
-                <div class="meta-picker-empty" id="meta_picker_empty">
-                  <i class="fa-regular fa-image"></i>
-                  <span>No product photo attached yet</span>
-                </div>
-              </div>
-              <div class="meta-upload-custom-row">
-                <label for="meta_custom_product_input" class="btn btn-secondary btn-sm meta-btn-upload">
-                  <i class="fa-solid fa-cloud-arrow-up"></i> Upload / Change Product Photo
-                </label>
-                <input type="file" id="meta_custom_product_input" accept="image/*" style="display: none;" onchange="handleMetaCustomProductUpload(event)" />
-                <span class="meta-upload-note" id="meta_custom_product_note">Uses uploaded campaign photo by default</span>
-              </div>
-            </div>
-
-            <!-- 3. Format & Engine Controls -->
-            <div class="form-group meta-format-section">
-              <label class="form-label meta-form-label">
-                <span><i class="fa-solid fa-crop-simple"></i> Meta Format &amp; Aspect Ratio</span>
-                <span class="meta-label-tag">Feed vs Stories</span>
-              </label>
-              <div class="meta-ratio-grid" id="meta_ratio_group">
-                <button type="button" class="meta-pill-btn meta-ratio-card active" data-ratio="4:5" onclick="setMetaRatio('4:5')">
-                  <div class="ratio-icon-wrap"><i class="fa-brands fa-instagram"></i></div>
-                  <div class="ratio-card-info">
-                    <strong>4:5 Feed</strong>
-                    <small>Best CTR</small>
-                  </div>
-                </button>
-                <button type="button" class="meta-pill-btn meta-ratio-card" data-ratio="1:1" onclick="setMetaRatio('1:1')">
-                  <div class="ratio-icon-wrap"><i class="fa-solid fa-square"></i></div>
-                  <div class="ratio-card-info">
-                    <strong>1:1 Square</strong>
-                    <small>Carousel</small>
-                  </div>
-                </button>
-                <button type="button" class="meta-pill-btn meta-ratio-card" data-ratio="9:16" onclick="setMetaRatio('9:16')">
-                  <div class="ratio-icon-wrap"><i class="fa-solid fa-mobile-screen"></i></div>
-                  <div class="ratio-card-info">
-                    <strong>9:16 Vertical</strong>
-                    <small>Stories / Reels</small>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            <div class="form-group meta-engine-section">
-              <label class="form-label meta-form-label">
-                <span><i class="fa-solid fa-microchip"></i> Generation Engine</span>
-                <span class="meta-label-tag">GPU vs Cloud API</span>
-              </label>
-              <div class="meta-engine-grid" id="meta_engine_group">
-                <button type="button" class="meta-pill-btn meta-engine-card active" data-engine="qwen" onclick="setMetaEngine('qwen')">
-                  <span class="pill-engine-icon qwen-pill-icon"><i class="fa-solid fa-server"></i></span>
-                  <div class="engine-card-text">
-                    <strong>Qwen-Image-2.1</strong>
-                    <small>Self-Hosted GCP · Placement</small>
-                  </div>
-                </button>
-                <button type="button" class="meta-pill-btn meta-engine-card" data-engine="banana" onclick="setMetaEngine('banana')">
-                  <span class="pill-engine-icon banana-pill-icon"><i class="fa-solid fa-bolt"></i></span>
-                  <div class="engine-card-text">
-                    <strong>Nano Banana Pro</strong>
-                    <small>Gemini Multimodal · Fast</small>
-                  </div>
-                </button>
-              </div>
-            </div>
-
-            <!-- 4. Optional Custom Hook or Directive Override -->
-            <div class="form-group" style="margin-bottom: 14px;">
-              <label class="form-label meta-form-label">
-                <span><i class="fa-solid fa-wand-magic-sparkles"></i> Custom Creative Directive (Optional)</span>
-                <span class="meta-label-tag">Fine-tune</span>
-              </label>
-              <input type="text" id="meta_custom_directive" class="form-input" placeholder="E.g. Place on sunlit wooden desk with matcha latte, crisp morning light..." />
-            </div>
-
-            <!-- Generate Button -->
-            <button class="btn btn-primary meta-btn-generate" id="btn_generate_meta_ad" onclick="generateMetaCreative()">
-              <i class="fa-brands fa-meta"></i> Generate Meta Creative &amp; Ad Copy
-            </button>
-          </div>
-
-          <!-- Right Column: Interactive Meta Ad Mockup (Facebook / Instagram Live Preview) -->
-          <div class="meta-preview-col">
-            <div class="meta-mockup-wrapper">
-              <div class="meta-mockup-header-bar">
-                <div class="mockup-tabs">
-                  <button type="button" class="mockup-tab active" id="tab_mockup_ig" onclick="setMockupPlatform('ig')">
-                    <i class="fa-brands fa-instagram"></i> Instagram Feed
-                  </button>
-                  <button type="button" class="mockup-tab" id="tab_mockup_fb" onclick="setMockupPlatform('fb')">
-                    <i class="fa-brands fa-facebook"></i> Facebook Feed
-                  </button>
-                </div>
-                <div class="mockup-actions">
-                  <button type="button" class="mockup-tab meta-view-toggle-pill active" id="toggle_composite_view_btn" onclick="toggleMetaCompositeView()" title="Native AI Ad Creative with in-image typography and branding">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i> <span id="toggle_composite_label">AI Ad Creative</span>
-                  </button>
-                  <button class="icon-action-btn" title="Copy Ad Copy" onclick="copyCurrentMetaCopy()">
-                    <i class="fa-regular fa-copy"></i>
-                  </button>
-                  <button class="icon-action-btn" title="Download Creative" onclick="downloadCurrentMetaImage()">
-                    <i class="fa-solid fa-download"></i>
-                  </button>
-                </div>
-              </div>
-
-              <div class="meta-feed-card" id="meta_feed_card">
-                <!-- Feed Header: Profile & Sponsored -->
-                <div class="feed-header">
-                  <div class="feed-avatar" id="meta_preview_avatar">B</div>
-                  <div class="feed-account-info">
-                    <div class="feed-brand-title">
-                      <span id="meta_preview_brand">Brand Name</span>
-                      <i class="fa-solid fa-circle-check verified-badge"></i>
-                    </div>
-                    <div class="feed-sub-meta">Sponsored · <i class="fa-solid fa-earth-americas"></i> Paid partnership</div>
-                  </div>
-                  <button class="feed-more-btn" type="button"><i class="fa-solid fa-ellipsis"></i></button>
-                </div>
-
-                <!-- Primary Text (Post caption) -->
-                <div class="feed-primary-text" id="meta_preview_primary_text">
-                  Run campaign analysis to generate personalized Meta feed copy &amp; thumb-stopping visual creatives tailored to your audience.
-                </div>
-
-                <!-- Creative Media Frame -->
-                <div class="feed-media-frame ratio-4-5" id="meta_media_frame">
-                  <div class="feed-placeholder-wrap" id="meta_media_placeholder">
-                    <i class="fa-brands fa-meta meta-placeholder-icon"></i>
-                    <p class="meta-placeholder-text">Click <strong>Generate Meta Creative</strong> to synthesize an image ad tailored to this audience &amp; product.</p>
-                  </div>
-                  <img id="meta_preview_image" src="" alt="Meta Ad Creative" style="display: none;" />
-                  <div class="meta-media-loader" id="meta_media_loader" style="display: none;">
-                    <div class="spinner"></div>
-                    <span id="meta_loader_status">Synthesizing ad creative with AI...</span>
-                  </div>
-                </div>
-
-                <!-- Feed Bottom Action Bar (Link Headline + CTA) -->
-                <div class="feed-bottom-bar" id="meta_feed_bottom_bar">
-                  <div class="feed-link-info">
-                    <span class="feed-domain" id="meta_preview_domain">WWW.BRANDNAME.COM</span>
-                    <span class="feed-headline" id="meta_preview_headline">Elevate Your Daily Routine · Shop Now</span>
-                  </div>
-                  <button class="feed-cta-btn" id="meta_preview_cta" type="button">Shop Now</button>
-                </div>
-
-                <!-- Social engagement bar -->
-                <div class="feed-engagement-bar">
-                  <div class="feed-eng-left">
-                    <span><i class="fa-regular fa-heart"></i></span>
-                    <span><i class="fa-regular fa-comment"></i></span>
-                    <span><i class="fa-regular fa-paper-plane"></i></span>
-                  </div>
-                  <span><i class="fa-regular fa-bookmark"></i></span>
-                </div>
-              </div>
-
-              <!-- Meta Action Bridge Buttons -->
-              <div class="meta-creative-actions">
-                <button class="btn btn-secondary btn-sm" type="button" onclick="copyCurrentMetaCopy()">
-                  <i class="fa-regular fa-copy"></i> Copy Ad Copy
-                </button>
-                <button class="btn btn-secondary btn-sm" type="button" onclick="downloadCurrentMetaImage()">
-                  <i class="fa-solid fa-download"></i> Download PNG
-                </button>
-                <button class="btn btn-secondary btn-sm" type="button" onclick="bridgeToMiniMaxFromMeta()">
-                  <i class="fa-solid fa-video"></i> Animate (MiniMax)
-                </button>
-                <button class="btn btn-secondary btn-sm" type="button" onclick="bridgeToOmniFromMeta()">
-                  <i class="fa-solid fa-bolt"></i> Animate (Omni Flash)
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Session Gallery of Meta Ad Creatives -->
-        <div class="meta-gallery-section" id="meta_gallery_section" style="display: none;">
-          <div class="meta-gallery-header">
-            <h4><i class="fa-solid fa-images"></i> Generated Meta Creatives for this Campaign (<span id="meta_gallery_count">0</span>)</h4>
-            <span style="font-size: 11px; color: var(--text-muted);">Click any creative to load into the preview mockup</span>
-          </div>
-          <div class="meta-gallery-grid" id="meta_gallery_grid"></div>
-        </div>
-      </div>
-
-      <!-- Ad Groups -->
-      <div class="glass-card ad-groups-card">
-        <div class="card-heading">
-          <div class="card-heading-icon"><i class="fa-solid fa-layer-group"></i></div>
-          <div>
-            <h2>Campaign Ad Groups</h2>
-            <p>6 angles · 3 video scripts each — open a script in Creator Studio to produce it</p>
-          </div>
-        </div>
-
-        <div class="tabs-header" id="ad_group_tabs"></div>
-
-        <div class="ad-group-intro">
-          <h3 id="current_ad_group_title">Ad Group</h3>
-          <p id="current_ad_group_angle">Marketing angle</p>
-        </div>
-
-        <div class="videos-grid" id="scripts_grid"></div>
-      </div>
-
-    </section>
-    </div><!-- End #view_ad_campaign -->
-
-    <!-- ==================== FLOW 3: MONEYPRINTER TURBO (STOCK B-ROLL AI ADS) ==================== -->
-    <section id="view_moneyprinter" class="studio-workspace-section" style="display: none; margin-top: 24px;">
-      <!-- MoneyPrinter Toolbar Strip -->
-      <div class="studio-toolbar-strip">
-        <div class="studio-status-wrap">
-          <div class="studio-pill-status" style="border-color: rgba(16, 185, 129, 0.4); background: rgba(16, 185, 129, 0.1);">
-            <span class="pulse-dot" style="background: #10b981;"></span>
-            <strong>MoneyPrinter Turbo Engine</strong> · Auto Stock Video Generator
-          </div>
-          <span class="studio-tagline">1-Click topic to viral short: auto scriptwriting, Edge TTS voiceover, HD stock footage matching &amp; animated subtitles</span>
-        </div>
-        <div class="studio-engine-pills">
-          <span class="engine-badge"><i class="fa-solid fa-microphone"></i> Edge TTS (Free)</span>
-          <span class="engine-badge"><i class="fa-solid fa-film"></i> Pixabay HD B-Roll</span>
-          <span class="engine-badge"><i class="fa-solid fa-closed-captioning"></i> Auto Subtitles</span>
-        </div>
-      </div>
-
-      <div class="studio-grid-layout" style="margin-top: 20px;">
-        <!-- Left: Controls & Inputs -->
-        <div class="glass-card studio-control-panel">
-          <h3 class="panel-section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Video Concept</h3>
-
-          <div class="form-group" style="margin-top: 14px;">
-            <label class="dna-label" for="mpt_subject_input">Video Topic or Ad Angle <span style="color: var(--accent); font-weight: 700;">*</span></label>
-            <input type="text" id="mpt_subject_input" class="text-input" placeholder="e.g. 5 psychological hacks to study without burnout" style="width: 100%;">
-            <p class="field-hint" style="color: var(--text-muted); font-size: 0.78rem; margin-top: 4px;">Enter any hook, ad idea, product benefit, or trending topic.</p>
-          </div>
-
-          <div class="form-group" style="margin-top: 16px;">
-            <label class="dna-label" for="mpt_custom_script_input">Custom Script (Optional)</label>
-            <textarea id="mpt_custom_script_input" class="text-area-input" rows="4" placeholder="Leave blank to let Gemini write an engaging viral script automatically, or paste your custom voiceover script here..."></textarea>
-            <p class="field-hint" style="color: var(--text-muted); font-size: 0.78rem; margin-top: 4px;">If provided, Gemini extracts scene keywords to match footage.</p>
-          </div>
-
-          <div class="generator-row" style="margin-top: 16px;">
-            <label class="dna-label" for="mpt_aspect_select">Format / Aspect Ratio</label>
-            <select id="mpt_aspect_select" class="select-input">
-              <option value="9:16">📱 Vertical 9:16 (Shorts / Reels / TikTok)</option>
-              <option value="16:9">🖥️ Landscape 16:9 (YouTube / Web)</option>
-            </select>
-          </div>
-
-          <div class="generator-row" style="margin-top: 14px;">
-            <label class="dna-label" for="mpt_voice_select">Narration Voice (Edge TTS)</label>
-            <select id="mpt_voice_select" class="select-input">
-              <option value="en-US-ChristopherNeural">Christopher (Male - Deep &amp; Authoritative)</option>
-              <option value="en-US-JennyNeural">Jenny (Female - Natural &amp; Warm)</option>
-              <option value="en-US-GuyNeural">Guy (Male - Casual &amp; Friendly)</option>
-              <option value="en-US-AriaNeural">Aria (Female - Clear &amp; Energetic)</option>
-              <option value="en-GB-RyanNeural">Ryan (UK Male - Polished British)</option>
-              <option value="en-IN-NeerjaNeural">Neerja (Indian English - Female)</option>
-              <option value="en-IN-PrabhatNeural">Prabhat (Indian English - Male)</option>
-              <option value="hi-IN-MadhurNeural">Madhur (Hindi - Male)</option>
-              <option value="hi-IN-SwaraNeural">Swara (Hindi - Female)</option>
-            </select>
-          </div>
-
-          <div style="display: flex; gap: 16px; margin-top: 16px;">
-            <label style="display: flex; align-items: center; gap: 8px; color: var(--text-body); font-size: 0.85rem; cursor: pointer;">
-              <input type="checkbox" id="mpt_subtitles_toggle" checked style="accent-color: var(--accent);">
-              <span>Burn-in Subtitles</span>
-            </label>
-          </div>
-
-          <div class="pane-actions" style="margin-top: 24px;">
-            <button id="mpt_generate_btn" class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="generateMoneyPrinterVideo()">
-              <i class="fa-solid fa-bolt"></i> Generate MoneyPrinter Video
-            </button>
-            <div class="generator-status" id="mpt_status" style="display: none; margin-top: 12px;">
-              <div class="mini-spinner"></div>
-              <span id="mpt_status_text">Starting MoneyPrinter Turbo pipeline…</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right: Preview Box & Details -->
-        <div class="glass-card studio-preview-panel">
-          <h3 class="panel-section-title"><i class="fa-solid fa-play"></i> Generated Video</h3>
-          
-          <div class="video-preview-wrapper" style="width: 100%; max-width: 480px; margin: 0 auto;">
-            <div class="preview-box video-box" id="mpt_video_preview_box" style="min-height: 480px;">
-              <div class="preview-placeholder" id="mpt_video_placeholder">
-                <i class="fa-solid fa-film" style="font-size: 3rem; color: var(--text-muted); margin-bottom: 12px;"></i>
-                <p>Enter a topic and click Generate</p>
-                <span style="font-size: 0.8rem; color: var(--text-muted); text-align: center;">Your rendered video with narration &amp; stock B-roll will appear here</span>
-              </div>
-              <video src="" id="mpt_ad_video" class="preview-video" style="display: none; width: 100%; height: 100%; max-height: 520px; border-radius: var(--radius-sm);" controls autoplay loop></video>
-            </div>
-            
-            <a href="" id="mpt_download_btn" class="btn btn-primary btn-download" style="display: none; width: 100%; justify-content: center; margin-top: 14px;" download>
-              <i class="fa-solid fa-download"></i> Download Video (.mp4)
-            </a>
-          </div>
-
-          <!-- Script & Keyword Inspector -->
-          <div id="mpt_details_card" class="glass-card" style="display: none; margin-top: 20px; padding: 16px; background: rgba(255,255,255,0.02); border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
-            <h4 style="font-size: 0.9rem; font-weight: 600; color: var(--text-white); margin-bottom: 8px;">
-              <i class="fa-solid fa-align-left" style="color: var(--accent);"></i> Script &amp; Visual Plan
-            </h4>
-            <p id="mpt_script_preview" style="font-size: 0.85rem; color: var(--text-body); line-height: 1.5; margin-bottom: 10px;"></p>
-            <div id="mpt_keywords_wrap" style="display: flex; flex-wrap: wrap; gap: 6px;"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-
+      </section>
+    </div>
   </main>
 
-  <footer class="footer">
-    <span>Viral Studio</span> · Powered by Gemini, Nano Banana Pro &amp; Seedance · Made for performance marketers
-  </footer>
-
-  <!-- Creator Studio Modal -->
-  <div class="studio-overlay" id="studio_overlay">
-    <div class="glass-card studio-card">
-
-      <div class="studio-header">
-        <div class="studio-title">
-          <div class="studio-title-icon"><i class="fa-solid fa-clapperboard"></i></div>
-          <div>
-            <h3 id="studio_video_title">Creator Studio</h3>
-            <p id="studio_video_style">Video style details</p>
-          </div>
-        </div>
-        <button class="close-studio" onclick="closeStudio()" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
-      </div>
-
-      <div class="studio-grid">
-
-        <!-- Left: Storyboard & Image Ad Reference -->
-        <div class="studio-pane">
-          <div class="pane-label-row">
-            <div class="pane-label"><span class="pane-step">1</span> Storyboard &amp; Image Reference</div>
-            <div class="sb-engine-toggle-wrap">
-              <span class="sb-engine-label"><i class="fa-solid fa-microchip"></i> Engine:</span>
-              <div class="sb-engine-pill-group" id="sb_engine_pill_group">
-                <button type="button" class="sb-engine-pill active" id="sb_engine_banana" onclick="setStoryboardEngine('banana')">
-                  <i class="fa-solid fa-bolt"></i> Nano Banana Pro
-                </button>
-                <button type="button" class="sb-engine-pill" id="sb_engine_qwen" onclick="setStoryboardEngine('qwen')">
-                  <i class="fa-solid fa-server"></i> Qwen-Image-2.1
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div class="preview-box storyboard-pane" id="storyboard_preview_box">
-            <div class="preview-placeholder" id="storyboard_placeholder">
-              <i class="fa-regular fa-image"></i>
-              <p>No storyboard generated yet</p>
-            </div>
-            <img src="" id="storyboard_img" class="preview-img" style="display: none;" alt="Ad storyboard">
-          </div>
-
-          <div class="pane-actions">
-            <div class="pane-action-buttons">
-              <button id="generate_storyboard_btn" class="btn btn-primary" onclick="generateStoryboard()">
-                <i class="fa-solid fa-image"></i> Generate Storyboard (Nano Banana Pro)
-              </button>
-              <button id="studio_meta_img_btn" class="btn btn-secondary btn-sm" onclick="createMetaAdFromStudio()" title="Design a 4:5 / 1:1 Meta Image Ad for this script angle">
-                <i class="fa-brands fa-meta"></i> Create Meta Image Ad
-              </button>
-            </div>
-            <div class="generator-status" id="storyboard_status">
-              <div class="mini-spinner"></div>
-              <span>Generating 9:16 storyboard layout…</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right: Videos -->
-        <div class="studio-pane">
-          <div class="pane-label"><span class="pane-step">2</span> Animated video ads · 10s</div>
-
-          <div class="video-previews-grid">
-            <!-- 9:16 -->
-            <div class="video-preview-wrapper">
-              <h5 class="ratio-label"><i class="fa-solid fa-mobile-screen"></i> Vertical 9:16</h5>
-              <div class="preview-box video-box" id="video_preview_box_9_16">
-                <div class="preview-placeholder" id="video_placeholder_9_16">
-                  <i class="fa-solid fa-clapperboard"></i>
-                  <p>Generate storyboard first</p>
-                </div>
-                <video src="" id="ad_video_9_16" class="preview-video" style="display: none;" controls autoplay loop></video>
-              </div>
-              <a href="" id="download_video_btn_9_16" class="btn btn-secondary btn-download" style="display: none;" download>
-                <i class="fa-solid fa-download"></i> Download 9:16
-              </a>
-            </div>
-
-            <!-- 16:9 -->
-            <div class="video-preview-wrapper">
-              <h5 class="ratio-label"><i class="fa-solid fa-tv"></i> Landscape 16:9</h5>
-              <div class="preview-box video-box" id="video_preview_box_16_9">
-                <div class="preview-placeholder" id="video_placeholder_16_9">
-                  <i class="fa-solid fa-clapperboard"></i>
-                  <p>Generate storyboard first</p>
-                </div>
-                <video src="" id="ad_video_16_9" class="preview-video" style="display: none;" controls autoplay loop></video>
-              </div>
-              <a href="" id="download_video_btn_16_9" class="btn btn-secondary btn-download" style="display: none;" download>
-                <i class="fa-solid fa-download"></i> Download 16:9
-              </a>
-            </div>
-          </div>
-
-          <div class="generator-row">
-            <label for="video_generator_select" class="dna-label">Generator model</label>
-            <select id="video_generator_select" class="select-input" onchange="updateGeneratorModelText()">
-              <option value="minimax" selected>MiniMax-H3 (Self-Hosted GPU + Audio)</option>
-              <option value="omni-flash">Gemini Omni Flash</option>
-              <option value="seedance">Seedance 2 Mini (Kie AI)</option>
-              <option value="moneyprinter">MoneyPrinter Turbo (Stock B-Roll & Subtitles)</option>
-            </select>
-          </div>
-
-          <div class="pane-actions">
-            <button id="generate_video_btn" class="btn btn-primary" disabled style="opacity: 0.5;" onclick="animateVideo()">
-              <i class="fa-solid fa-play"></i> Animate Videos (MiniMax-H3)
-            </button>
-            <div class="generator-status" id="video_status">
-              <div class="mini-spinner"></div>
-              <span>Animating storyboard frames…</span>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-  </div>
-
-  <!-- ==================== ANTIGRAVITY API KEYS & CREDENTIALS MODAL ==================== -->
-  <div class="modal-backdrop" id="api_keys_modal" style="display: none;" onclick="if(event.target===this) closeApiKeysModal()">
-    <div class="glass-card modal-container antigravity-modal" onclick="event.stopPropagation()">
-      <div class="modal-header">
-        <div class="modal-title-wrap">
-          <div class="modal-title-icon" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(34, 211, 238, 0.3)); color: var(--accent-light);">
-            <i class="fa-solid fa-key"></i>
-          </div>
-          <div>
-            <h3>API Keys &amp; Credentials</h3>
-            <span class="modal-subtitle">Stored securely in your browser's LocalStorage · Never exposed</span>
-          </div>
-        </div>
-        <button type="button" class="modal-close-btn" onclick="closeApiKeysModal()" aria-label="Close Modal">
-          <i class="fa-solid fa-xmark"></i>
-        </button>
-      </div>
-
-      <div class="modal-body" style="padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 14px;">
-        <!-- Gemini Key -->
-        <div class="key-credential-card">
-          <div class="key-card-header">
-            <div class="key-service-info">
-              <span class="key-icon-wrap" style="color: #c084fc; background: rgba(139, 92, 246, 0.15);"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
-              <div>
-                <strong>Gemini API Key</strong>
-                <small>Powers URL Brand Analysis, Omni Flash 1.1, Nano Banana Pro &amp; Meta Ad Copy</small>
-              </div>
-            </div>
-            <span class="key-badge primary" id="badge_gemini_key">Recommended</span>
-          </div>
-          <div class="key-input-wrapper">
-            <input type="password" id="api_key_input" class="form-input key-field" placeholder="AIzaSy... (from Google AI Studio)" autocomplete="off">
-            <button type="button" class="btn-toggle-mask" onclick="toggleKeyMask('api_key_input', this)" title="Show/Hide"><i class="fa-regular fa-eye"></i></button>
-          </div>
-        </div>
-
-        <!-- Kie AI Key -->
-        <div class="key-credential-card">
-          <div class="key-card-header">
-            <div class="key-service-info">
-              <span class="key-icon-wrap" style="color: #60a5fa; background: rgba(59, 130, 246, 0.15);"><i class="fa-solid fa-video"></i></span>
-              <div>
-                <strong>Kie AI Key</strong>
-                <small>Optional · ByteDance Seedance 2 Mini Video Model</small>
-              </div>
-            </div>
-            <span class="key-badge neutral" id="badge_kie_key">Optional</span>
-          </div>
-          <div class="key-input-wrapper">
-            <input type="password" id="kie_key_input" class="form-input key-field" placeholder="Enter Kie AI key..." autocomplete="off">
-            <button type="button" class="btn-toggle-mask" onclick="toggleKeyMask('kie_key_input', this)" title="Show/Hide"><i class="fa-regular fa-eye"></i></button>
-          </div>
-        </div>
-
-        <!-- Pixabay Key -->
-        <div class="key-credential-card">
-          <div class="key-card-header">
-            <div class="key-service-info">
-              <span class="key-icon-wrap" style="color: #34d399; background: rgba(16, 185, 129, 0.15);"><i class="fa-solid fa-film"></i></span>
-              <div>
-                <strong>Pixabay API Key</strong>
-                <small>Optional · Free HD B-Roll stock footage matching in MoneyPrinter Turbo</small>
-              </div>
-            </div>
-            <span class="key-badge neutral" id="badge_pixabay_key">Free Tier</span>
-          </div>
-          <div class="key-input-wrapper">
-            <input type="password" id="pixabay_key_input" class="form-input key-field" placeholder="Enter Pixabay key..." autocomplete="off">
-            <button type="button" class="btn-toggle-mask" onclick="toggleKeyMask('pixabay_key_input', this)" title="Show/Hide"><i class="fa-regular fa-eye"></i></button>
-          </div>
-        </div>
-
-        <!-- GPU Cloud Shortcut Box -->
-        <div class="gpu-cloud-bridge-box" onclick="closeApiKeysModal(); openSelfHostedModal();" style="cursor: pointer;">
-          <div style="display: flex; align-items: center; gap: 12px;">
-            <div class="bridge-gpu-icon"><i class="fa-solid fa-server"></i></div>
-            <div>
-              <strong style="color: var(--text-white); font-size: 0.85rem;">Self-Hosted GPU Cloud (Qwen-Image-2.1 &amp; MiniMax-H3)</strong>
-              <small style="color: var(--text-muted); display: block; font-size: 0.72rem;">Manage dedicated GCP GPU API keys, monitor live server health &amp; IP allowlist</small>
-            </div>
-          </div>
-          <i class="fa-solid fa-chevron-right" style="color: var(--accent-light); font-size: 13px;"></i>
-        </div>
-      </div>
-
-      <div class="modal-footer-flex">
-        <button type="button" class="btn btn-secondary btn-sm" onclick="closeApiKeysModal()">Cancel</button>
-        <button type="button" class="btn btn-primary btn-sm" onclick="saveApiKeysFromModal()">
-          <i class="fa-solid fa-check"></i> Save &amp; Apply Credentials
-        </button>
+  <!-- ================================================================== -->
+  <!-- Image studio                                                       -->
+  <!-- ================================================================== -->
+  <main class="page" id="view_image" data-view-panel="image" hidden>
+    <div class="page-head">
+      <div>
+        <h1>Image studio</h1>
+        <p>One-off image ads with Nano Banana Pro and Nano Banana 2.1. Add reference images to place real products or styling in the scene.</p>
       </div>
     </div>
-  </div>
-
-  <!-- Self-Hosted Servers Diagnostic & Settings Modal -->
-  <div id="self_hosted_modal" class="self-hosted-modal-overlay">
-    <div class="self-hosted-modal-card">
-      <div class="modal-header-flex">
-        <div class="modal-title-group">
-          <div class="modal-icon"><i class="fa-solid fa-server"></i></div>
-          <div>
-            <h3>Self-Hosted GPU Servers</h3>
-            <p>GCP (server-hosting-510312, us-central1)</p>
+    <div class="studio">
+      <form class="panel" id="img_form">
+        <div class="field">
+          <span class="label">Model</span>
+          <div class="segmented" id="img_model">
+            <button type="button" data-model="nano-banana-pro" class="active">Nano Banana Pro</button>
+            <button type="button" data-model="nano-banana-2.1">Nano Banana 2.1</button>
           </div>
         </div>
-        <button type="button" class="modal-close-btn" onclick="closeSelfHostedModal()">&times;</button>
-      </div>
-
-      <div class="modal-body-content">
-        <!-- Live Status Grid -->
-        <div class="server-status-grid">
-          <!-- Image Server -->
-          <div class="server-node-card" id="status_card_image">
-            <div class="node-header">
-              <span class="node-title">Image Server</span>
-              <span class="node-badge offline" id="badge_image_status">Checking...</span>
-            </div>
-            <div class="node-model">Qwen-Image-2.1</div>
-            <div class="node-url" id="node_image_url">http://35.239.44.254:8000</div>
-            <div class="node-hint" id="node_image_hint">Auto-shuts down after 30 min idle.<br>Start: <code>.\image-on.ps1</code> (~3-10m)</div>
+        <div class="field">
+          <label class="label" for="img_prompt" id="img_prompt_label">Prompt <span class="muted">· drop a .md file to import</span></label>
+          <div class="prompt-list" id="img_prompts">
+            <textarea class="textarea" id="img_prompt" data-prompt rows="6" placeholder="A bottle of our serum on a sunlit bathroom shelf, bold headline 'Glow in 7 days', CTA 'Shop now'"></textarea>
           </div>
-
-          <!-- Video Server -->
-          <div class="server-node-card" id="status_card_video">
-            <div class="node-header">
-              <span class="node-title">Video Server</span>
-              <span class="node-badge offline" id="badge_video_status">Checking...</span>
-            </div>
-            <div class="node-model">MiniMax-H3 (Video + Audio)</div>
-            <div class="node-url" id="node_video_url">http://136.115.27.165:8000</div>
-            <div class="node-hint" id="node_video_hint">Auto-shuts down after 45 min idle.<br>Start: <code>.\video-on.ps1</code> (~3-10m)</div>
+          <button type="button" class="btn-link prompt-add" id="img_add_prompt"><i class="fa-solid fa-plus"></i> Add another prompt <span class="muted">· up to 5, one image each</span></button>
+        </div>
+        <div class="field">
+          <span class="label">Reference images <span class="muted" id="img_refs_hint">· optional, up to 6 · product photos, styling or packaging</span></span>
+          <div class="dropzone" id="img_drop" role="button" tabindex="0" aria-label="Add reference images">
+            <div class="dropzone-cta"><i class="fa-solid fa-cloud-arrow-up"></i><span>Drop or browse</span></div>
+            <div class="thumbs" id="img_thumbs"></div>
+            <input type="file" id="img_files" accept="image/*" multiple hidden>
           </div>
         </div>
-
-        <!-- IP Allowlist Box -->
-        <div class="ip-info-box">
-          <div class="ip-info-left">
-            <i class="fa-solid fa-shield-halved"></i>
-            <div>
-              <strong>Your Public IP:</strong>
-              <code id="user_public_ip">Detecting...</code>
-            </div>
-          </div>
-          <button type="button" class="btn btn-secondary btn-sm" onclick="copyPublicIp()">
-            <i class="fa-solid fa-copy"></i> Copy IP
-          </button>
-        </div>
-        <p class="server-note">
-          <i class="fa-solid fa-circle-info"></i> The GCP firewall only accepts allowlisted IPs. If requests time out while the server is running, share your public IP with the server owner.
-        </p>
-
-        <!-- API Key Settings -->
-        <div class="modal-form-section">
-          <h4>Server Authentication (X-API-Key)</h4>
-          <div class="modal-input-group">
-            <label for="modal_image_key">Image Server Key (Qwen-Image-2.1):</label>
-            <input type="password" id="modal_image_key" placeholder="Enter X-API-Key for Image Server..." autocomplete="off">
-          </div>
-          <div class="modal-input-group">
-            <label for="modal_video_key">Video Server Key (MiniMax-H3):</label>
-            <input type="password" id="modal_video_key" placeholder="Enter X-API-Key for Video Server..." autocomplete="off">
+        <div class="field">
+          <span class="label">Size</span>
+          <div class="segmented" id="img_aspect">
+            <button type="button" data-ratio="1:1" class="active">1:1</button>
+            <button type="button" data-ratio="4:5">4:5</button>
+            <button type="button" data-ratio="9:16">9:16</button>
+            <button type="button" data-ratio="16:9">16:9</button>
           </div>
         </div>
-      </div>
-
-      <div class="modal-footer-flex">
-        <button type="button" class="btn btn-secondary btn-sm" onclick="checkSelfHostedStatus(true)">
-          <i class="fa-solid fa-arrows-rotate"></i> Refresh Health
-        </button>
-        <button type="button" class="btn btn-primary btn-sm" onclick="saveSelfHostedSettings()">
-          <i class="fa-solid fa-check"></i> Save Keys
-        </button>
+        <div class="field">
+          <label class="label" for="img_style">Style</label>
+          <select class="select" id="img_style">
+            <option value="">None — use my prompt as is</option>
+            <option value="minimal_dtc">Minimal DTC studio</option>
+            <option value="luxury_podium">Luxury podium</option>
+            <option value="ugc_lifestyle">UGC lifestyle</option>
+            <option value="nature_botanical">Nature &amp; botanical</option>
+            <option value="dramatic_splash">Dramatic splash</option>
+          </select>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" id="img_submit"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate image</button>
+      </form>
+      <div class="result-stage">
+        <div class="result-main" id="img_result"><div class="media-empty"><i class="fa-regular fa-image"></i><span>Your image appears here</span></div></div>
+        <div>
+          <div class="label" style="margin-bottom: 8px;">Recent</div>
+          <div class="history" id="img_history"></div>
+        </div>
       </div>
     </div>
-  </div>
+  </main>
 
-  <script src="js/app.js?v=2.0.2"></script>
+  <!-- ================================================================== -->
+  <!-- Video studio                                                       -->
+  <!-- ================================================================== -->
+  <main class="page" id="view_video" data-view-panel="video" hidden>
+    <div class="page-head">
+      <div>
+        <h1>Video studio</h1>
+        <p>One-off videos with Omni Flash: from a prompt and reference images, between two frames, or by editing a clip.</p>
+      </div>
+    </div>
+    <div class="studio">
+      <form class="panel" id="vid_form">
+        <div class="field">
+          <span class="label">Mode</span>
+          <div class="segmented" id="vid_mode">
+            <button type="button" data-mode="prompt_images" class="active">Prompt + images</button>
+            <button type="button" data-mode="first_last_frame">Two frames</button>
+            <button type="button" data-mode="edit_video">Edit a clip</button>
+          </div>
+        </div>
+        <div class="field">
+          <label class="label" for="vid_prompt"><span id="vid_prompt_label">Prompt</span> <span class="muted">· drop a .md file to import</span></label>
+          <div class="prompt-list" id="vid_prompts">
+            <textarea class="textarea" id="vid_prompt" data-prompt rows="6" placeholder="Close-up of the product on a rainy window sill, slow push-in, warm light"></textarea>
+          </div>
+          <button type="button" class="btn-link prompt-add" id="vid_add_prompt"><i class="fa-solid fa-plus"></i> Add another prompt <span class="muted">· up to 5, one video each</span></button>
+        </div>
+        <div class="field" data-for-mode="prompt_images">
+          <span class="label">Reference images <span class="muted">· optional, up to 7</span></span>
+          <div class="dropzone" id="vid_drop" role="button" tabindex="0" aria-label="Add reference images">
+            <div class="dropzone-cta"><i class="fa-solid fa-cloud-arrow-up"></i><span>Drop or browse</span></div>
+            <div class="thumbs" id="vid_thumbs"></div>
+            <input type="file" id="vid_files" accept="image/*" multiple hidden>
+          </div>
+        </div>
+        <div class="field" data-for-mode="first_last_frame" hidden>
+          <span class="label">Start and end frames</span>
+          <div class="frame-pair">
+            <div class="dropzone" id="vid_first_drop" role="button" tabindex="0" aria-label="Add start frame">
+              <div class="dropzone-cta"><span>Start frame</span></div>
+              <div class="thumbs" id="vid_first_thumbs"></div>
+              <input type="file" id="vid_first_file" accept="image/*" hidden>
+            </div>
+            <div class="dropzone" id="vid_last_drop" role="button" tabindex="0" aria-label="Add end frame">
+              <div class="dropzone-cta"><span>End frame</span></div>
+              <div class="thumbs" id="vid_last_thumbs"></div>
+              <input type="file" id="vid_last_file" accept="image/*" hidden>
+            </div>
+          </div>
+        </div>
+        <div class="field" data-for-mode="edit_video" hidden>
+          <label class="label" for="vid_source">Source clip</label>
+          <input type="file" class="input" id="vid_source" accept="video/mp4,video/quicktime,video/webm">
+        </div>
+        <div class="field">
+          <span class="label">Format</span>
+          <div class="toolbar-group">
+            <div class="segmented" id="vid_aspect">
+              <button type="button" data-ratio="9:16" class="active">9:16</button>
+              <button type="button" data-ratio="16:9">16:9</button>
+              <button type="button" data-ratio="1:1">1:1</button>
+            </div>
+            <div class="segmented" id="vid_duration">
+              <button type="button" data-dur="4">4s</button>
+              <button type="button" data-dur="6">6s</button>
+              <button type="button" data-dur="8" class="active">8s</button>
+              <button type="button" data-dur="10">10s</button>
+            </div>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary btn-lg" id="vid_submit"><i class="fa-solid fa-clapperboard"></i> Generate video</button>
+      </form>
+      <div class="result-stage">
+        <div class="result-main" id="vid_result"><div class="media-empty"><i class="fa-solid fa-film"></i><span>Your video appears here</span></div></div>
+        <div>
+          <div class="label" style="margin-bottom: 8px;">This session</div>
+          <div class="history" id="vid_history"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- API key -->
+  <dialog id="key_dialog">
+    <form method="dialog" class="dialog-body" id="key_form">
+      <h3>Gemini API key</h3>
+      <p>Powers research, prompt writing, Nano Banana Pro and Omni Flash. Saved in this browser only and sent only to this app's server.</p>
+      <label class="label" for="key_input">Key</label>
+      <input type="password" class="input" id="key_input" placeholder="AIzaSy…" autocomplete="off">
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-ghost" id="key_cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="confirm_dialog">
+    <form method="dialog" class="dialog-body">
+      <h3 id="confirm_title">Are you sure?</h3>
+      <p id="confirm_text"></p>
+      <div class="dialog-actions">
+        <button type="submit" class="btn btn-ghost" value="cancel">Cancel</button>
+        <button type="submit" class="btn btn-primary" value="ok" id="confirm_ok">Continue</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toasts" id="toasts" aria-live="polite"></div>
+
+  <script src="js/core.js?v=3.0.2"></script>
+  <script src="js/campaign.js?v=3.0.8"></script>
+  <script src="js/studios.js?v=3.0.5"></script>
 </body>
 </html>

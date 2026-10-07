@@ -1,0 +1,24 @@
+{
+  "run_id": "_example",
+  "status": "complete",
+  "timestamp": "2026-10-05T15:43:59.877186",
+  "blocking_issues": [],
+  "coverage": {
+    "competitors_resolved": 0,
+    "ads_seen": 0,
+    "ads_analysed": 0,
+    "images": 0,
+    "videos": 0,
+    "source": "meta_ad_library_browser"
+  },
+  "outputs": {
+    "image_prompts": "prompts/image_prompts.json",
+    "video_prompts": "prompts/video_prompts.json",
+    "insights": "analysis/insights.md",
+    "report": "report.md"
+  },
+  "routing": {
+    "rainbow": "prompts/image_prompts.json",
+    "opus": "prompts/video_prompts.json"
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "video": "runs\\_example\\media\\sanfe\\28195366336727396.mp4",
+  "duration_s": 38.22,
+  "width": 360,
+  "height": 640,
+  "aspect_ratio": "9:16",
+  "has_audio": true,
+  "hook_frames": [
+    {
+      "t": 0,
+      "file": "hook_00_0s.jpg"
+    },
+    {
+      "t": 0.5,
+      "file": "hook_00_5s.jpg"
+    },
+    {
+      "t": 1.0,
+      "file": "hook_01_0s.jpg"
+    },
+    {
+      "t": 1.5,
+      "file": "hook_01_5s.jpg"
+    },
+    {
+      "t": 2.0,
+      "file": "hook_02_0s.jpg"
+    },
+    {
+      "t": 2.5,
+      "file": "hook_02_5s.jpg"
+    },
+    {
+      "t": 3.0,
+      "file": "hook_03_0s.jpg"
+    }
+  ],
+  "scene_frames": [
+    {
+      "t": 4.13,
+      "file": "scene_01.jpg"
+    },
+    {
+      "t": 6.55,
+      "file": "scene_02.jpg"
+    },
+    {
+      "t": 8.38,
+      "file": "scene_03.jpg"
+    },
+    {
+      "t": 11.01,
+      "file": "scene_04.jpg"
+    },
+    {
+      "t": 15.52,
+      "file": "scene_05.jpg"
+    },
+    {
+      "t": 16.18,
+      "file": "scene_06.jpg"
+    },
+    {
+      "t": 17.73,
+      "file": "scene_07.jpg"
+    },
+    {
+      "t": 26.65,
+      "file": "scene_08.jpg"
+    },
+    {
+      "t": 33.28,
+      "file": "scene_09.jpg"
+    }
+  ],
+  "frames_dir": "runs\\_example\\frames\\28195366336727396"
+}

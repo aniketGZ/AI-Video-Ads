@@ -1,0 +1,13 @@
+[mcp_servers.playwright]
+command = "cmd"
+args = [
+    "/c",
+    "npx",
+    "-y",
+    "@playwright/mcp@0.0.83",
+    "--isolated",
+    "--viewport-size",
+    "1366x900",
+    "--output-dir",
+    ".playwright-mcp",
+]

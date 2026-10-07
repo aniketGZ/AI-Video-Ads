@@ -1,0 +1,186 @@
+[
+  {
+    "id": "ag_01_vid_01",
+    "ad_group_id": "ag_01",
+    "concept_type": "proven",
+    "angle": "problem-solution",
+    "inspired_by_pattern": "3-second hook transition to smooth application demo",
+    "model": "omni-flash",
+    "aspect_ratio": "9:16",
+    "duration_s": 8,
+    "reference_images": [
+      {
+        "file": "uploads/product.png",
+        "role": "product reference"
+      }
+    ],
+    "first_frame_prompt": "Close-up commercial shot of the product bottle held in hand against sun-drenched city background. Use attached product image as exact reference; preserve shape, label layout, and proportions.",
+    "beats": [
+      {
+        "t": "0–1.5s",
+        "purpose": "hook",
+        "visual": "Fast cut of urban heat and relatable sweat discomfort",
+        "camera": "Dynamic handheld close-up",
+        "on_screen_text": "Keeps Skin Fresh & Dry",
+        "audio": "Punchy percussion hit with street ambience"
+      },
+      {
+        "t": "1.5–5s",
+        "purpose": "demo",
+        "visual": "Silky cream dispenses and melts invisibly into skin with velvety matte finish",
+        "camera": "Smooth macro push-in",
+        "on_screen_text": "Instant Dry Feel",
+        "audio": "Voiceover: One touch for all-day freshness"
+      },
+      {
+        "t": "5–8s",
+        "purpose": "end_card",
+        "visual": "Hero bottle standing proud with fresh energized talent smiling in background",
+        "camera": "Steady centered lock-off",
+        "on_screen_text": "Shop Now",
+        "audio": "Upbeat chord resolve"
+      }
+    ],
+    "video_prompt": "Single continuous shot, no scene cuts. Commercial video starting on Keeps Skin Fresh & Dry visual hook, transitioning seamlessly to the product bottle from uploads/product.png, keeping packaging label sharp and unchanged throughout.",
+    "voiceover": "Stay completely fresh and dry all day with Arriv. Shop Now.",
+    "end_card": "Headline: Keeps Skin Fresh & Dry | CTA: Shop Now | Logo composited top-right"
+  },
+  {
+    "id": "ag_01_vid_02",
+    "ad_group_id": "ag_01",
+    "concept_type": "differentiator",
+    "angle": "problem-solution",
+    "inspired_by_pattern": "3-second hook transition to smooth application demo",
+    "model": "omni-flash",
+    "aspect_ratio": "9:16",
+    "duration_s": 8,
+    "reference_images": [
+      {
+        "file": "uploads/product.png",
+        "role": "product reference"
+      }
+    ],
+    "first_frame_prompt": "Close-up commercial shot of the product bottle held in hand against sun-drenched city background. Use attached product image as exact reference; preserve shape, label layout, and proportions.",
+    "beats": [
+      {
+        "t": "0–1.5s",
+        "purpose": "hook",
+        "visual": "Fast cut of urban heat and relatable sweat discomfort",
+        "camera": "Dynamic handheld close-up",
+        "on_screen_text": "Odor Protection, Head To Toe",
+        "audio": "Punchy percussion hit with street ambience"
+      },
+      {
+        "t": "1.5–5s",
+        "purpose": "demo",
+        "visual": "Silky cream dispenses and melts invisibly into skin with velvety matte finish",
+        "camera": "Smooth macro push-in",
+        "on_screen_text": "Instant Dry Feel",
+        "audio": "Voiceover: One touch for all-day freshness"
+      },
+      {
+        "t": "5–8s",
+        "purpose": "end_card",
+        "visual": "Hero bottle standing proud with fresh energized talent smiling in background",
+        "camera": "Steady centered lock-off",
+        "on_screen_text": "Shop Now",
+        "audio": "Upbeat chord resolve"
+      }
+    ],
+    "video_prompt": "Single continuous shot, no scene cuts. Commercial video starting on Odor Protection, Head To Toe visual hook, transitioning seamlessly to the product bottle from uploads/product.png, keeping packaging label sharp and unchanged throughout.",
+    "voiceover": "Stay completely fresh and dry all day with Arriv. Shop Now.",
+    "end_card": "Headline: Odor Protection, Head To Toe | CTA: Shop Now | Logo composited top-right"
+  },
+  {
+    "id": "ag_02_vid_01",
+    "ad_group_id": "ag_02",
+    "concept_type": "proven",
+    "angle": "problem-solution",
+    "inspired_by_pattern": "3-second hook transition to smooth application demo",
+    "model": "omni-flash",
+    "aspect_ratio": "9:16",
+    "duration_s": 8,
+    "reference_images": [
+      {
+        "file": "uploads/product.png",
+        "role": "product reference"
+      }
+    ],
+    "first_frame_prompt": "Close-up commercial shot of the product bottle held in hand against sun-drenched city background. Use attached product image as exact reference; preserve shape, label layout, and proportions.",
+    "beats": [
+      {
+        "t": "0–1.5s",
+        "purpose": "hook",
+        "visual": "Fast cut of urban heat and relatable sweat discomfort",
+        "camera": "Dynamic handheld close-up",
+        "on_screen_text": "Relieves Chafing",
+        "audio": "Punchy percussion hit with street ambience"
+      },
+      {
+        "t": "1.5–5s",
+        "purpose": "demo",
+        "visual": "Silky cream dispenses and melts invisibly into skin with velvety matte finish",
+        "camera": "Smooth macro push-in",
+        "on_screen_text": "Instant Dry Feel",
+        "audio": "Voiceover: One touch for all-day freshness"
+      },
+      {
+        "t": "5–8s",
+        "purpose": "end_card",
+        "visual": "Hero bottle standing proud with fresh energized talent smiling in background",
+        "camera": "Steady centered lock-off",
+        "on_screen_text": "Learn More",
+        "audio": "Upbeat chord resolve"
+      }
+    ],
+    "video_prompt": "Single continuous shot, no scene cuts. Commercial video starting on Relieves Chafing visual hook, transitioning seamlessly to the product bottle from uploads/product.png, keeping packaging label sharp and unchanged throughout.",
+    "voiceover": "Stay completely fresh and dry all day with Arriv. Learn More.",
+    "end_card": "Headline: Relieves Chafing | CTA: Learn More | Logo composited top-right"
+  },
+  {
+    "id": "ag_02_vid_02",
+    "ad_group_id": "ag_02",
+    "concept_type": "differentiator",
+    "angle": "problem-solution",
+    "inspired_by_pattern": "3-second hook transition to smooth application demo",
+    "model": "omni-flash",
+    "aspect_ratio": "9:16",
+    "duration_s": 8,
+    "reference_images": [
+      {
+        "file": "uploads/product.png",
+        "role": "product reference"
+      }
+    ],
+    "first_frame_prompt": "Close-up commercial shot of the product bottle held in hand against sun-drenched city background. Use attached product image as exact reference; preserve shape, label layout, and proportions.",
+    "beats": [
+      {
+        "t": "0–1.5s",
+        "purpose": "hook",
+        "visual": "Fast cut of urban heat and relatable sweat discomfort",
+        "camera": "Dynamic handheld close-up",
+        "on_screen_text": "Triple Action Whole Body Cream",
+        "audio": "Punchy percussion hit with street ambience"
+      },
+      {
+        "t": "1.5–5s",
+        "purpose": "demo",
+        "visual": "Silky cream dispenses and melts invisibly into skin with velvety matte finish",
+        "camera": "Smooth macro push-in",
+        "on_screen_text": "Instant Dry Feel",
+        "audio": "Voiceover: One touch for all-day freshness"
+      },
+      {
+        "t": "5–8s",
+        "purpose": "end_card",
+        "visual": "Hero bottle standing proud with fresh energized talent smiling in background",
+        "camera": "Steady centered lock-off",
+        "on_screen_text": "Learn More",
+        "audio": "Upbeat chord resolve"
+      }
+    ],
+    "video_prompt": "Single continuous shot, no scene cuts. Commercial video starting on Triple Action Whole Body Cream visual hook, transitioning seamlessly to the product bottle from uploads/product.png, keeping packaging label sharp and unchanged throughout.",
+    "voiceover": "Stay completely fresh and dry all day with Arriv. Learn More.",
+    "end_card": "Headline: Triple Action Whole Body Cream | CTA: Learn More | Logo composited top-right"
+  }
+]

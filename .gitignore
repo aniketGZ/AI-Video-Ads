@@ -43,3 +43,14 @@ scratch_image_*.jpg
 scratch_video.mp4
 ref videos/
 *.png
+
+# Server-side job cache
+data/
+
+# Competitor ad agent runs (keep the example) and Playwright MCP output
+runs/*
+!runs/_example/
+.playwright-mcp/
+
+# Archived runs, old frontend and removed modules (local only)
+archive/

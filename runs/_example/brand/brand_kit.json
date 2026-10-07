@@ -1,0 +1,19 @@
+{
+  "brand": "Arriv",
+  "palette": {
+    "primary_peach": "#F7C3A6",
+    "product_body": "#F4C9A8",
+    "accent_terracotta": "#D9481C",
+    "ink_black": "#111111",
+    "neutral_light": "#F7F2EC"
+  },
+  "palette_source": "input.json brand_colors + product image sampling",
+  "typography_feel": "Friendly Gen-Z: warm script/cursive for the wordmark, clean bold geometric sans for headlines (uppercase for emphasis), rounded and approachable.",
+  "logo": {
+    "file": "none_uploaded",
+    "handling": "composite_in_post",
+    "notes": "No standalone logo file provided. The product bottle carries an 'Arriv' script wordmark in terracotta. For ads, reserve a clean logo zone (top area) for post-production compositing. Never ask the model to render the wordmark/logo."
+  },
+  "visual_feel": "Playful, warm, confident, sun-lit Indian-city lifestyle; peach/terracotta/cream world; light-hearted body-positive line-art motif echoing the pack illustration.",
+  "tone": "playful, warm, confident, Gen-Z"
+}

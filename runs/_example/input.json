@@ -1,0 +1,55 @@
+{
+  "brand": {
+    "name": "Arriv",
+    "url": "https://www.arrivfresh.com",
+    "category": "personal care / whole-body deodorant cream",
+    "product": "Triple Action Whole Body Cream, 100 g pump bottle",
+    "usp": ["Odor Protection", "Helps Absorb Sweat", "Relieves Chafing", "Keeps Skin Fresh & Dry"],
+    "audience": "Gen-Z and young millennials in Indian cities dealing with heat, sweat and chafing",
+    "tone": "playful, warm, confident, Gen-Z",
+    "brand_colors": ["#F7C3A6", "#D9481C", "#111111"]
+  },
+  "ad_groups": [
+    {
+      "id": "ag_01",
+      "name": "Sweat & odor",
+      "theme": "pain-point: sweaty, smelly days in Indian heat to all-day fresh",
+      "audience": "college students and young professionals commuting in the heat",
+      "keywords": ["body odor cream", "whole body deodorant", "sweat control"],
+      "copy": {
+        "headlines": ["Keeps Skin Fresh & Dry", "Odor Protection, Head To Toe"],
+        "primary_text": ["One cream for odor protection that helps absorb sweat, so you stay fresh all day."],
+        "cta": "Shop Now"
+      }
+    },
+    {
+      "id": "ag_02",
+      "name": "Chafing relief",
+      "theme": "problem/solution: inner-thigh and underarm chafing relief",
+      "audience": "people who walk, work out or wear fitted clothes in humid weather",
+      "keywords": ["anti chafing cream", "thigh chafing"],
+      "copy": {
+        "headlines": ["Relieves Chafing", "Triple Action Whole Body Cream"],
+        "primary_text": ["Relieves chafing, helps absorb sweat and keeps skin fresh & dry."],
+        "cta": "Learn More"
+      }
+    }
+  ],
+  "competitors": [
+    { "name": "Sanfe" },
+    { "name": "Bombay Shaving Company" },
+    { "name": "Plum Goodness", "website": "https://plumgoodness.com" }
+  ],
+  "settings": {
+    "ad_library_country": "IN",
+    "max_ads_per_competitor": 15,
+    "image_prompts_per_ad_group": 3,
+    "video_prompts_per_ad_group": 2,
+    "image_model": "nano-banana-pro",
+    "video_model": "omni-flash",
+    "image_aspect_ratios": ["4:5", "1:1", "9:16"],
+    "video_aspect_ratios": ["9:16"],
+    "video_duration_s": 8,
+    "logo_handling": "composite_in_post"
+  }
+}
