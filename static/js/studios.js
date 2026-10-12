@@ -107,6 +107,7 @@
   // ------------------------------------------------------------ image studio
   const imgRefs = imageDropzone({ zone: "img_drop", input: "img_files", thumbs: "img_thumbs", max: 6 });
   const imgAspect = segmented("img_aspect", "ratio");
+  const imgResolution = segmented("img_resolution", "res");
   const imgModel = segmented("img_model", "model", (m) => {
     const is21 = m === "nano-banana-2.1";
     const max = is21 ? 14 : 6;
@@ -115,8 +116,17 @@
     if (hint) hint.textContent = `· optional, up to ${max} · product photos, styling or packaging`;
   });
 
-  function showImage(url) {
-    showResult("img_result", `<img src="${esc(url)}" alt="Generated image ad">`);
+  function showImage(url, meta) {
+    let metaHtml = "";
+    if (meta && (meta.resolution || meta.aspect_ratio || meta.width)) {
+      const dim = meta.width && meta.height ? `${meta.width}×${meta.height}` : "";
+      metaHtml = `<div class="image-meta-bar" style="margin-top: 10px; display: flex; gap: 8px; align-items: center; justify-content: center; font-size: 0.82rem; color: var(--text-2);">
+        ${meta.resolution ? `<span class="badge badge-accent">${esc(meta.resolution)}</span>` : ""}
+        ${meta.aspect_ratio ? `<span class="badge">${esc(meta.aspect_ratio)}</span>` : ""}
+        ${dim ? `<span class="muted small">${esc(dim)}</span>` : ""}
+      </div>`;
+    }
+    showResult("img_result", `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;"><img src="${esc(url)}" alt="Generated image ad">${metaHtml}</div>`);
   }
 
   function imgPromptBoxes() {
@@ -184,11 +194,12 @@
     if (!requireKey()) return;
 
     const selectedModel = imgModel() || "nano-banana-pro";
+    const selectedRes = imgResolution() || "1K";
     const modelLabel = selectedModel === "nano-banana-2.1" ? "Nano Banana 2.1" : "Nano Banana Pro";
 
     if (prompts.length > 1 && !(await askConfirm(
       `Generate ${prompts.length} images?`,
-      `Each prompt is a separate ${modelLabel} render.`,
+      `Each prompt is a separate ${modelLabel} render (${selectedRes}).`,
       `Generate ${prompts.length}`
     ))) return;
 
@@ -197,6 +208,7 @@
     fd.append("prompts", JSON.stringify(prompts));
     fd.append("prompt", prompts[0]);
     fd.append("aspect_ratio", imgAspect() || "1:1");
+    fd.append("resolution", selectedRes);
     if ($("img_style").value) fd.append("style_preset", $("img_style").value);
 
     const refFiles = imgRefs.files();
@@ -206,14 +218,14 @@
     $("img_submit").disabled = true;
 
     if (prompts.length === 1) {
-      busy("img_result", `${modelLabel} is generating…`);
+      busy("img_result", `${modelLabel} is generating… (${selectedRes})`);
       try {
         const res = await fetch("/api/image-studio/generate", { method: "POST", headers: apiHeaders(), body: fd });
         if (!res.ok) throw new Error(await readErrorDetail(res, "Image generation failed"));
         const data = await res.json();
-        showImage(data.image_url);
+        showImage(data.image_url, data);
         loadImageHistory();
-        notify("Image ready.", "success");
+        notify(`Image ready (${data.resolution || selectedRes}).`, "success");
       } catch (err) {
         failed("img_result", err.message);
       } finally {
@@ -246,12 +258,13 @@
           tileEl.innerHTML = `
             <img src="${esc(item.image_url)}" alt="${esc(p)}" style="cursor:pointer;" title="Click to view full size">
             <div class="tile-bar">
+              <span class="badge badge-accent small">${esc(item.resolution || selectedRes)}</span>
               <button type="button" class="btn-link small" data-view-img><i class="fa-solid fa-expand"></i> View</button>
               <a href="${esc(item.image_url)}" download="${esc(item.filename || `image_${i+1}.png`)}" class="btn-link small" target="_blank"><i class="fa-solid fa-download"></i> Save</a>
             </div>`;
-          tileEl.querySelector("img").addEventListener("click", () => showImage(item.image_url));
+          tileEl.querySelector("img").addEventListener("click", () => showImage(item.image_url, item));
           const viewBtn = tileEl.querySelector("[data-view-img]");
-          if (viewBtn) viewBtn.addEventListener("click", () => showImage(item.image_url));
+          if (viewBtn) viewBtn.addEventListener("click", () => showImage(item.image_url, item));
         } else {
           const errText = item?.error || "Generation failed";
           tileEl.innerHTML = `<div class="media-empty error"><i class="fa-solid fa-triangle-exclamation"></i><span>${esc(errText)}</span></div>`;
@@ -271,8 +284,9 @@
   const vidFirst = imageDropzone({ zone: "vid_first_drop", input: "vid_first_file", thumbs: "vid_first_thumbs", max: 1 });
   const vidLast = imageDropzone({ zone: "vid_last_drop", input: "vid_last_file", thumbs: "vid_last_thumbs", max: 1 });
   const vidAspect = segmented("vid_aspect", "ratio");
+  const vidResolution = segmented("vid_resolution", "res");
   const vidDuration = segmented("vid_duration", "dur");
-  const PROMPT_LABELS = { prompt_images: "Prompt", first_last_frame: "Motion between the frames", edit_video: "Edit instructions" };
+  const PROMPT_LABELS = { prompt_images: "Prompt", first_last_frame: "Motion directions / prompt", edit_video: "Edit instructions" };
   const vidMode = segmented("vid_mode", "mode", (mode) => {
     document.querySelectorAll("[data-for-mode]").forEach((el) => { el.hidden = el.dataset.forMode !== mode; });
     $("vid_prompt_label").textContent = PROMPT_LABELS[mode];
@@ -322,10 +336,14 @@
     onUpdate: syncPromptUi,
   });
 
-  function rememberVideo(url) {
-    sessionVideos.unshift(url);
-    $("vid_history").innerHTML = sessionVideos.map((u) =>
-      `<button type="button" data-url="${esc(u)}" aria-label="Show this video"><video src="${esc(u)}" muted preload="metadata"></video></button>`
+  function rememberVideo(url, job) {
+    const res = job?.resolution || vidResolution() || "720p";
+    sessionVideos.unshift({ url, resolution: res });
+    $("vid_history").innerHTML = sessionVideos.map((item) =>
+      `<button type="button" data-url="${esc(item.url)}" aria-label="Show this video">
+        <video src="${esc(item.url)}" muted preload="metadata"></video>
+        ${item.resolution ? `<span class="vid-hist-badge">${esc(item.resolution)}</span>` : ""}
+      </button>`
     ).join("");
   }
 
@@ -334,8 +352,11 @@
     if (el) el.innerHTML = html;
   }
 
-  function showVideo(url) {
-    showResult("vid_result", `<video src="${esc(url)}" controls autoplay playsinline></video>`);
+  function showVideo(url, job) {
+    const item = sessionVideos.find((v) => v.url === url);
+    const res = job?.resolution || item?.resolution;
+    const badge = res ? `<div class="vid-meta-pill"><span class="badge">${esc(res)}</span></div>` : "";
+    showResult("vid_result", `<div class="vid-preview-box">${badge}<video src="${esc(url)}" controls autoplay playsinline></video></div>`);
   }
 
   $("vid_history").addEventListener("click", (e) => {
@@ -348,8 +369,8 @@
     const mode = vidMode() || "prompt_images";
     const prompts = promptBoxes().map((b) => b.value.trim()).filter(Boolean);
     if (!prompts.length) return notify("Write a prompt first.", "warning");
-    if (mode === "first_last_frame" && !(vidFirst.files()[0] && vidLast.files()[0])) {
-      return notify("Add both a start frame and an end frame.", "warning");
+    if (mode === "first_last_frame" && !vidFirst.files()[0]) {
+      return notify("Add at least a start frame.", "warning");
     }
     if (mode === "edit_video" && !$("vid_source").files[0]) return notify("Choose a clip to edit.", "warning");
     if (!requireKey()) return;
@@ -362,11 +383,11 @@
     fd.append("prompts", JSON.stringify(prompts));
     fd.append("aspect_ratio", vidAspect() || "9:16");
     fd.append("duration", vidDuration() || "8");
-    fd.append("resolution", "720p");
+    fd.append("resolution", vidResolution() || "720p");
     if (mode === "prompt_images") vidRefs.files().forEach((f) => fd.append("reference_images", f));
     if (mode === "first_last_frame") {
-      fd.append("first_frame", vidFirst.files()[0]);
-      fd.append("last_frame", vidLast.files()[0]);
+      if (vidFirst.files()[0]) fd.append("first_frame", vidFirst.files()[0]);
+      if (vidLast.files()[0]) fd.append("last_frame", vidLast.files()[0]);
     }
     if (mode === "edit_video") fd.append("source_video", $("vid_source").files[0]);
 
@@ -382,8 +403,8 @@
       if (jobIds.length === 1) {
         busy("vid_result", "Omni Flash is rendering… usually a few minutes");
         const job = await pollJob(jobIds[0], { onProgress: (j) => j.progress_msg && busy("vid_result", j.progress_msg) });
-        showVideo(job.video_url);
-        rememberVideo(job.video_url);
+        showVideo(job.video_url, job);
+        rememberVideo(job.video_url, job);
         notify("Video ready.", "success");
         return;
       }
@@ -398,8 +419,9 @@
       const results = await Promise.allSettled(jobIds.map((id, i) =>
         pollJob(id, { onProgress: (j) => j.progress_msg && tileState(i, spinner(j.progress_msg)) })
           .then((job) => {
-            tileState(i, `<video src="${esc(job.video_url)}" controls playsinline></video>`);
-            rememberVideo(job.video_url);
+            tileState(i, `<video src="${esc(job.video_url)}" controls playsinline></video>
+              <div class="tile-meta"><span class="badge">${esc(job.resolution || vidResolution() || "720p")}</span></div>`);
+            rememberVideo(job.video_url, job);
           })
           .catch((err) => {
             tileState(i, `<div class="media-empty error"><i class="fa-solid fa-triangle-exclamation"></i><span>${esc(err.message)}</span></div>`);

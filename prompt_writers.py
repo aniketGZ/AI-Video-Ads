@@ -38,6 +38,7 @@ from ad_templates import (
 )
 from meta_creative_engine import NO_FABRICATED_CLAIMS_RULE, build_native_in_image_ad_prompt
 from creative_strategist import StaticBrief, VideoBrief
+from media_utils import sanitize_visual_prompt
 
 logger = logging.getLogger(__name__)
 
@@ -139,7 +140,8 @@ def build_omni_prompt(
         lines.append(f"DIRECTION: {direction}")
 
     lines.append(
-        "AVOID: competitor logos, hallucinated pack text, illegible on-screen text, distorted hands, generic 3D renders."
+        "AVOID: celebrity likeness, famous actors or public figures, glamorous airbrushed influencer aesthetic, "
+        "competitor logos, hallucinated pack text, illegible on-screen text, distorted hands, generic 3D renders."
     )
     return "\n".join(lines)
 
@@ -194,6 +196,9 @@ class StaticPromptWriter:
             f"BRAND KIT: Primary {brand_kit.get('primary_hex')}, Accent {brand_kit.get('accent_hex')}, Mood {brand_kit.get('visual_mood')}\n"
             f"AVAILABLE TEMPLATES:\n{template_menu}\n\n"
             f"BRIEFS TO ART DIRECT:\n" + "\n\n".join(brief_summaries) + "\n\n"
+            "CRITICAL: Never use proper personal names (e.g., 'Ananya', 'Sarah') in scene descriptions. Describe talent "
+            "anonymously and realistically ('A 25-year-old woman in casual office wear'). Avoid any celebrity likeness, famous actors, "
+            "or glamorous influencer tropes.\n"
             "Return a scene_description and layout_notes for each brief."
         )
 
@@ -205,6 +210,7 @@ class StaticPromptWriter:
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     response_schema=StaticBatchArtDirection,
+                    temperature=0.7,
                 ),
             )
             data = json.loads(response.text)
@@ -217,6 +223,8 @@ class StaticPromptWriter:
         for idx, brief in enumerate(briefs, start=1):
             art = art_map.get(brief.id, {})
             scene_desc = art.get("scene_description") or brief.scene_direction
+            forbidden_names = [brief.persona, (brand_profile.get("bullseye_target") or {}).get("persona_name", "")]
+            scene_desc = sanitize_visual_prompt(scene_desc, forbidden_names)
             chosen_tmpl = art.get("template_id") or ""
 
             # Resolve product
@@ -228,11 +236,29 @@ class StaticPromptWriter:
             # Resolve competitor reference if cited in concept_source
             ref_match = None
             image_refs = references.get("image", {})
-            for src in brief.concept_source:
-                clean_src = src.strip("[] ").upper()
+            for src in (brief.concept_source or []):
+                m = re.search(r"\bR0*(\d+)\b", str(src), re.IGNORECASE)
+                if m:
+                    r_key = f"R{int(m.group(1))}"
+                    if r_key in image_refs:
+                        ref_match = image_refs[r_key]
+                        break
+                clean_src = str(src).strip("[] ").upper()
                 if clean_src in image_refs:
                     ref_match = image_refs[clean_src]
                     break
+
+            # Fallback: if competitor references exist in image_refs, pair the brief with an available competitor reference
+            if not ref_match and image_refs:
+                matching_by_framework = [
+                    r for r in image_refs.values()
+                    if r.get("framework") == brief.framework or r.get("angle") == brief.angle
+                ]
+                if matching_by_framework:
+                    ref_match = matching_by_framework[0]
+                else:
+                    ref_keys = list(image_refs.keys())
+                    ref_match = image_refs[ref_keys[(idx - 1) % len(ref_keys)]]
 
             # Build blueprint
             headline_clean = short_headline(brief.copy.image_headline)
@@ -253,7 +279,7 @@ class StaticPromptWriter:
                 "comparison_theirs": "",
                 "target_audience_resonance": brief.angle,
             }
-            blueprint["template_id"] = resolve_template_id(blueprint, mode)
+            blueprint["template_id"] = resolve_template_id(blueprint, mode, category)
 
             if ref_match:
                 blueprint["reference"] = {k: ref_match.get(k) for k in (
@@ -419,7 +445,10 @@ class VideoScriptWriter:
             "THE HOOK LINE AND VOICEOVER ARE FINAL AND MUST BE USED VERBATIM.\n\n"
             f"CASTING: {casting}\n"
             f"BRIEFS TO EXPAND:\n" + "\n\n".join(brief_summaries) + "\n\n"
-            "Format: 3-4 beats covering 0-10 seconds (e.g. 0-3s, 3-7s, 7-10s). Provide detailed visual action and camera motion."
+            "Format: 3-4 beats covering 0-10 seconds (e.g. 0-3s, 3-7s, 7-10s). Provide detailed visual action and camera motion.\n"
+            "CRITICAL: Never include proper character names (e.g. 'Ananya', 'Sarah') in expanded visual beats or direction. Always use "
+            "anonymous physical descriptions ('A young commuter', 'A 25-year-old woman in casual office wear'). "
+            "Avoid celebrity likeness, famous actors, or glamorous model tropes."
         )
 
         try:
@@ -430,6 +459,7 @@ class VideoScriptWriter:
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json",
                     response_schema=VideoBatchScripts,
+                    temperature=0.7,
                 ),
             )
             data = json.loads(response.text)
@@ -450,15 +480,32 @@ class VideoScriptWriter:
 
             direction = script_detail.get("direction", f"{brief.format.upper()} video ad with natural phone/cinema camera motion.")
 
+            forbidden_names = [brief.persona, (brand_profile.get("bullseye_target") or {}).get("persona_name", "")]
+            for b in beats:
+                if isinstance(b, dict) and "visual" in b:
+                    b["visual"] = sanitize_visual_prompt(b["visual"], forbidden_names)
+            direction = sanitize_visual_prompt(direction, forbidden_names)
+
             # Featured products
             featured = [products[p] for p in brief.product_indexes if 0 <= p < len(products)]
             ref_image_indexes = [p["index"] for p in featured]
 
             # Video reference if any
             vref_match = None
+            vid_refs = references.get("video", {})
             if brief.hook_mechanic_from:
-                clean_src = brief.hook_mechanic_from.strip("[] ").upper()
-                vref_match = references.get("video", {}).get(clean_src)
+                m = re.search(r"\bV0*(\d+)\b", str(brief.hook_mechanic_from), re.IGNORECASE)
+                if m:
+                    v_key = f"V{int(m.group(1))}"
+                    vref_match = vid_refs.get(v_key)
+                if not vref_match:
+                    clean_src = str(brief.hook_mechanic_from).strip("[] ").upper()
+                    vref_match = vid_refs.get(clean_src)
+
+            # Fallback: if video references exist in vid_refs, pair with an available competitor video ref
+            if not vref_match and vid_refs:
+                vid_list = list(vid_refs.values())
+                vref_match = vid_list[(briefs.index(brief)) % len(vid_list)]
 
             omni_prompt_text = build_omni_prompt(
                 brand_name=brand_name,
@@ -487,6 +534,7 @@ class VideoScriptWriter:
                 "proof_ids": brief.proof_ids,
                 "duration_s": VIDEO_DURATION_S,
                 "aspect_ratio": "9:16",
+                "resolution": "720p",
                 "beats": beats,
                 "direction": direction,
                 "omni_prompt": omni_prompt_text,

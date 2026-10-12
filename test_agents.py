@@ -296,9 +296,63 @@ def test_creative_director_rewrite_loop():
     print("[PASS] CreativeDirector successfully executed rewrite loop and recovered failing ad to passing score.")
 
 
+def test_anti_celebrity_and_persona_sanitization():
+    """Verify that proper persona names are sanitized out of prompts and anti-celebrity guardrails are active."""
+    from media_utils import sanitize_visual_prompt
+    from ad_templates import build_template_prompt, build_reference_prompt
+
+    # 1. Test name sanitization
+    raw_scene = "Ananya stepping off a crowded Delhi Metro platform into bright daylight. Ananya's tote bag is visible."
+    cleaned = sanitize_visual_prompt(raw_scene, ["Ananya Sharma", "Ananya"])
+    assert "Ananya" not in cleaned
+    assert "relatable customer" in cleaned.lower()
+    assert "the customer's tote bag" in cleaned.lower()
+
+    # 2. Test Omni prompt AVOID guardrails
+    omni_prompt = build_omni_prompt(
+        brand_name="Test Brand",
+        product_name="Sunscreen",
+        featured_products=[],
+        casting_description="20s commuter",
+        brand_kit={},
+        beats=[],
+        voiceover="",
+        direction="UGC selfie",
+    )
+    assert "celebrity likeness" in omni_prompt
+    assert "famous actors" in omni_prompt
+
+    # 3. Test template prompt TALENT guardrails
+    template_prompt = build_template_prompt(
+        template_id="model_lifestyle",
+        mode="product_mode",
+        brand_name="Test Brand",
+        product_name="Lotion",
+        target_audience_persona="Working professional",
+        headline="Morning Glow",
+        cta="Shop Now",
+    )
+    assert "Not a celebrity, actor, or glamorous influencer" in template_prompt
+
+    # 4. Test reference prompt LAYOUT-REF guardrails
+    ref_prompt = build_reference_prompt(
+        reference={"composition": "split", "product_presence": "handheld"},
+        concept="Test concept",
+        brand_name="Test Brand",
+        product_name="Lotion",
+        target_audience_persona="Commuter",
+        headline="Stay Fresh",
+        cta="Try Now",
+        has_layout_ref=True,
+    )
+    assert "NOT a celebrity, model, or influencer" in ref_prompt
+    print("[PASS] Anti-celebrity guardrails and persona name sanitization verified.")
+
+
 if __name__ == "__main__":
     test_models_serialization()
     test_omni_prompt_builder()
     test_creative_director_hard_checks()
     test_creative_director_rewrite_loop()
+    test_anti_celebrity_and_persona_sanitization()
     print("\nALL STEP 3 TESTS PASSED PERFECTLY!")

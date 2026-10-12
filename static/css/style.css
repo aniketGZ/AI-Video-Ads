@@ -554,8 +554,63 @@ a { color: var(--accent-text); }
 .textarea.dragover, .prompt-list.dragover { border-color: var(--accent) !important; background: var(--accent-soft); outline: 2px dashed var(--accent); }
 @media (max-width: 560px) { .result-grid { grid-template-columns: 1fr; } }
 .history { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
-.history button { padding: 0; border: 1px solid var(--border); border-radius: var(--r-sm); overflow: hidden; background: var(--bg); cursor: pointer; aspect-ratio: 1; }
+.history button { position: relative; padding: 0; border: 1px solid var(--border); border-radius: var(--r-sm); overflow: hidden; background: var(--bg); cursor: pointer; aspect-ratio: 1; }
 .history img, .history video { width: 100%; height: 100%; object-fit: cover; }
+.vid-hist-badge {
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 600;
+  padding: 1px 4px;
+  border-radius: 3px;
+  line-height: 1.2;
+  pointer-events: none;
+}
+.vid-preview-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.vid-meta-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+.tile-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+.select-sm {
+  width: auto;
+  padding: 5px 8px;
+  font-size: 0.8rem;
+  height: 31px;
+  border-radius: var(--r-sm);
+  background: var(--bg);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+}
+.vcard-res {
+  display: inline-block;
+  background: var(--surface-3);
+  color: var(--text);
+  padding: 1px 6px;
+  border-radius: var(--r-full);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: normal;
+}
 .frame-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .frame-pair .dropzone { flex-direction: column; justify-content: center; text-align: center; min-height: 110px; padding: 12px; }
 
@@ -608,3 +663,278 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.6); }
   .step-body { padding: 0 16px 20px; }
   .ad-grid { grid-template-columns: 1fr; }
 }
+
+/* ==========================================================================
+   Batch Prompt Studio
+   ========================================================================== */
+.studio.batch-studio {
+  grid-template-columns: minmax(360px, 460px) 1fr;
+}
+.batch-file-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.batch-file-pill {
+  background: var(--surface-3);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  font-size: 0.78rem;
+  border-radius: var(--r-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+.batch-list-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.batch-list-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+.batch-prompt-list {
+  max-height: 320px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  display: flex;
+  flex-direction: column;
+}
+.batch-empty-prompts {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  color: var(--text-3);
+  font-size: 0.84rem;
+  gap: 8px;
+  text-align: center;
+}
+.batch-empty-prompts i {
+  font-size: 1.6rem;
+  opacity: 0.5;
+}
+.batch-prompt-card {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  transition: background 0.15s ease;
+}
+.batch-prompt-card:last-child {
+  border-bottom: 0;
+}
+.batch-prompt-card:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+.batch-prompt-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.batch-check-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  flex: 1;
+  overflow: hidden;
+}
+.batch-prompt-num {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-soft);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.batch-prompt-title {
+  font-size: 0.86rem;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  outline: none;
+  border-bottom: 1px dashed transparent;
+}
+.batch-prompt-title:focus {
+  border-bottom-color: var(--accent);
+}
+.batch-prompt-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.batch-prompt-del {
+  background: transparent;
+  border: 0;
+  color: var(--text-3);
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+.batch-prompt-del:hover {
+  color: var(--danger);
+  background: var(--danger-soft);
+}
+.batch-prompt-textarea {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  font-family: var(--font-mono);
+  padding: 6px 8px;
+  background: var(--surface-3);
+  resize: vertical;
+}
+.batch-stage-header {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.batch-stage-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+.batch-alert {
+  padding: 10px 14px;
+  border-radius: var(--r-sm);
+  font-size: 0.84rem;
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1.4;
+}
+.batch-alert.info {
+  background: var(--accent-soft);
+  color: var(--accent-text);
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+.batch-alert.warning {
+  background: rgba(251, 191, 36, 0.12);
+  color: var(--warning);
+  border: 1px solid rgba(251, 191, 36, 0.3);
+}
+.batch-alert.success {
+  background: var(--success-soft);
+  color: var(--success);
+  border: 1px solid rgba(52, 211, 153, 0.3);
+}
+.batch-results-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  gap: 16px;
+}
+.batch-res-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.batch-res-card:hover {
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+}
+.batch-res-thumb {
+  position: relative;
+  aspect-ratio: 1;
+  background: #000;
+  overflow: hidden;
+}
+.batch-res-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.batch-res-tag {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+}
+.batch-res-placeholder {
+  aspect-ratio: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text-3);
+  font-size: 0.82rem;
+  background: var(--surface-3);
+}
+.batch-res-placeholder.error {
+  color: var(--danger);
+}
+.batch-res-placeholder i {
+  font-size: 1.6rem;
+  opacity: 0.8;
+}
+.batch-res-info {
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+.batch-res-title {
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text);
+}
+.batch-res-err {
+  font-size: 0.74rem;
+  color: var(--danger);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.batch-res-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 6px;
+}
+.batch-history-box {
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+.batch-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.batch-hist-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  font-size: 0.84rem;
+}
+

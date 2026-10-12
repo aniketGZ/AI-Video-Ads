@@ -11,7 +11,7 @@ six words or fewer and one CTA pill. Primary text, the Meta headline field and b
 belong in the ad copy, not in the pixels.
 """
 import re
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 PRODUCT_MODE = "product"
 SERVICE_MODE = "service"
@@ -204,13 +204,420 @@ TEMPLATES: Dict[str, Dict[str, Any]] = {
         "talent": False,
         "square": "Device in the upper 62%. Headline centred below it. Brand wordmark and CTA pill centred in the bottom 14%.",
     },
+
+    # ----------------------------- fashion & apparel -----------------------------
+    "fashion_editorial": {
+        "name": "Fashion Editorial Stance",
+        "mode": PRODUCT_MODE,
+        "frameworks": ["lifestyle_hero", "social_proof"],
+        "style": "photo",
+        "summary": "Full-length or 3/4 editorial styling on minimal architectural set or cyclorama.",
+        "set": "Architectural studio set with clean limestone or tinted cyclorama wall in the lightest brand palette colour. Soft diffused daylight from large window scrim, natural shadows.",
+        "hero": "The model wears the featured garment naturally with effortless posture, 3/4 or full-body framing. The cut, fabric drape, and silhouette are in tack-sharp focus.",
+        "camera": "50mm portrait lens at eye level, shallow depth of field softly falling off behind.",
+        "light": "Soft diffused key light, natural subtle fill preserving genuine fabric weave and color fidelity.",
+        "talent": True,
+        "square": "Brand wordmark top-left, headline directly under in the upper-left, CTA pill bottom-left. Calm space around model.",
+    },
+    "apparel_flatlay": {
+        "name": "Curated Styling Flatlay",
+        "mode": PRODUCT_MODE,
+        "frameworks": ["feature_callout", "problem_solution"],
+        "style": "photo",
+        "summary": "Curated top-down styling grid of garment and tonal accessories on textured linen.",
+        "set": "Top-down overhead view of textured neutral linen or polished micro-cement surface. The garment is neatly folded or styled flat alongside 1-2 minimal complementary accessories.",
+        "hero": "The featured product occupies the center 60% of the flatlay, pristine folds, tags or brand label crisp and legible.",
+        "camera": "90-degree direct overhead top-down shot, 50mm, completely flat plane of focus.",
+        "light": "Clean directional morning light casting soft organic shadows to the lower right.",
+        "talent": False,
+        "square": "Headline top 20% centred. Wordmark and CTA pill in bottom 14% with breathing room.",
+    },
+    "garment_craft_detail": {
+        "name": "Craft & Fabric Macro Crop",
+        "mode": PRODUCT_MODE,
+        "frameworks": ["feature_callout"],
+        "style": "photo",
+        "summary": "Tight macro detail crop on premium fabric weave, custom stitching, or hardware.",
+        "set": "Macro studio tabletop or drape. In the foreground, a close-up macro view highlighting the product's premium material texture, precise stitching, zipper hardware, or unique fabric weave.",
+        "hero": "The textural detail fills the right 60% of the frame with razor-sharp focal clarity, showing authentic touch and quality.",
+        "camera": "100mm macro lens, angled 35 degrees, razor-sharp focus on the material detail.",
+        "light": "High-contrast raking side light emphasizing tactile surface dimension, weave, and depth.",
+        "talent": False,
+        "square": "Headline top-left in clear column. Brand wordmark top-right. CTA pill bottom-left.",
+    },
+    "street_lifestyle": {
+        "name": "Urban Street Movement",
+        "mode": PRODUCT_MODE,
+        "frameworks": ["lifestyle_hero", "problem_solution"],
+        "style": "photo",
+        "summary": "Candid model wearing the piece mid-stride in an authentic sunlit street setting.",
+        "set": "Sunlit architectural city sidewalk, minimalist storefront or modern urban plaza with soft natural blur.",
+        "hero": "Relatable everyday model walking mid-stride wearing the product, authentic natural motion, clothing moving realistically.",
+        "camera": "35mm street camera at eye level, capturing a spontaneous lifestyle moment.",
+        "light": "Golden natural outdoor daylight with crisp rim separation.",
+        "talent": True,
+        "square": "Headline across the upper clean sky or wall zone, CTA pill bottom-right.",
+    },
+
+    # ----------------------------- jewelry & luxury -----------------------------
+    "jewelry_macro": {
+        "name": "Jewelry Facet Macro",
+        "mode": PRODUCT_MODE,
+        "frameworks": ["feature_callout", "problem_solution", "us_vs_them"],
+        "style": "photo",
+        "summary": "Extreme macro close-up on slate or travertine stone with razor-sharp metallic luster.",
+        "set": "Dark matte slate or warm travertine stone plinth with subtle natural mineral texture.",
+        "hero": "The jewelry or watch sits upright, razor-sharp reflections on polished metal facets and clean gemstone brilliance, label/mark crisp.",
+        "camera": "100mm macro, low perspective, surgical focus on the hero jewelry face.",
+        "light": "Precise cinematic rim lighting with soft directional fill highlighting luster without glare.",
+        "talent": False,
+        "square": "Headline across top 20%. Wordmark and CTA pill bottom 14% centered.",
+    },
+    "jewelry_model": {
+        "name": "Luxury Editorial Worn",
+        "mode": PRODUCT_MODE,
+        "frameworks": ["lifestyle_hero", "social_proof"],
+        "style": "photo",
+        "summary": "Model wearing the jewelry piece against a warm editorial backdrop.",
+        "set": "Warm studio backdrop with gentle painterly chiaroscuro light and deep shadow gradation.",
+        "hero": "Model's wrist, neck, ear, or hand wearing the piece, graceful poise, real skin texture with the jewelry in tack-sharp focus.",
+        "camera": "85mm portrait, shallow depth of field, focused squarely on the jewelry.",
+        "light": "Soft sculpted key light from 45 degrees, illuminating the jewel and natural skin tones.",
+        "talent": True,
+        "square": "Left column headline and CTA pill, model and piece filling the right 55%.",
+    },
+
+    # ----------------------------- food & beverage -----------------------------
+    "appetite_hero": {
+        "name": "Appetite Tabletop Hero",
+        "mode": PRODUCT_MODE,
+        "frameworks": ["lifestyle_hero", "problem_solution", "feature_callout"],
+        "style": "photo",
+        "summary": "Mouth-watering studio tabletop capture of food/drink at 45 degrees with fresh garnish.",
+        "set": "Rustic natural wood, slate, or marble countertop with organic fresh ingredients or garnishes nearby.",
+        "hero": "The food or drink product sits center-frame at peak appetizing freshness—condensation droplets, gentle steam, or glistening rich texture.",
+        "camera": "50mm food photography lens, 45-degree angle, crisp depth of field.",
+        "light": "Warm back-three-quarter window light creating delicious specular glints, soft fill.",
+        "talent": False,
+        "square": "Headline top 20% centered, CTA pill bottom 14% centered.",
+    },
+    "pour_action": {
+        "name": "Dynamic Pour & Splash Action",
+        "mode": PRODUCT_MODE,
+        "frameworks": ["feature_callout", "problem_solution"],
+        "style": "photo",
+        "summary": "High-speed suspended pour, drizzle or splash capture in mid-air.",
+        "set": "Clean studio backdrop in brand tone with surface reflections.",
+        "hero": "Rich pour into a glass, drizzle of honey/sauce, or splash frozen in mid-air with crisp liquid droplets and dynamic motion.",
+        "camera": "1/2000s high-speed shutter macro capture, freeze-frame clarity on liquid droplets.",
+        "light": "Bright punchy rim flash isolating the droplets against the clean background.",
+        "talent": False,
+        "square": "Headline top-left, CTA pill bottom-left, action centered.",
+    },
+    "table_lifestyle": {
+        "name": "Convivial Table Spread",
+        "mode": PRODUCT_MODE,
+        "frameworks": ["social_proof", "lifestyle_hero"],
+        "style": "photo",
+        "summary": "Warm dining table scene with hands reaching in to enjoy, natural convivial warmth.",
+        "set": "Sunlit café or home dining table with plates, glasses, and natural linen napkins.",
+        "hero": "The product in the middle of an inviting spread, everyday hands reaching in to share or pour, warm relaxed atmosphere.",
+        "camera": "35mm slightly high angle capturing the communal joy of eating/drinking.",
+        "light": "Warm soft sunlight filtering across the table.",
+        "talent": True,
+        "square": "Headline across the top, wordmark and CTA pill in bottom corner.",
+    },
+
+    # ----------------------------- electronics & tech hardware -----------------------------
+    "tech_exploded_pedestal": {
+        "name": "Industrial Design Plinth",
+        "mode": PRODUCT_MODE,
+        "frameworks": ["feature_callout", "us_vs_them"],
+        "style": "photo",
+        "summary": "Device standing on dark anodized pedestal with precise rim light tracing contours.",
+        "set": "Matte dark grey or brushed aluminum plinth, subtle gradient background with brand accent glow.",
+        "hero": "The device or hardware rests at a three-quarter angle, surgical edge reflections tracing its industrial design and port/button details.",
+        "camera": "85mm product lens, eye-level, flawless edge definition and zero distortion.",
+        "light": "Dual rim lights in brand accent highlighting chamfered edges, soft frontal bounce.",
+        "talent": False,
+        "square": "Headline across top 20%, product centered, CTA pill bottom-right.",
+    },
+    "desk_setup": {
+        "name": "Creator Desk Setup",
+        "mode": PRODUCT_MODE,
+        "frameworks": ["lifestyle_hero", "problem_solution"],
+        "style": "photo",
+        "summary": "Aesthetic modern workstation showing device seamlessly integrated in situ.",
+        "set": "Warm walnut or oak desktop, desk mat, warm ambient screen glow, small succulent plant, clean cable-free minimalism.",
+        "hero": "The hardware device positioned in active use on the desk, looking essential, ergonomic and premium.",
+        "camera": "40mm slightly elevated three-quarter view, gentle natural depth.",
+        "light": "Warm ambient monitor glow combined with soft natural daylight from side.",
+        "talent": False,
+        "square": "Left 40% column for headline and CTA, desk setup on right 60%.",
+    },
+
+    # ----------------------------- home & furniture -----------------------------
+    "room_scene": {
+        "name": "Modern Interior In-Situ",
+        "mode": PRODUCT_MODE,
+        "frameworks": ["lifestyle_hero", "social_proof", "problem_solution"],
+        "style": "photo",
+        "summary": "Warmly lit modern living room or bedroom with product naturally situated as hero.",
+        "set": "Clean Scandinavian or warm minimalist interior room with hardwood floors, neutral walls, and morning window sunlight.",
+        "hero": "The furniture or home decor item situated as the harmonious centerpiece of the room, looking lived-in and inviting.",
+        "camera": "35mm wide-normal lens, architectural eye level, straight verticals.",
+        "light": "Natural morning sunlight streaming through sheer curtains casting soft shadows.",
+        "talent": False,
+        "square": "Headline top 20% centered, CTA pill bottom 14% centered.",
+    },
+    "corner_vignette": {
+        "name": "Architectural Corner Vignette",
+        "mode": PRODUCT_MODE,
+        "frameworks": ["feature_callout", "lifestyle_hero"],
+        "style": "photo",
+        "summary": "Stylized architectural corner crop with plaster wall and serene breathing room.",
+        "set": "Textured lime-wash plaster wall corner, hardwood or polished concrete floor, botanical branch in ceramic vase nearby.",
+        "hero": "The product positioned in the quiet corner with generous negative space, highlighting craft and material finish.",
+        "camera": "50mm, eye-level, serene composition.",
+        "light": "Soft diffused raking light highlighting the wall and product textures.",
+        "talent": False,
+        "square": "Right column calm for headline and CTA, product in lower left.",
+    },
+
+    # ----------------------------- fitness & sports -----------------------------
+    "athletic_action": {
+        "name": "Athletic Motion Power",
+        "mode": PRODUCT_MODE,
+        "frameworks": ["lifestyle_hero", "problem_solution"],
+        "style": "photo",
+        "summary": "High-energy training scene with relatable athlete in motion using the gear.",
+        "set": "Modern athletic training space, outdoor running track, or rugged natural trail.",
+        "hero": "Everyday determined athlete in motion actively using or wearing the product, authentic sweat and determination, dynamic movement.",
+        "camera": "35mm fast shutter speed, low dynamic angle capturing speed and grit.",
+        "light": "Dramatic directional sun or stadium key light with crisp edge rim separating the athlete.",
+        "talent": True,
+        "square": "Bold headline top-left, CTA pill bottom-right, athlete centered.",
+    },
+    "gym_floor_hero": {
+        "name": "Gym Floor Equipment Hero",
+        "mode": PRODUCT_MODE,
+        "frameworks": ["feature_callout", "us_vs_them"],
+        "style": "photo",
+        "summary": "Product resting on textured rubber gym mat or locker bench, focused lighting.",
+        "set": "Textured black rubber gym mat floor, raw concrete wall, metallic locker in background.",
+        "hero": "The fitness gear/supplement resting securely on the gym floor, ready for action, tactile grip surfaces clearly visible.",
+        "camera": "Low ground-level 50mm shot, product commanding the frame.",
+        "light": "Overhead spotlighting creating high-contrast athletic intensity.",
+        "talent": False,
+        "square": "Headline top 20%, CTA pill bottom 14%.",
+    },
+
+    # ----------------------------- local & professional services -----------------------------
+    "service_consultation": {
+        "name": "Approachable Expert Consultation",
+        "mode": SERVICE_MODE,
+        "frameworks": ["feature_callout", "social_proof"],
+        "style": "photo",
+        "summary": "Bright modern office or clinic setting with friendly expert engaging warmly.",
+        "set": "Clean, bright, contemporary consultation room or clinic with warm wood accents, comfortable seating, and natural daylight.",
+        "hero": "Approachable professional greeting a client with a warm smile, attentive and reassuring body language.",
+        "camera": "50mm eye-level portrait lens, gentle background defocus.",
+        "light": "Soft flattering window light, welcoming and trustworthy.",
+        "talent": True,
+        "square": "Right 45% for headline, logo, and CTA. Expert on left 55%.",
+    },
+    "client_result": {
+        "name": "Client Transformation Result",
+        "mode": SERVICE_MODE,
+        "frameworks": ["problem_solution", "lifestyle_hero", "us_vs_them"],
+        "style": "photo",
+        "summary": "Happy customer experiencing the finished outcome with authentic relief and joy.",
+        "set": "Beautiful finished home, bright clinic, or modern workspace showing the transformation.",
+        "hero": "Customer smiling with genuine satisfaction, relaxed posture, enjoying the tangible result of the service.",
+        "camera": "35mm natural perspective, candid and unposed.",
+        "light": "Bright, uplifting, high-key natural daylight.",
+        "talent": True,
+        "square": "Headline across the top, CTA pill bottom-right.",
+    },
+}
+
+# ---------------------------------------------------------------------------
+# Industry Category Classification
+# ---------------------------------------------------------------------------
+CATEGORY_KEYWORDS: Dict[str, Tuple[str, ...]] = {
+    "fashion": (
+        "fashion", "clothing", "apparel", "wear", "dress", "shirt", "pants", "jeans", "denim",
+        "jacket", "coat", "hoodie", "streetwear", "activewear", "sportswear", "swimwear", "shoes",
+        "footwear", "sneakers", "boots", "sandals", "heels", "bag", "handbag", "backpack", "wallet",
+        "belt", "hat", "scarf", "sunglasses", "outfit", "garment", "textile"
+    ),
+    "jewelry": (
+        "jewelry", "jewellery", "watch", "watches", "ring", "rings", "necklace", "pendant",
+        "bracelet", "earrings", "gemstone", "diamond", "gold", "silver", "luxury", "chronograph"
+    ),
+    "food_beverage": (
+        "food", "beverage", "beverages", "drink", "drinks", "coffee", "tea", "snack", "snacks",
+        "chocolate", "candy", "bakery", "cookie", "cake", "sauce", "spice", "condiment", "meal",
+        "restaurant", "recipe", "beer", "wine", "cocktail", "supplement", "protein",
+        "nutrition", "vitamins", "gourmet", "organic", "cafe", "eats", "brew", "brews", "roast", "roaster", "culinary"
+    ),
+    "beauty": (
+        "beauty", "skincare", "skin care", "cosmetics", "makeup", "lipstick", "lip", "serum",
+        "moisturizer", "moisturiser", "lotion", "cream", "cleanser", "toner", "sunscreen", "spf",
+        "haircare", "hair care", "shampoo", "conditioner", "perfume", "fragrance", "scent",
+        "bodycare", "wellness", "anti-aging"
+    ),
+    "electronics": (
+        "electronic", "electronics", "gadget", "gadgets", "tech", "audio", "headphone", "headphones",
+        "earbuds", "speaker", "phone", "smartphone", "tablet", "computer", "laptop", "monitor",
+        "keyboard", "mouse", "gaming", "console", "camera", "charger", "cables", "wearable",
+        "hardware", "device"
+    ),
+    "home_living": (
+        "furniture", "sofa", "couch", "chair", "table", "desk", "bed", "mattress", "bedding",
+        "pillow", "decor", "home decor", "lighting", "lamp", "rug", "curtain", "kitchenware",
+        "cookware", "pan", "knife", "appliance", "candle", "pet", "dog", "cat", "garden", "home",
+        "dining table", "living room", "interior"
+    ),
+    "fitness": (
+        "fitness", "workout", "gym", "exercise", "athletic", "running", "yoga", "pilates",
+        "crossfit", "weights", "dumbbell", "training", "sport", "cycling", "bike", "outdoor gear"
+    ),
+    "local_service": (
+        "dental", "dentist", "clinic", "doctor", "medical", "healthcare", "therapy", "salon",
+        "barber", "barbershop", "spa", "real estate", "realtor", "property", "legal", "lawyer",
+        "attorney", "consultant", "consulting", "coach", "coaching", "accounting", "cpa",
+        "plumbing", "roofing", "cleaning", "contractor", "repair", "agency", "service", "services",
+        "local service", "professional service"
+    ),
+    "saas_tech": (
+        "software", "saas", "app", "platform", "cloud", "api", "crm", "dashboard", "analytics",
+        "automation", "b2b", "workflow", "ai ", "tool"
+    ),
+}
+
+def detect_product_category(category: Any, business_type: Optional[str] = "", product_name: Optional[str] = "") -> str:
+    """Classifies brand into a specific industry vertical using weighted scoring."""
+    extra_sources = []
+    if isinstance(category, dict):
+        d = category
+        category = d.get("brand_category") or d.get("category") or ""
+        business_type = business_type or d.get("business_type") or ""
+        product_name = product_name or d.get("product_name") or ""
+        extra_sources.extend([
+            str(d.get("brand_name") or ""),
+            str(d.get("brand_description") or ""),
+            str(d.get("summary") or ""),
+            str(d.get("product_visual_description") or ""),
+        ])
+
+    cat_clean = (str(category or "")).strip().lower()
+    if cat_clean in CATEGORY_KEYWORDS:
+        return cat_clean
+
+    cat_text = f" {cat_clean} "
+    extra_text = f" {str(business_type or '').lower()} {str(product_name or '').lower()} {' '.join(s.lower() for s in extra_sources if s)} "
+
+    best_cat = None
+    best_score = 0
+
+    for cat_name, keywords in CATEGORY_KEYWORDS.items():
+        score = 0
+        for k in keywords:
+            pattern = r"(?:\b|_)" + re.escape(k.lower()) + r"(?:\b|_)"
+            if re.search(pattern, cat_text):
+                score += 3
+            elif re.search(pattern, extra_text):
+                score += 1
+        if score > best_score:
+            best_score = score
+            best_cat = cat_name
+
+    if best_cat and best_score > 0:
+        return best_cat
+    return "general_product" if "physical" in (business_type or "").lower() or not business_type else "general_service"
+
+# Category-specific template mappings for marketing frameworks
+CATEGORY_DEFAULTS: Dict[str, Dict[str, str]] = {
+    "fashion": {
+        "problem_solution": "street_lifestyle",
+        "feature_callout": "garment_craft_detail",
+        "social_proof": "fashion_editorial",
+        "us_vs_them": "fashion_editorial",
+        "lifestyle_hero": "fashion_editorial",
+        "_single": "apparel_flatlay",
+    },
+    "jewelry": {
+        "problem_solution": "jewelry_macro",
+        "feature_callout": "jewelry_macro",
+        "social_proof": "jewelry_model",
+        "us_vs_them": "jewelry_macro",
+        "lifestyle_hero": "jewelry_model",
+        "_single": "jewelry_macro",
+    },
+    "food_beverage": {
+        "problem_solution": "appetite_hero",
+        "feature_callout": "pour_action",
+        "social_proof": "table_lifestyle",
+        "us_vs_them": "appetite_hero",
+        "lifestyle_hero": "table_lifestyle",
+        "_single": "appetite_hero",
+    },
+    "electronics": {
+        "problem_solution": "desk_setup",
+        "feature_callout": "tech_exploded_pedestal",
+        "social_proof": "desk_setup",
+        "us_vs_them": "tech_exploded_pedestal",
+        "lifestyle_hero": "desk_setup",
+        "_single": "tech_exploded_pedestal",
+    },
+    "home_living": {
+        "problem_solution": "room_scene",
+        "feature_callout": "corner_vignette",
+        "social_proof": "room_scene",
+        "us_vs_them": "corner_vignette",
+        "lifestyle_hero": "room_scene",
+        "_single": "room_scene",
+    },
+    "fitness": {
+        "problem_solution": "athletic_action",
+        "feature_callout": "gym_floor_hero",
+        "social_proof": "athletic_action",
+        "us_vs_them": "athletic_action",
+        "lifestyle_hero": "athletic_action",
+        "_single": "gym_floor_hero",
+    },
+    "local_service": {
+        "problem_solution": "client_result",
+        "feature_callout": "service_consultation",
+        "social_proof": "service_consultation",
+        "us_vs_them": "client_result",
+        "lifestyle_hero": "client_result",
+        "_single": "service_consultation",
+    },
+    "beauty": {
+        "problem_solution": "elemental_set",
+        "feature_callout": "macro_texture",
+        "social_proof": "model_lifestyle",
+        "us_vs_them": "split_contrast",
+        "lifestyle_hero": "outdoor_light",
+        "_single": "studio_graphic",
+    },
+    "saas_tech": {
+        "problem_solution": "chaos_grid",
+        "feature_callout": "product_moment",
+        "social_proof": "control_panel",
+        "us_vs_them": "consolidation",
+        "lifestyle_hero": "metaphor_object",
+        "_single": "levitation_device",
+    },
 }
 
 # Which template each marketing framework uses by default, per mode
 FRAMEWORK_DEFAULTS = {
     PRODUCT_MODE: {
-        "problem_solution": "elemental_set",
-        "feature_callout": "macro_texture",
+        "problem_solution": "studio_graphic",
+        "feature_callout": "studio_graphic",
         "social_proof": "model_lifestyle",
         "us_vs_them": "split_contrast",
         "lifestyle_hero": "outdoor_light",
@@ -257,12 +664,28 @@ def templates_for_mode(mode: str) -> List[Dict[str, Any]]:
     ]
 
 
-def resolve_template_id(blueprint: Dict[str, Any], mode: str) -> str:
-    """Use the blueprint's template if it fits the mode, else the framework default for that mode."""
+def resolve_template_id(blueprint: Any, mode: str, category: str = "") -> str:
+    """Use the blueprint's template if it fits the mode, else pick category-tailored default."""
+    if isinstance(blueprint, str):
+        blueprint = {"template_id": blueprint, "framework_key": blueprint}
+    elif not isinstance(blueprint, dict):
+        blueprint = {}
+
     tid = (blueprint.get("template_id") or "").strip()
     if tid in TEMPLATES and TEMPLATES[tid]["mode"] == mode:
         return tid
+
     framework = blueprint.get("framework_key") or "_single"
+
+    # Prioritize industry category mapping
+    cat_key = detect_product_category(category)
+    if cat_key in CATEGORY_DEFAULTS:
+        cat_map = CATEGORY_DEFAULTS[cat_key]
+        if framework in cat_map:
+            return cat_map[framework]
+        if "_single" in cat_map:
+            return cat_map["_single"]
+
     return FRAMEWORK_DEFAULTS[mode].get(framework, FRAMEWORK_DEFAULTS[mode]["_single"])
 
 
@@ -311,7 +734,18 @@ def build_template_prompt(
     has_product_ref: bool = False,
     custom_directive: Optional[str] = None,
 ) -> str:
-    t = TEMPLATES[template_id]
+    cat_key = detect_product_category(product_category, business_type, product_name)
+    # Guard against non-beauty categories being forced into skincare cream swatches or ice mist
+    if template_id == "macro_texture" and cat_key != "beauty":
+        if cat_key in CATEGORY_DEFAULTS and "feature_callout" in CATEGORY_DEFAULTS[cat_key]:
+            template_id = CATEGORY_DEFAULTS[cat_key]["feature_callout"]
+    elif template_id == "elemental_set" and cat_key not in ("beauty", "food_beverage"):
+        if cat_key in CATEGORY_DEFAULTS and "problem_solution" in CATEGORY_DEFAULTS[cat_key]:
+            template_id = CATEGORY_DEFAULTS[cat_key]["problem_solution"]
+    elif template_id in ("chaos_grid", "product_moment", "control_panel", "consolidation") and cat_key == "local_service":
+        template_id = "service_consultation"
+
+    t = TEMPLATES.get(template_id, TEMPLATES["studio_graphic"])
     brand = (brand_name or "Brand").strip()
     product = (product_name or "the product").strip()
     image_headline = short_headline(headline) or f"Meet {product}"
@@ -383,7 +817,7 @@ def build_template_prompt(
         lines.append("TALENT")
         lines.append(
             (talent.strip()[:700] if talent else f"One model who reflects {target_audience_persona or 'the target audience'}.")
-            + " Genuine, relaxed expression, eye contact with the lens, natural skin texture."
+            + " Genuine, relaxed expression, eye contact with the lens, natural skin texture, everyday relatable appearance. Not a celebrity, actor, or glamorous influencer."
         )
         lines.append("")
 
@@ -489,7 +923,8 @@ def build_reference_prompt(
         lines.append(
             f"IMAGE {layout_img} = LAYOUT-REF: a live competitor ad, used ONLY for its concept and layout: composition, "
             "framing, camera distance, pose type, where the text sits, how much text there is and the visual hierarchy. "
-            "Do NOT copy its brand, logo, model's face or identity, garments, product, packaging, colours or any of its words."
+            "Do NOT copy its brand, logo, model's face, celebrity likeness or identity, garments, product, packaging, colours or any of its words. "
+            "Depict an everyday, relatable real person with natural unretouched skin, NOT a celebrity, model, or influencer."
         )
     if logo_img:
         lines.append(
@@ -575,6 +1010,9 @@ def _avoid_lines(mode: str, photo: bool, extra: Optional[List[str]] = None) -> L
     else:
         avoid += ["readable UI words or numbers", "real banking or card numbers", "stock-photo people", "glowing brains, robots, circuit boards"]
     if photo:
-        avoid += ["CGI or 3D-render look", "plastic skin", "HDR", "oversaturation", "visible studio equipment"]
+        avoid += [
+            "CGI or 3D-render look", "plastic skin", "HDR", "oversaturation", "visible studio equipment",
+            "celebrity likeness", "famous actors or influencers", "glamorous airbrushed skin",
+        ]
     avoid += [x for x in (extra or []) if x]
     return ["AVOID", ", ".join(avoid) + "."]

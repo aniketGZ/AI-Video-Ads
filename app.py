@@ -29,6 +29,8 @@ from media_utils import (
     IMAGE_MODELS,
     DEFAULT_IMAGE_MODEL,
     image_model,
+    GEMINI_IMAGE_RESOLUTIONS,
+    DEFAULT_IMAGE_RESOLUTION,
 )
 
 # Load .env before the routers below read API keys from the environment
@@ -38,6 +40,7 @@ from job_store import persist_job_update, load_job  # noqa: E402
 from meta_creative_engine import generate_single_meta_creative  # noqa: E402
 from competitor_ad_routes import router as competitor_ad_router  # noqa: E402
 from campaign_flow import router as campaign_flow_router  # noqa: E402
+from batch_prompt_engine import batch_prompt_router  # noqa: E402
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -259,7 +262,7 @@ STYLE_PRESETS = {
 
 @app.get("/api/image-studio/models")
 async def get_image_studio_models():
-    """Available image generation models and default selection."""
+    """Available image generation models, resolutions, and default selection."""
     return {
         "models": [
             {
@@ -271,6 +274,8 @@ async def get_image_studio_models():
             for k, v in IMAGE_MODELS.items()
         ],
         "default": DEFAULT_IMAGE_MODEL,
+        "resolutions": sorted(list(GEMINI_IMAGE_RESOLUTIONS)),
+        "default_resolution": DEFAULT_IMAGE_RESOLUTION,
     }
 
 
@@ -280,13 +285,14 @@ async def generate_studio_image(
     prompts: Optional[str] = Form(None),
     model: str = Form("nano-banana-pro"),
     aspect_ratio: str = Form("1:1"),
+    resolution: str = Form("1K"),
     style_preset: Optional[str] = Form(None),
     negative_prompt: Optional[str] = Form(None),
     product_image: Optional[UploadFile] = File(None),
     reference_images: Optional[List[UploadFile]] = File(None),
     x_api_key: Optional[str] = Header(None),
 ):
-    """Generate image ad(s) from prompt(s) with selectable Nano Banana models and reference images."""
+    """Generate image ad(s) from prompt(s) with selectable Nano Banana models, resolutions, and reference images."""
     client = require_client(x_api_key)
     try:
         # Parse prompts
@@ -311,6 +317,11 @@ async def generate_studio_image(
         model_info = image_model(model)
         model_key = model_info["key"]
         max_refs = model_info.get("max_refs", 6)
+
+        # Resolve resolution
+        res_clean = (resolution or DEFAULT_IMAGE_RESOLUTION).strip().upper()
+        if res_clean not in GEMINI_IMAGE_RESOLUTIONS:
+            res_clean = DEFAULT_IMAGE_RESOLUTION
 
         # Collect reference images (supports both reference_images list and legacy product_image)
         upload_files: List[UploadFile] = [f for f in (reference_images or []) if f and f.filename]
@@ -350,7 +361,7 @@ async def generate_studio_image(
                 contents = [*parts, final_text]
 
                 image_bytes = await asyncio.to_thread(
-                    generate_gemini_image, client, contents, aspect_ratio, model_key
+                    generate_gemini_image, client, contents, aspect_ratio, model_key, res_clean
                 )
                 if not image_bytes:
                     return {
@@ -359,6 +370,15 @@ async def generate_studio_image(
                         "status": "failed",
                         "error": f"{model_info['label']} did not return an image."
                     }
+
+                actual_width, actual_height = None, None
+                try:
+                    import io
+                    from PIL import Image
+                    with Image.open(io.BytesIO(image_bytes)) as img_obj:
+                        actual_width, actual_height = img_obj.size
+                except Exception:
+                    pass
 
                 filename = f"banana_ad_{uuid.uuid4().hex}.png"
                 with open(os.path.join(GENERATED_DIR, filename), "wb") as f:
@@ -371,6 +391,9 @@ async def generate_studio_image(
                     "filename": filename,
                     "image_url": f"/static/generated/{filename}",
                     "aspect_ratio": aspect_ratio,
+                    "resolution": res_clean,
+                    "width": actual_width,
+                    "height": actual_height,
                     "model": model_key,
                 }
             except Exception as e:
@@ -394,6 +417,9 @@ async def generate_studio_image(
             "image_url": first_url,
             "filename": successful[0]["filename"],
             "aspect_ratio": aspect_ratio,
+            "resolution": res_clean,
+            "width": successful[0].get("width"),
+            "height": successful[0].get("height"),
             "prompt": successful[0]["prompt"],
             "model": model_key,
             "has_product_reference": bool(parts),
@@ -402,6 +428,10 @@ async def generate_studio_image(
                     "prompt": r["prompt"],
                     "image_url": r.get("image_url"),
                     "filename": r.get("filename"),
+                    "aspect_ratio": r.get("aspect_ratio"),
+                    "resolution": r.get("resolution"),
+                    "width": r.get("width"),
+                    "height": r.get("height"),
                     "status": r.get("status"),
                     "error": r.get("error"),
                 }
@@ -450,17 +480,29 @@ async def generate_omni_video_background(
             persist_job_update(job_id, {"status": "failed", "error": "A Gemini API key is required for Omni Flash. Add it under API Keys."}, video_jobs)
             return
 
+        res_clean = (resolution or "720p").strip().lower()
+        if res_clean not in ("720p", "1080p"):
+            res_clean = "720p"
+
         orientation = {"16:9": "horizontal landscape (16:9)", "9:16": "vertical portrait (9:16)"}.get(aspect_ratio, "square (1:1)")
-        header = f"Generate an ultra-high quality video in {orientation}, target resolution: {resolution}, duration: {duration} seconds.\n\n"
+        header = f"Generate an ultra-high quality video in {orientation}, target resolution: {res_clean}, duration: {duration} seconds.\n\n"
 
         if mode == "first_last_frame":
-            omni_prompt = (
-                f"{header}MODE: FIRST FRAME & LAST FRAME INTERPOLATION.\n"
-                "The first attached image is the EXACT START FRAME (t=0.0s).\n"
-                f"The second attached image is the EXACT LAST FRAME (t={duration}.0s).\n"
-                "Render a fluid, continuous sequence transitioning from the start frame to the end frame.\n"
-                f"Action and motion directions: {prompt}\n"
-            )
+            if first_frame_path and last_frame_path:
+                omni_prompt = (
+                    f"{header}MODE: FIRST FRAME & LAST FRAME INTERPOLATION.\n"
+                    "The first attached image is the EXACT START FRAME (t=0.0s).\n"
+                    f"The second attached image is the EXACT LAST FRAME (t={duration}.0s).\n"
+                    "Render a fluid, continuous sequence transitioning from the start frame to the end frame.\n"
+                    f"Action and motion directions: {_paste_block(prompt)}\n"
+                )
+            else:
+                omni_prompt = (
+                    f"{header}MODE: START FRAME ANIMATION.\n"
+                    "The attached image is the EXACT START FRAME (t=0.0s).\n"
+                    "Render a fluid, continuous sequence animating forward starting exactly from this start frame.\n"
+                    f"Action and motion directions: {_paste_block(prompt)}\n"
+                )
         elif mode == "edit_video":
             omni_prompt = (
                 f"{header}MODE: VIDEO-TO-VIDEO EDITING.\n"
@@ -496,7 +538,7 @@ async def generate_omni_video_background(
             inputs += [encode(p, "image") for p in reference_image_paths if p and os.path.exists(p)]
         inputs.append({"type": "text", "text": omni_prompt})
 
-        logger.info(f"Dispatching Omni Flash video job {job_id} (mode={mode}, res={resolution}, ratio={aspect_ratio}, dur={duration}s)...")
+        logger.info(f"Dispatching Omni Flash video job {job_id} (mode={mode}, res={res_clean}, ratio={aspect_ratio}, dur={duration}s)...")
         persist_job_update(job_id, {"status": "processing", "progress_msg": "Omni Flash is rendering the video..."}, video_jobs)
 
         video_b64 = None
@@ -513,7 +555,7 @@ async def generate_omni_video_background(
                 raise
             logger.warning(f"Interactions API attempt failed: {api_err}. Trying generate_videos fallback...")
             try:
-                config_args = {"aspect_ratio": aspect_ratio, "resolution": resolution, "duration_seconds": duration}
+                config_args = {"aspect_ratio": aspect_ratio, "resolution": res_clean, "duration_seconds": duration}
                 if negative_prompt:
                     config_args["negative_prompt"] = negative_prompt
 
@@ -555,7 +597,7 @@ async def generate_omni_video_background(
             "status": "success",
             "video_url": video_url,
             "mode": mode,
-            "resolution": resolution,
+            "resolution": res_clean,
             "aspect_ratio": aspect_ratio,
             "duration": duration,
             "prompt": prompt,
@@ -631,15 +673,24 @@ async def studio_generate_video(
         last_path = await _save_upload(last_frame, "frame_end", IMAGE_EXTS, ".jpg", MAX_IMAGE_BYTES)
         source_path = await _save_upload(source_video, "source_vid", VIDEO_EXTS, ".mp4", MAX_VIDEO_BYTES)
 
-        if mode == "first_last_frame" and not (first_path and last_path):
-            raise HTTPException(status_code=400, detail="Please upload both a start frame and an end frame.")
+        if mode == "first_last_frame" and not first_path:
+            raise HTTPException(status_code=400, detail="Please upload at least a start frame.")
         if mode == "edit_video" and not source_path:
             raise HTTPException(status_code=400, detail="Please upload a source video to edit.")
+
+        res_clean = (resolution or "720p").strip().lower()
+        if res_clean not in ("720p", "1080p"):
+            res_clean = "720p"
 
         job_ids = []
         for text in prompt_list:
             job_id = f"job_studio_{uuid.uuid4().hex}"
-            persist_job_update(job_id, {"status": "processing", "created_at": time.time()}, video_jobs)
+            persist_job_update(job_id, {
+                "status": "processing",
+                "created_at": time.time(),
+                "resolution": res_clean,
+                "aspect_ratio": aspect_ratio,
+            }, video_jobs)
             # Plain tasks, not BackgroundTasks: those run one after another, these render in parallel
             task = asyncio.create_task(generate_omni_video_background(
                 job_id=job_id,
@@ -647,7 +698,7 @@ async def studio_generate_video(
                 prompt=text,
                 negative_prompt=negative_prompt,
                 aspect_ratio=aspect_ratio,
-                resolution=resolution,
+                resolution=res_clean,
                 duration=max(4, min(10, duration)),
                 reference_image_paths=saved_refs,
                 first_frame_path=first_path,
@@ -688,6 +739,7 @@ async def get_video_status(job_id: str):
 
 app.include_router(competitor_ad_router)
 app.include_router(campaign_flow_router)
+app.include_router(batch_prompt_router)
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/css", StaticFiles(directory="static/css"), name="css")

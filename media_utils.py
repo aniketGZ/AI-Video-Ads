@@ -23,6 +23,10 @@ MAX_VIDEO_BYTES = 200 * 1024 * 1024
 # Aspect ratios accepted by Gemini image models (ImageConfig.aspect_ratio)
 GEMINI_IMAGE_ASPECTS = {"1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"}
 
+# Resolutions accepted by Gemini image models (ImageConfig.image_size)
+GEMINI_IMAGE_RESOLUTIONS = {"1K", "2K", "4K"}
+DEFAULT_IMAGE_RESOLUTION = "1K"
+
 # Selectable image models: key -> API model id, display name and how many reference images it accepts
 IMAGE_MODELS = {
     "nano-banana-pro": {"id": "nano-banana-pro-preview", "label": "Nano Banana Pro", "max_refs": 6},
@@ -68,6 +72,20 @@ def load_dotenv(env_path: str = ".env") -> None:
                     os.environ[key] = val.strip().strip("'\"")
     except Exception as e:
         logger.warning(f"Could not load {env_path}: {e}")
+
+
+def get_client(api_key: Optional[str] = None):
+    """Initializes and returns a Google GenAI client if an API key is provided or present in the environment."""
+    from google import genai
+
+    key = api_key or os.environ.get("GEMINI_API_KEY")
+    if not key or not str(key).strip():
+        return None
+    try:
+        return genai.Client(api_key=str(key).strip())
+    except Exception as e:
+        logger.warning(f"Could not initialize GenAI client: {e}")
+        return None
 
 
 def mime_for_path(path: str, default: str = "image/jpeg") -> str:
@@ -150,21 +168,61 @@ def is_public_http_url(url: str) -> bool:
         return False
 
 
-def generate_gemini_image(client, contents: List, aspect_ratio: Optional[str] = None, model: Optional[str] = None) -> Optional[bytes]:
+def generate_gemini_image(
+    client,
+    contents: List,
+    aspect_ratio: Optional[str] = None,
+    model: Optional[str] = None,
+    resolution: Optional[str] = None,
+) -> Optional[bytes]:
     """
     Blocking call to a Nano Banana model (`model` is an IMAGE_MODELS key; default Nano Banana Pro).
-    Passes the aspect ratio through ImageConfig so the model composes for the requested format.
+    Passes the aspect ratio and resolution (image_size: 1K, 2K, 4K) through ImageConfig so the model
+    composes for the requested format and target resolution.
     """
     from google.genai import types
 
-    config = None
+    image_config_kwargs = {}
     if aspect_ratio in GEMINI_IMAGE_ASPECTS:
-        config = types.GenerateContentConfig(image_config=types.ImageConfig(aspect_ratio=aspect_ratio))
-    response = client.models.generate_content(
-        model=image_model(model)["id"],
-        contents=contents,
-        config=config,
-    )
+        image_config_kwargs["aspect_ratio"] = aspect_ratio
+
+    res_clean = None
+    if resolution:
+        r = str(resolution).strip().upper()
+        if r in GEMINI_IMAGE_RESOLUTIONS:
+            res_clean = r
+            image_config_kwargs["image_size"] = r
+
+    config = None
+    if image_config_kwargs:
+        config = types.GenerateContentConfig(image_config=types.ImageConfig(**image_config_kwargs))
+
+    try:
+        response = client.models.generate_content(
+            model=image_model(model)["id"],
+            contents=contents,
+            config=config,
+        )
+    except Exception as e:
+        err_msg = str(e).lower()
+        if res_clean and ("image_size" in err_msg or "imagesize" in err_msg or "size" in err_msg):
+            logger.warning(
+                f"Image generation failed with image_size={res_clean}: {e}. Retrying without resolution constraint."
+            )
+            fallback_kwargs = {k: v for k, v in image_config_kwargs.items() if k != "image_size"}
+            fallback_config = (
+                types.GenerateContentConfig(image_config=types.ImageConfig(**fallback_kwargs))
+                if fallback_kwargs
+                else None
+            )
+            response = client.models.generate_content(
+                model=image_model(model)["id"],
+                contents=contents,
+                config=fallback_config,
+            )
+        else:
+            raise
+
     if response.candidates:
         cand = response.candidates[0]
         if cand.finish_reason and str(cand.finish_reason) not in ("STOP", "FinishReason.STOP"):
@@ -249,3 +307,36 @@ def scrape_url(url: str) -> str:
     except Exception as e:
         logger.error(f"Web scraping failed: {e}")
         return ""
+
+
+def sanitize_visual_prompt(text: str, forbidden_names: Optional[List[str]] = None) -> str:
+    """
+    Strips proper personal names and celebrity cues from visual prompts/scenes so that
+    image/video generation models do not produce celebrity lookalikes or repeat individuals.
+    """
+    if not text:
+        return ""
+
+    cleaned = text
+    names_to_strip = []
+    if forbidden_names:
+        for name in forbidden_names:
+            if not name:
+                continue
+            name = name.strip()
+            if len(name) >= 3:
+                names_to_strip.append(name)
+                parts = name.split()
+                if len(parts) > 1 and len(parts[0]) >= 3:
+                    names_to_strip.append(parts[0])
+
+    names_to_strip.sort(key=len, reverse=True)
+    for n in names_to_strip:
+        pattern = rf"\b{re.escape(n)}\b"
+        cleaned = re.sub(pattern, "a relatable customer", cleaned, flags=re.IGNORECASE)
+
+    cleaned = re.sub(r"\ba relatable customer\'s\b", "the customer's", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"\ba relatable customer is\b", "a customer is", cleaned, flags=re.IGNORECASE)
+    cleaned = re.sub(r"^a relatable customer\b", "A relatable customer", cleaned)
+    return cleaned
+

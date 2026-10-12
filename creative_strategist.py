@@ -277,6 +277,8 @@ class CreativeStrategist:
             "  * meta_headline: <= 40 characters.\n"
             "  * NEVER use words from the avoid_words list.\n"
             "  * Never invent statistics, awards, or medical claims.\n"
+            "- CRITICAL CASTING & PROMPT RULE: In scene_direction, NEVER use proper personal names (e.g. do NOT use 'Ananya', 'Sarah', etc.). Always describe talent anonymously using demographic and situational descriptors (e.g. 'A 24-year-old South Asian woman in smart-casual office wear', 'A young commuter'). NEVER request, imply, or describe celebrity likeness, famous actors, or glamorous influencers. Keep talent looking like relatable everyday real customers with natural skin texture.\n"
+            "- PERSONA DIVERSITY: Do not assign the exact same persona name to every single brief. Vary the persona name and customer sub-segment (e.g., college commuter, corporate professional, outdoor traveler, young parent, weekend athlete) across angles and awareness stages to represent real audience segments.\n"
         )
 
         response = await asyncio.to_thread(
@@ -286,6 +288,7 @@ class CreativeStrategist:
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 response_schema=StaticsBatch,
+                temperature=0.7,
             ),
         )
         batch = json.loads(response.text)
@@ -320,6 +323,8 @@ class CreativeStrategist:
             "  * cta: <= 3 words.\n"
             "  * Proof IDs: cited from PROOF BANK only.\n"
             "  * NEVER use avoid_words.\n"
+            "- CRITICAL CASTING & PROMPT RULE: In beats (the visual field) and copy, NEVER use proper character names (e.g. do NOT write 'Ananya steps off...', 'Sarah in the office...'). Always describe people anonymously (e.g. 'A 25-year-old woman in casual office wear', 'A young commuter'). NEVER request, imply, or describe celebrity likeness, famous actors, or glamorous influencers. Keep talent relatable with natural unretouched skin.\n"
+            "- PERSONA DIVERSITY: Vary persona names and sub-segments across briefs to match the angle and awareness stage.\n"
         )
 
         response = await asyncio.to_thread(
@@ -329,6 +334,7 @@ class CreativeStrategist:
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 response_schema=VideosBatch,
+                temperature=0.7,
             ),
         )
         batch = json.loads(response.text)
@@ -364,6 +370,7 @@ class CreativeStrategist:
             config=types.GenerateContentConfig(
                 response_mime_type="application/json",
                 response_schema=TestPlanBatch,
+                temperature=0.7,
             ),
         )
         batch = json.loads(response.text)

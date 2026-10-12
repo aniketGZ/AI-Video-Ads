@@ -485,6 +485,7 @@
           aspect_ratio: flow.aspect,
           image_count: IMAGE_COUNT,
           video_count: VIDEO_COUNT,
+          meta_refs: (flow.intelligence || {}).references || null,
         }),
       });
       if (!res.ok) throw new Error(await readErrorDetail(res, "Prompt writing failed"));
@@ -535,6 +536,21 @@
     flow.aspect = ratio;
     document.querySelectorAll("#image_grid .media").forEach((m) => { m.className = `media ${ratioClass(ratio)}`; });
     notify("New size applies to the next render. Use Render all to render every image.", "info");
+  });
+
+  flow.videoRes = "720p";
+  segmented("video_res_group", "res", (res) => {
+    flow.videoRes = res;
+    (flow.prompts?.video_ads || []).forEach((ad) => {
+      if (!ad.custom_res) {
+        ad.resolution = res;
+        const sel = document.querySelector(`select[data-vad-res="${ad.id}"]`);
+        if (sel) sel.value = res;
+        const tag = document.querySelector(`#vcard_${ad.id} .vcard-res`);
+        if (tag) tag.textContent = res;
+      }
+    });
+    notify(`Video resolution set to ${res}.`, "info");
   });
 
   document.querySelectorAll("[data-ads-tab]").forEach((btn) => btn.addEventListener("click", () => {
@@ -748,14 +764,16 @@
   }
 
   function renderVideoCards() {
-    $("video_grid").innerHTML = flow.prompts.video_ads.map((ad) => `
+    $("video_grid").innerHTML = flow.prompts.video_ads.map((ad) => {
+      const resVal = ad.resolution || flow.videoRes || "720p";
+      return `
       <article class="ad-card" id="vcard_${ad.id}">
         <div class="media r-9-16">
           <div class="media-empty" id="vempty_${ad.id}"><i class="fa-solid fa-film"></i><span>Not rendered yet</span></div>
           <video id="video_${ad.id}" controls playsinline hidden></video>
         </div>
         <div class="ad-body">
-          <div class="ad-tag">${esc(ad.angle_name)}${(ad.product_names || []).length ? ` · ${esc(ad.product_names.join(" + "))}` : ""} · ${esc(ad.duration_s)}s</div>
+          <div class="ad-tag">${esc(ad.angle_name)}${(ad.product_names || []).length ? ` · ${esc(ad.product_names.join(" + "))}` : ""} · ${esc(ad.duration_s)}s · <span class="vcard-res">${esc(resVal)}</span></div>
           <div class="ad-headline">“${esc(ad.hook_line)}”</div>
           <div class="ad-sub">${esc(ad.voiceover)}</div>
           <details>
@@ -771,16 +789,34 @@
           <div class="why"><i class="fa-solid fa-lightbulb"></i>${esc(ad.rationale)}${ad.reference ? ` · Hook adapted from a ${esc(ad.reference.competitor)} ad` : ""}</div>
           ${checksLine(ad.checks)}
           <div class="ad-actions">
+            <select class="select select-sm ad-res-select" data-vad-res="${ad.id}" title="Video resolution">
+              <option value="720p" ${resVal === "720p" ? "selected" : ""}>720p</option>
+              <option value="1080p" ${resVal === "1080p" ? "selected" : ""}>1080p</option>
+            </select>
             <button type="button" class="btn btn-sm btn-primary" id="vbtn_${ad.id}" data-vrender="${ad.id}"><i class="fa-solid fa-clapperboard"></i> Render video</button>
             <a class="btn btn-sm" id="vdl_${ad.id}" hidden download><i class="fa-solid fa-download"></i> Download</a>
           </div>
         </div>
-      </article>`).join("");
+      </article>`;
+    }).join("");
   }
 
   $("video_grid").addEventListener("input", (e) => {
     const ad = e.target.dataset.vad && videoAd(e.target.dataset.vad);
     if (ad) ad.omni_prompt = e.target.value;
+  });
+
+  $("video_grid").addEventListener("change", (e) => {
+    const sel = e.target.closest("[data-vad-res]");
+    if (sel) {
+      const ad = videoAd(sel.dataset.vadRes);
+      if (ad) {
+        ad.resolution = sel.value;
+        ad.custom_res = true;
+        const tag = $(`vcard_${ad.id}`)?.querySelector(".vcard-res");
+        if (tag) tag.textContent = sel.value;
+      }
+    }
   });
 
   $("video_grid").addEventListener("click", (e) => {
@@ -808,14 +844,15 @@
     const ad = videoAd(id);
     if (!ad || !requireKey()) return;
     const token = flow.token;
-    setVideoState(id, "rendering", "Sending to Omni Flash…");
+    const chosenRes = ad.resolution || flow.videoRes || "720p";
+    setVideoState(id, "rendering", `Sending ${chosenRes} video to Omni Flash…`);
     flow.activeRenders++;
 
     const fd = new FormData();
     fd.append("mode", "prompt_images");
     fd.append("prompt", ad.omni_prompt);
     fd.append("aspect_ratio", ad.aspect_ratio || "9:16");
-    fd.append("resolution", "720p");
+    fd.append("resolution", chosenRes);
     fd.append("duration", String(ad.duration_s || 8));
     // Attach only the featured products' photos, in the <IMAGE_REF_n> order the prompt describes them
     const refFiles = (ad.ref_image_indexes || []).length
@@ -833,12 +870,13 @@
       });
       if (token !== flow.token) return;
       flow.videos[id] = job.video_url;
+      ad.rendered_resolution = job.resolution || chosenRes;
       $(`video_${id}`).src = job.video_url;
       const dl = $(`vdl_${id}`);
       dl.href = job.video_url;
       dl.hidden = false;
       setVideoState(id, "done");
-      notify(`Video ad “${ad.angle_name}” is ready.`, "success");
+      notify(`Video ad “${ad.angle_name}” (${ad.rendered_resolution}) is ready.`, "success");
     } catch (err) {
       if (token !== flow.token) return;
       setVideoState(id, "error", err.message);

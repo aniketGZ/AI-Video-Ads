@@ -21,6 +21,7 @@
         <button type="button" class="nav-btn active" data-view="campaign"><i class="fa-solid fa-bullhorn"></i><span class="nav-label">Campaign</span></button>
         <button type="button" class="nav-btn" data-view="image"><i class="fa-regular fa-image"></i><span class="nav-label">Image studio</span></button>
         <button type="button" class="nav-btn" data-view="video"><i class="fa-solid fa-film"></i><span class="nav-label">Video studio</span></button>
+        <button type="button" class="nav-btn" data-view="batch"><i class="fa-solid fa-layer-group"></i><span class="nav-label">Batch studio</span></button>
       </nav>
       <button type="button" class="btn btn-sm key-btn" id="key_btn"><span class="key-dot" id="key_dot"></span> API key</button>
     </div>
@@ -161,7 +162,13 @@
               </div>
               <button type="button" class="btn btn-sm" id="btn_render_all"><i class="fa-solid fa-images"></i> Render all</button>
             </div>
-            <span class="muted small" id="video_tools" hidden>Videos render one at a time when you click Render.</span>
+            <div class="toolbar-group" id="video_tools" hidden>
+              <div class="segmented" id="video_res_group" aria-label="Video resolution">
+                <button type="button" class="active" data-res="720p">720p</button>
+                <button type="button" data-res="1080p">1080p</button>
+              </div>
+              <span class="muted small">Videos render one at a time when you click Render.</span>
+            </div>
           </div>
           <div class="inline-status status-line" id="ads_status"></div>
           <div class="ad-grid" id="image_grid"></div>
@@ -206,12 +213,19 @@
           </div>
         </div>
         <div class="field">
-          <span class="label">Size</span>
-          <div class="segmented" id="img_aspect">
-            <button type="button" data-ratio="1:1" class="active">1:1</button>
-            <button type="button" data-ratio="4:5">4:5</button>
-            <button type="button" data-ratio="9:16">9:16</button>
-            <button type="button" data-ratio="16:9">16:9</button>
+          <span class="label">Format &amp; Resolution</span>
+          <div class="toolbar-group">
+            <div class="segmented" id="img_aspect" aria-label="Aspect ratio">
+              <button type="button" data-ratio="1:1" class="active">1:1</button>
+              <button type="button" data-ratio="4:5">4:5</button>
+              <button type="button" data-ratio="9:16">9:16</button>
+              <button type="button" data-ratio="16:9">16:9</button>
+            </div>
+            <div class="segmented" id="img_resolution" aria-label="Resolution">
+              <button type="button" data-res="1K" class="active" title="Standard resolution (~1024px)">1K</button>
+              <button type="button" data-res="2K" title="High resolution (~2048px)">2K</button>
+              <button type="button" data-res="4K" title="Ultra high resolution (~4096px)">4K</button>
+            </div>
           </div>
         </div>
         <div class="field">
@@ -273,7 +287,7 @@
           </div>
         </div>
         <div class="field" data-for-mode="first_last_frame" hidden>
-          <span class="label">Start and end frames</span>
+          <span class="label">Start and end frames <span class="muted">· end frame is optional</span></span>
           <div class="frame-pair">
             <div class="dropzone" id="vid_first_drop" role="button" tabindex="0" aria-label="Add start frame">
               <div class="dropzone-cta"><span>Start frame</span></div>
@@ -281,7 +295,7 @@
               <input type="file" id="vid_first_file" accept="image/*" hidden>
             </div>
             <div class="dropzone" id="vid_last_drop" role="button" tabindex="0" aria-label="Add end frame">
-              <div class="dropzone-cta"><span>End frame</span></div>
+              <div class="dropzone-cta"><span>End frame <span class="muted">(optional)</span></span></div>
               <div class="thumbs" id="vid_last_thumbs"></div>
               <input type="file" id="vid_last_file" accept="image/*" hidden>
             </div>
@@ -294,12 +308,16 @@
         <div class="field">
           <span class="label">Format</span>
           <div class="toolbar-group">
-            <div class="segmented" id="vid_aspect">
+            <div class="segmented" id="vid_aspect" aria-label="Aspect ratio">
               <button type="button" data-ratio="9:16" class="active">9:16</button>
               <button type="button" data-ratio="16:9">16:9</button>
               <button type="button" data-ratio="1:1">1:1</button>
             </div>
-            <div class="segmented" id="vid_duration">
+            <div class="segmented" id="vid_resolution" aria-label="Resolution">
+              <button type="button" data-res="720p" class="active">720p</button>
+              <button type="button" data-res="1080p">1080p</button>
+            </div>
+            <div class="segmented" id="vid_duration" aria-label="Duration">
               <button type="button" data-dur="4">4s</button>
               <button type="button" data-dur="6">6s</button>
               <button type="button" data-dur="8" class="active">8s</button>
@@ -314,6 +332,131 @@
         <div>
           <div class="label" style="margin-bottom: 8px;">This session</div>
           <div class="history" id="vid_history"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================================================================== -->
+  <!-- Batch Prompt Studio                                                -->
+  <!-- ================================================================== -->
+  <main class="page" id="view_batch" data-view-panel="batch" hidden>
+    <div class="page-head">
+      <div>
+        <h1>Batch prompt studio</h1>
+        <p>Bulk image generation from Markdown files with automatic rate-limit cooldowns, sequential queueing, and ZIP export.</p>
+      </div>
+    </div>
+    <div class="studio batch-studio">
+      <div class="panel">
+        <h2>1. Import markdown prompts</h2>
+        <div class="field">
+          <label class="label">Markdown / Text files <span class="muted">· up to 100 prompts total</span></label>
+          <div class="dropzone" id="batch_md_drop" role="button" tabindex="0" aria-label="Drop markdown files">
+            <div class="dropzone-cta"><i class="fa-solid fa-file-import"></i><span>Drop .md or .txt files or click to browse</span></div>
+            <input type="file" id="batch_md_files" accept=".md,.markdown,.txt,text/markdown,text/plain" multiple hidden>
+          </div>
+          <div class="batch-file-tags" id="batch_file_tags"></div>
+        </div>
+
+        <div class="field">
+          <div class="batch-list-top">
+            <span class="label">Parsed prompts (<span id="batch_prompt_count">0</span>)</span>
+            <div class="batch-list-actions" id="batch_list_actions" hidden>
+              <button type="button" class="btn-link" id="batch_select_all">Select all / none</button>
+              <span class="muted">·</span>
+              <button type="button" class="btn-link" id="batch_clear_all">Clear all</button>
+            </div>
+          </div>
+          <div class="batch-prompt-list" id="batch_prompt_list">
+            <div class="batch-empty-prompts">
+              <i class="fa-solid fa-list-check"></i>
+              <span>No prompts loaded yet. Drop one or more .md files above.</span>
+            </div>
+          </div>
+        </div>
+
+        <h2 style="margin-top: 24px;">2. Reference style / branding</h2>
+        <div class="field">
+          <span class="label">Reference images <span class="muted" id="batch_ref_limit_label">· optional, up to 6 for Pro / 14 for 2.1</span></span>
+          <div class="dropzone" id="batch_ref_drop" role="button" tabindex="0" aria-label="Add reference images">
+            <div class="dropzone-cta"><i class="fa-solid fa-cloud-arrow-up"></i><span>Drop reference images</span></div>
+            <div class="thumbs" id="batch_ref_thumbs"></div>
+            <input type="file" id="batch_ref_files" accept="image/*" multiple hidden>
+          </div>
+        </div>
+
+        <h2 style="margin-top: 24px;">3. Queue settings</h2>
+        <div class="field">
+          <span class="label">Model</span>
+          <div class="segmented" id="batch_model">
+            <button type="button" data-model="nano-banana-pro" class="active">Nano Banana Pro</button>
+            <button type="button" data-model="nano-banana-2.1">Nano Banana 2.1</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="label">Default aspect ratio <span class="muted">· overridden if prompt specifies</span></span>
+          <div class="segmented" id="batch_aspect">
+            <button type="button" data-ratio="1:1" class="active">1:1</button>
+            <button type="button" data-ratio="9:16">9:16</button>
+            <button type="button" data-ratio="16:9">16:9</button>
+            <button type="button" data-ratio="4:5">4:5</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <span class="label">API rate limit spacing delay</span>
+          <div class="segmented" id="batch_delay">
+            <button type="button" data-delay="1.5">1.5s</button>
+            <button type="button" data-delay="2.5" class="active">2.5s</button>
+            <button type="button" data-delay="4.0">4.0s (Safer)</button>
+            <button type="button" data-delay="6.0">6.0s (Strict Free Tier)</button>
+          </div>
+        </div>
+
+        <button type="button" class="btn btn-primary btn-lg" id="batch_start_btn" disabled>
+          <i class="fa-solid fa-wand-magic-sparkles"></i> Start batch generation (0)
+        </button>
+
+        <div class="batch-history-box" style="margin-top: 24px;">
+          <div class="label" style="margin-bottom: 8px;">Recent batch jobs</div>
+          <div class="batch-history-list" id="batch_history_list"></div>
+        </div>
+      </div>
+
+      <div class="result-stage">
+        <div id="batch_stage_empty" class="result-main">
+          <div class="media-empty">
+            <i class="fa-solid fa-images"></i>
+            <span>Upload markdown prompts on the left and start the queue</span>
+          </div>
+        </div>
+
+        <div id="batch_stage_active" hidden>
+          <div class="batch-stage-header">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <div>
+                <strong>Generation queue progress</strong>
+                <span id="batch_model_badge" class="badge badge-accent" style="margin-left: 8px;" hidden></span>
+              </div>
+              <span id="batch_meter_val" class="badge">0 / 0</span>
+            </div>
+            <div class="progress" style="height: 8px; background: var(--bg); border-radius: 999px; overflow: hidden; border: 1px solid var(--border);">
+              <div id="batch_meter_fill" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.3s ease;"></div>
+            </div>
+
+            <div class="batch-stage-toolbar">
+              <button type="button" class="btn btn-sm btn-ghost" id="batch_pause_btn"><i class="fa-solid fa-pause"></i> Pause queue</button>
+              <button type="button" class="btn btn-sm btn-ghost" id="batch_resume_btn" hidden><i class="fa-solid fa-play"></i> Resume queue</button>
+              <button type="button" class="btn btn-sm btn-ghost" id="batch_cancel_btn" style="color: var(--danger);"><i class="fa-solid fa-stop"></i> Cancel queue</button>
+              <a href="#" download class="btn btn-sm btn-primary" id="batch_zip_btn" hidden style="margin-left: auto;"><i class="fa-solid fa-file-zipper"></i> Download all as ZIP</a>
+            </div>
+
+            <div id="batch_alert" class="batch-alert info" hidden></div>
+          </div>
+
+          <div class="batch-results-grid" id="batch_results_grid"></div>
         </div>
       </div>
     </div>
@@ -348,6 +491,7 @@
 
   <script src="js/core.js?v=3.0.2"></script>
   <script src="js/campaign.js?v=3.0.8"></script>
-  <script src="js/studios.js?v=3.0.5"></script>
+  <script src="js/studios.js?v=3.0.7"></script>
+  <script src="js/batch.js?v=1.0.0"></script>
 </body>
 </html>

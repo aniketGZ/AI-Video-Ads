@@ -90,7 +90,7 @@ def build_native_in_image_ad_prompt(
             custom_directive=custom_directive,
         )
     mode = detect_brand_mode(business_type, product_category, has_product_ref)
-    template_id = resolve_template_id(blueprint, mode)
+    template_id = resolve_template_id(blueprint, mode, product_category)
     callouts = [c for c in (blueprint.get("callout_points") or []) if c]
     return build_template_prompt(
         template_id=template_id,

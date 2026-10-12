@@ -587,7 +587,8 @@ def _omni_prompt(intel: Dict[str, Any], ad: Dict[str, Any], has_refs: bool, feat
         lines.append(f'VOICEOVER ({spoken}natural, matches the timeline): "{ad["voiceover"]}"')
     lines.append(f"DIRECTION: {ad.get('video_prompt', '')}")
     lines.append(
-        "AVOID: competitor brands or logos, star ratings, prices, discounts, fake reviews, extra products, "
+        "AVOID: celebrity likeness, famous actors or public figures, glamorous airbrushed influencer aesthetic, "
+        "competitor brands or logos, star ratings, prices, discounts, fake reviews, extra products, "
         "warped hands, garbled or misspelled on-screen text, more than six words of on-screen text at once."
     )
     return "\n".join(lines)
@@ -664,6 +665,10 @@ def _prompt_batch_instructions(
         + "Prefer real customer phrases from CUSTOMER LANGUAGE for hooks. Any factual claim (number, rating, ingredient "
         "effect, guarantee, award, offer) must come from the PROOF BANK and be listed in proof_ids.\n"
         "Never name or show competitors. "
+        "CASTING & PROMPT RULE: In scene, beats (visual action), and video_prompt, NEVER use proper personal names "
+        "(e.g. do NOT write 'Ananya', 'Sarah', etc.). Always describe talent anonymously using realistic demographic and situational "
+        "descriptors (e.g. 'A 24-year-old female commuter', 'A young professional'). NEVER request, imply, or describe celebrity likeness, "
+        "famous actors, or glamorous influencers. All talent should look like everyday relatable real people with natural unretouched skin.\n"
         f"{NO_FABRICATED_CLAIMS_RULE}"
     )
 
@@ -896,8 +901,10 @@ async def analyze_brand(
             "- demographics and bullseye_target live in the brand's main market from the research (never assume a country "
             "the research does not support).\n"
             "- bullseye_target: ONE specific person who is the single most valuable buyer (not an average of segments). "
+            "persona_name should be realistic and authentic to the culture/market (do not default to common repetitive AI cliché names like 'Ananya Sharma', 'Priya Sharma', 'Sarah Miller', 'Alex', etc.). "
             "trigger_moment is the everyday moment they feel the problem. casting_description is a concrete on-camera look "
-            "(age, ethnicity, styling, wardrobe, setting) for image and video models, true to that market.\n"
+            "(age, ethnicity, styling, wardrobe, setting, natural unretouched skin) for image and video models, true to that market. "
+            "NEVER reference or resemble celebrities, famous actors, or public figures.\n"
             "- competitor_takeaways: derived from the competitor research only; empty lists when there is none.\n"
             "- color_palette: 3-5 colour names or hex codes from the brand identity.\n"
             "- brand_kit: the brand's real visual identity from its logo and site (hex codes like #1F1F1F): primary_hex is "
@@ -911,13 +918,13 @@ async def analyze_brand(
             client.models.generate_content,
             model=TEXT_MODEL,
             contents=[*image_parts, *logo_parts, analysis_prompt],
-            config=types.GenerateContentConfig(response_mime_type="application/json", response_schema=BrandIntelligence),
+            config=types.GenerateContentConfig(response_mime_type="application/json", response_schema=BrandIntelligence, temperature=0.7),
         )
         voice_call = asyncio.to_thread(
             client.models.generate_content,
             model=TEXT_MODEL,
             contents=_voice_proof_prompt(site_text, research_text, research_sources, (comp or {}).get("market")),
-            config=types.GenerateContentConfig(response_mime_type="application/json", response_schema=BrandVoiceProof),
+            config=types.GenerateContentConfig(response_mime_type="application/json", response_schema=BrandVoiceProof, temperature=0.7),
         )
         response, voice_response = await asyncio.gather(intel_call, voice_call, return_exceptions=True)
         if isinstance(response, Exception):
@@ -1082,9 +1089,43 @@ async def write_ad_prompts(req: PromptsRequest, x_api_key: Optional[str] = Heade
     if not matrix:
         logger.info(f"[flow/prompts] Generating campaign matrix via A5 Creative Strategist ({image_count} statics, {video_count} videos)...")
         strategist = CreativeStrategist(client)
+        effective_meta_refs = req.meta_refs
+        if not effective_meta_refs and intel.get("references"):
+            raw_refs = intel.get("references", {})
+            img_list = raw_refs.get("image") or []
+            vid_list = raw_refs.get("video") or []
+            if img_list or vid_list:
+                effective_meta_refs = {
+                    "signal": "strong" if img_list else "moderate",
+                    "image_refs": [
+                        {
+                            "id": f"R{i}",
+                            "competitor": r.get("competitor", "Competitor"),
+                            "angle": r.get("angle", ""),
+                            "hook": r.get("hook", ""),
+                            "days_running": r.get("days_running", 14),
+                        }
+                        for i, r in enumerate(img_list, start=1)
+                    ],
+                    "video_refs": [
+                        {
+                            "id": f"V{i}",
+                            "competitor": v.get("competitor", "Competitor"),
+                            "format": v.get("format", "video"),
+                            "hook": v.get("hook", ""),
+                            "days_running": v.get("days_running", 14),
+                        }
+                        for i, v in enumerate(vid_list, start=1)
+                    ],
+                    "synthesis": {
+                        "saturated": (intel.get("competitor_takeaways") or {}).get("saturated_angles", []),
+                        "whitespace": (intel.get("competitor_takeaways") or {}).get("whitespace", []),
+                    },
+                }
+
         matrix = await strategist.build_campaign_matrix(
             brand_profile=intel,
-            meta_refs=req.meta_refs,
+            meta_refs=effective_meta_refs,
             style_tokens=req.style_tokens,
             target_statics=image_count,
             target_videos=video_count,
