@@ -27,6 +27,10 @@ GEMINI_IMAGE_ASPECTS = {"1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16",
 GEMINI_IMAGE_RESOLUTIONS = {"1K", "2K", "4K"}
 DEFAULT_IMAGE_RESOLUTION = "1K"
 
+# Video resolutions supported for Omni Flash video output
+OMNI_VIDEO_RESOLUTIONS = {"720p", "1080p", "4k"}
+DEFAULT_VIDEO_RESOLUTION = "1080p"
+
 # Selectable image models: key -> API model id, display name and how many reference images it accepts
 IMAGE_MODELS = {
     "nano-banana-pro": {"id": "nano-banana-pro-preview", "label": "Nano Banana Pro", "max_refs": 6},
@@ -339,4 +343,125 @@ def sanitize_visual_prompt(text: str, forbidden_names: Optional[List[str]] = Non
     cleaned = re.sub(r"\ba relatable customer is\b", "a customer is", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"^a relatable customer\b", "A relatable customer", cleaned)
     return cleaned
+
+
+def get_video_dimensions(file_path: str) -> Tuple[Optional[int], Optional[int]]:
+    """Probes the width and height of an MP4/video file using ffmpeg."""
+    if not file_path or not os.path.isfile(file_path):
+        return None, None
+    try:
+        import imageio_ffmpeg
+        import subprocess
+
+        exe = imageio_ffmpeg.get_ffmpeg_exe()
+        res = subprocess.run([exe, "-i", file_path], capture_output=True, text=True, errors="replace")
+        m = re.search(r"Video:.*?,\s*(\d{3,4})x(\d{3,4})", res.stderr)
+        if m:
+            return int(m.group(1)), int(m.group(2))
+    except Exception as e:
+        logger.warning(f"Failed to probe video dimensions for {file_path}: {e}")
+    return None, None
+
+
+def target_video_dimensions(
+    current_w: int,
+    current_h: int,
+    target_resolution: str,
+    aspect_ratio: Optional[str] = None,
+) -> Tuple[int, int]:
+    """Calculates the target pixel width and height for a desired resolution tier (720p, 1080p, 4k)."""
+    res = (target_resolution or "1080p").strip().lower()
+    if res in ("4k", "2160p", "uhd"):
+        base = 2160
+    elif res in ("1080p", "fhd"):
+        base = 1080
+    else:
+        base = 720
+
+    ratio = (aspect_ratio or "").strip()
+    if ratio == "9:16":
+        return base, int(round((base * 16 / 9) / 2.0) * 2)
+    elif ratio == "16:9":
+        return int(round((base * 16 / 9) / 2.0) * 2), base
+    elif ratio == "1:1":
+        return base, base
+    elif ratio == "4:5":
+        return base, int(round((base * 5 / 4) / 2.0) * 2)
+
+    # Fallback to current aspect ratio if not specified
+    if current_w < current_h:
+        tw = base
+        th = int(round((base * current_h / current_w) / 2.0) * 2)
+    elif current_w > current_h:
+        th = base
+        tw = int(round((base * current_w / current_h) / 2.0) * 2)
+    else:
+        tw = base
+        th = base
+    return tw, th
+
+
+def ensure_video_resolution(
+    file_path: str,
+    target_resolution: str,
+    aspect_ratio: Optional[str] = None,
+) -> str:
+    """
+    Ensures the video file matches the target resolution (720p, 1080p, 4k).
+    If the video output from the model is lower resolution (e.g. native 720p base frames
+    when 1080p or 4k was requested), upscales using high-fidelity Lanczos filtering.
+    """
+    if not file_path or not os.path.isfile(file_path):
+        return file_path
+
+    res_norm = (target_resolution or "1080p").strip().lower()
+    if res_norm not in OMNI_VIDEO_RESOLUTIONS:
+        res_norm = "1080p"
+
+    w, h = get_video_dimensions(file_path)
+    if not w or not h:
+        return file_path
+
+    tw, th = target_video_dimensions(w, h, res_norm, aspect_ratio)
+
+    # If the video is already at or exceeding target dimensions, keep as-is
+    if w >= tw and h >= th:
+        logger.info(f"Video {file_path} already at {w}x{h} (meets target {tw}x{th}). No upscale needed.")
+        return file_path
+
+    logger.info(f"Upscaling video {file_path} from {w}x{h} to {tw}x{th} ({res_norm})...")
+    try:
+        import imageio_ffmpeg
+        import subprocess
+
+        exe = imageio_ffmpeg.get_ffmpeg_exe()
+        out_path = file_path.rsplit(".", 1)[0] + f"_{res_norm}.mp4"
+        cmd = [
+            exe,
+            "-y",
+            "-i",
+            file_path,
+            "-vf",
+            f"scale={tw}:{th}:flags=lanczos",
+            "-c:v",
+            "libx264",
+            "-crf",
+            "18",
+            "-preset",
+            "fast",
+            "-c:a",
+            "copy",
+            out_path,
+        ]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        if proc.returncode == 0 and os.path.isfile(out_path) and os.path.getsize(out_path) > 0:
+            os.replace(out_path, file_path)
+            logger.info(f"Successfully scaled video to {tw}x{th} ({res_norm}).")
+            return file_path
+        else:
+            logger.warning(f"ffmpeg upscale failed (code {proc.returncode}): {proc.stderr[:300]}")
+    except Exception as e:
+        logger.error(f"Error ensuring video resolution: {e}")
+
+    return file_path
 

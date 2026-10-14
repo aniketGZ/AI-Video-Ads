@@ -337,8 +337,8 @@
   });
 
   function rememberVideo(url, job) {
-    const res = job?.resolution || vidResolution() || "720p";
-    sessionVideos.unshift({ url, resolution: res });
+    const res = (job?.resolution || vidResolution() || "1080p").toUpperCase();
+    sessionVideos.unshift({ url, resolution: res, width: job?.width, height: job?.height });
     $("vid_history").innerHTML = sessionVideos.map((item) =>
       `<button type="button" data-url="${esc(item.url)}" aria-label="Show this video">
         <video src="${esc(item.url)}" muted preload="metadata"></video>
@@ -354,9 +354,18 @@
 
   function showVideo(url, job) {
     const item = sessionVideos.find((v) => v.url === url);
-    const res = job?.resolution || item?.resolution;
-    const badge = res ? `<div class="vid-meta-pill"><span class="badge">${esc(res)}</span></div>` : "";
-    showResult("vid_result", `<div class="vid-preview-box">${badge}<video src="${esc(url)}" controls autoplay playsinline></video></div>`);
+    const res = (job?.resolution || item?.resolution || vidResolution() || "1080p").toUpperCase();
+    const dim = (job?.width && job?.height) ? `${job.width}×${job.height} · ` : (item?.width && item?.height ? `${item.width}×${item.height} · ` : "");
+    const dlFilename = `omni_video_${res.toLowerCase()}.mp4`;
+    const toolbar = `
+      <div class="vid-meta-pill" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span class="badge badge-accent">${esc(res)}</span>
+        ${dim ? `<span class="muted small">${esc(dim)}</span>` : ""}
+        <a href="${esc(url)}" download="${esc(dlFilename)}" class="btn btn-sm btn-ghost" style="padding: 3px 10px; font-size: 0.76rem; border: 1px solid var(--border);" title="Download full resolution video">
+          <i class="fa-solid fa-download"></i> Download ${esc(res)}
+        </a>
+      </div>`;
+    showResult("vid_result", `<div class="vid-preview-box">${toolbar}<video src="${esc(url)}" controls autoplay playsinline></video></div>`);
   }
 
   $("vid_history").addEventListener("click", (e) => {
@@ -383,7 +392,7 @@
     fd.append("prompts", JSON.stringify(prompts));
     fd.append("aspect_ratio", vidAspect() || "9:16");
     fd.append("duration", vidDuration() || "8");
-    fd.append("resolution", vidResolution() || "720p");
+    fd.append("resolution", vidResolution() || "1080p");
     if (mode === "prompt_images") vidRefs.files().forEach((f) => fd.append("reference_images", f));
     if (mode === "first_last_frame") {
       if (vidFirst.files()[0]) fd.append("first_frame", vidFirst.files()[0]);
@@ -419,8 +428,12 @@
       const results = await Promise.allSettled(jobIds.map((id, i) =>
         pollJob(id, { onProgress: (j) => j.progress_msg && tileState(i, spinner(j.progress_msg)) })
           .then((job) => {
+            const rBadge = (job.resolution || vidResolution() || "1080p").toUpperCase();
             tileState(i, `<video src="${esc(job.video_url)}" controls playsinline></video>
-              <div class="tile-meta"><span class="badge">${esc(job.resolution || vidResolution() || "720p")}</span></div>`);
+              <div class="tile-meta" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
+                <span class="badge badge-accent">${esc(rBadge)}</span>
+                <a href="${esc(job.video_url)}" download="video_${i+1}_${rBadge.toLowerCase()}.mp4" class="btn-link small" title="Download video"><i class="fa-solid fa-download"></i> Save</a>
+              </div>`);
             rememberVideo(job.video_url, job);
           })
           .catch((err) => {

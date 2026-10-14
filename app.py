@@ -31,6 +31,11 @@ from media_utils import (
     image_model,
     GEMINI_IMAGE_RESOLUTIONS,
     DEFAULT_IMAGE_RESOLUTION,
+    OMNI_VIDEO_RESOLUTIONS,
+    DEFAULT_VIDEO_RESOLUTION,
+    get_video_dimensions,
+    ensure_video_resolution,
+    resolve_generated_path,
 )
 
 # Load .env before the routers below read API keys from the environment
@@ -480,8 +485,12 @@ async def generate_omni_video_background(
             persist_job_update(job_id, {"status": "failed", "error": "A Gemini API key is required for Omni Flash. Add it under API Keys."}, video_jobs)
             return
 
-        res_clean = (resolution or "720p").strip().lower()
-        if res_clean not in ("720p", "1080p"):
+        res_clean = (resolution or DEFAULT_VIDEO_RESOLUTION).strip().lower()
+        if res_clean in ("4k", "2160p", "uhd"):
+            res_clean = "4k"
+        elif res_clean in ("1080p", "fhd"):
+            res_clean = "1080p"
+        else:
             res_clean = "720p"
 
         orientation = {"16:9": "horizontal landscape (16:9)", "9:16": "vertical portrait (9:16)"}.get(aspect_ratio, "square (1:1)")
@@ -543,10 +552,21 @@ async def generate_omni_video_background(
 
         video_b64 = None
         try:
-            request = {"model": OMNI_MODEL, "input": inputs}
+            resp_fmt = {"type": "video"}
             if aspect_ratio in ("9:16", "16:9"):
-                request["response_format"] = {"type": "video", "aspect_ratio": aspect_ratio}
-            interaction = await asyncio.to_thread(client.interactions.create, **request)
+                resp_fmt["aspect_ratio"] = aspect_ratio
+            if res_clean in ("1080p", "4k"):
+                resp_fmt["resolution"] = res_clean
+            request = {"model": OMNI_MODEL, "input": inputs, "response_format": resp_fmt}
+            try:
+                interaction = await asyncio.to_thread(client.interactions.create, **request)
+            except Exception as fmt_err:
+                if "response_format" in str(fmt_err).lower() or "resolution" in str(fmt_err).lower():
+                    resp_fmt.pop("resolution", None)
+                    request["response_format"] = resp_fmt
+                    interaction = await asyncio.to_thread(client.interactions.create, **request)
+                else:
+                    raise
             video_b64 = _extract_interaction_video(interaction)
         except Exception as api_err:
             # Client errors (spend cap, blocked input, bad request) fail the same way on the fallback,
@@ -568,13 +588,27 @@ async def generate_omni_video_background(
                     with open(last_frame_path, "rb") as f:
                         config_args["last_frame"] = types.Image(image_bytes=f.read())
 
-                op = await asyncio.to_thread(
-                    client.models.generate_videos,
-                    model=OMNI_MODEL,
-                    prompt=prompt,
-                    image=first_img,
-                    config=types.GenerateVideosConfig(**config_args),
-                )
+                try:
+                    op = await asyncio.to_thread(
+                        client.models.generate_videos,
+                        model=OMNI_MODEL,
+                        prompt=prompt,
+                        image=first_img,
+                        config=types.GenerateVideosConfig(**config_args),
+                    )
+                except Exception as gen_cfg_err:
+                    if "resolution" in str(gen_cfg_err).lower() and res_clean == "4k":
+                        config_args["resolution"] = "1080p"
+                        op = await asyncio.to_thread(
+                            client.models.generate_videos,
+                            model=OMNI_MODEL,
+                            prompt=prompt,
+                            image=first_img,
+                            config=types.GenerateVideosConfig(**config_args),
+                        )
+                    else:
+                        raise
+
                 deadline = time.time() + 1200
                 while not op.done:
                     if time.time() > deadline:
@@ -592,12 +626,22 @@ async def generate_omni_video_background(
             return
 
         video_url = _save_video_bytes("studio_video", safe_b64decode(video_b64))
-        logger.info(f"Omni Flash video saved to {video_url}")
+        video_disk_path = resolve_generated_path(video_url)
+        final_w, final_h = None, None
+        if video_disk_path and os.path.isfile(video_disk_path):
+            video_disk_path = await asyncio.to_thread(
+                ensure_video_resolution, video_disk_path, res_clean, aspect_ratio
+            )
+            final_w, final_h = get_video_dimensions(video_disk_path)
+
+        logger.info(f"Omni Flash video saved to {video_url} ({final_w}x{final_h}, target={res_clean})")
         persist_job_update(job_id, {
             "status": "success",
             "video_url": video_url,
             "mode": mode,
             "resolution": res_clean,
+            "width": final_w,
+            "height": final_h,
             "aspect_ratio": aspect_ratio,
             "duration": duration,
             "prompt": prompt,
@@ -635,7 +679,7 @@ async def studio_generate_video(
     prompts: Optional[str] = Form(None),
     negative_prompt: Optional[str] = Form(None),
     aspect_ratio: str = Form("9:16"),
-    resolution: str = Form("720p"),
+    resolution: str = Form("1080p"),
     duration: int = Form(8),
     reference_images: Optional[List[UploadFile]] = File(None),
     first_frame: Optional[UploadFile] = File(None),
@@ -678,8 +722,12 @@ async def studio_generate_video(
         if mode == "edit_video" and not source_path:
             raise HTTPException(status_code=400, detail="Please upload a source video to edit.")
 
-        res_clean = (resolution or "720p").strip().lower()
-        if res_clean not in ("720p", "1080p"):
+        res_clean = (resolution or DEFAULT_VIDEO_RESOLUTION).strip().lower()
+        if res_clean in ("4k", "2160p", "uhd"):
+            res_clean = "4k"
+        elif res_clean in ("1080p", "fhd"):
+            res_clean = "1080p"
+        else:
             res_clean = "720p"
 
         job_ids = []

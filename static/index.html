@@ -164,8 +164,9 @@
             </div>
             <div class="toolbar-group" id="video_tools" hidden>
               <div class="segmented" id="video_res_group" aria-label="Video resolution">
-                <button type="button" class="active" data-res="720p">720p</button>
-                <button type="button" data-res="1080p">1080p</button>
+                <button type="button" data-res="720p">720p</button>
+                <button type="button" class="active" data-res="1080p">1080p</button>
+                <button type="button" data-res="4k">4K</button>
               </div>
               <span class="muted small">Videos render one at a time when you click Render.</span>
             </div>
@@ -314,8 +315,9 @@
               <button type="button" data-ratio="1:1">1:1</button>
             </div>
             <div class="segmented" id="vid_resolution" aria-label="Resolution">
-              <button type="button" data-res="720p" class="active">720p</button>
-              <button type="button" data-res="1080p">1080p</button>
+              <button type="button" data-res="720p" title="Draft (720p HD)">720p</button>
+              <button type="button" data-res="1080p" class="active" title="Full HD (1080p)">1080p</button>
+              <button type="button" data-res="4k" title="Ultra HD (4K)">4K</button>
             </div>
             <div class="segmented" id="vid_duration" aria-label="Duration">
               <button type="button" data-dur="4">4s</button>
@@ -490,8 +492,8 @@
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
   <script src="js/core.js?v=3.0.2"></script>
-  <script src="js/campaign.js?v=3.0.8"></script>
-  <script src="js/studios.js?v=3.0.7"></script>
+  <script src="js/campaign.js?v=3.0.9"></script>
+  <script src="js/studios.js?v=3.0.8"></script>
   <script src="js/batch.js?v=1.0.0"></script>
 </body>
 </html>

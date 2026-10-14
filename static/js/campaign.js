@@ -538,7 +538,7 @@
     notify("New size applies to the next render. Use Render all to render every image.", "info");
   });
 
-  flow.videoRes = "720p";
+  flow.videoRes = "1080p";
   segmented("video_res_group", "res", (res) => {
     flow.videoRes = res;
     (flow.prompts?.video_ads || []).forEach((ad) => {
@@ -792,6 +792,7 @@
             <select class="select select-sm ad-res-select" data-vad-res="${ad.id}" title="Video resolution">
               <option value="720p" ${resVal === "720p" ? "selected" : ""}>720p</option>
               <option value="1080p" ${resVal === "1080p" ? "selected" : ""}>1080p</option>
+              <option value="4k" ${resVal === "4k" ? "selected" : ""}>4K</option>
             </select>
             <button type="button" class="btn btn-sm btn-primary" id="vbtn_${ad.id}" data-vrender="${ad.id}"><i class="fa-solid fa-clapperboard"></i> Render video</button>
             <a class="btn btn-sm" id="vdl_${ad.id}" hidden download><i class="fa-solid fa-download"></i> Download</a>
@@ -844,7 +845,7 @@
     const ad = videoAd(id);
     if (!ad || !requireKey()) return;
     const token = flow.token;
-    const chosenRes = ad.resolution || flow.videoRes || "720p";
+    const chosenRes = ad.resolution || flow.videoRes || "1080p";
     setVideoState(id, "rendering", `Sending ${chosenRes} video to Omni Flash…`);
     flow.activeRenders++;
 
