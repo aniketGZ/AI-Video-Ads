@@ -1,43 +1,51 @@
 /* ==========================================================================
    Ad Studio — design tokens
-   True-black flat with a Higgsfield-style shell: one top bar over a
-   full-width canvas, studios as a gallery with a floating composer.
-   Elevation by lightness alone; one lime hue for the active nav, Generate
-   and data. Status colours appear only as pale-on-dark pairs.
+   Liquid glass over a warm ambient light: frosted, translucent surfaces with
+   a soft sheen and a bright top edge, floating over slowly drifting orange,
+   amber, rose and plum light. One warm accent (orange) for the active tab,
+   Generate and data. No green anywhere: "done" reads as warm white.
    ========================================================================== */
 :root {
-  --bg: #000000;          /* ground: page, top bar, inputs */
-  --surface: #111111;     /* cards and panels */
-  --surface-2: #1a1a1a;   /* panels nested in a card */
-  --surface-3: #2a2a2a;   /* selected and pressed */
-  --border: #1f1f1f;      /* structural rules */
-  --border-strong: #3a3a3a; /* control outlines */
+  --canvas: #0c0807;                      /* the page under the ambient light */
+  --bg: rgba(0, 0, 0, 0.32);              /* wells inside glass: inputs, frames, media */
+  --surface: rgba(255, 255, 255, 0.05);   /* quiet fills */
+  --surface-2: rgba(255, 255, 255, 0.07); /* panels nested in glass */
+  --surface-3: rgba(255, 255, 255, 0.13); /* selected and pressed */
+  --border: rgba(255, 255, 255, 0.09);    /* structural rules */
+  --border-strong: rgba(255, 255, 255, 0.2); /* control outlines */
 
   --text: #ffffff;
-  --text-2: #b4b4b4;
-  --text-3: #949494;
+  --text-2: rgba(255, 255, 255, 0.76);
+  --text-3: rgba(255, 255, 255, 0.6);
 
   --primary: #ffffff;
   --primary-ink: #000000;
 
-  --accent: #c6f24e;      /* the one hue: active nav, Generate, data */
-  --accent-hover: #d6fa72;
-  --accent-soft: rgba(198, 242, 78, 0.14);
-  --accent-text: #d9f78a;
+  --accent: #ff6b1f;      /* the one hue: active tab, Generate, data */
+  --accent-hover: #ff8547;
+  --accent-soft: rgba(255, 107, 31, 0.16);
+  --accent-text: #ffa36b;
 
-  --success: #3fc07a;
-  --success-soft: #172a1d;
-  --warning: #e5a93b;
-  --warning-soft: #2b2414;
-  --danger: #e5566f;
-  --danger-soft: #2c1a20;
+  --success: #f6efe6;     /* done / OK: warm white, never green */
+  --success-soft: rgba(255, 255, 255, 0.14);
+  --warning: #f2b54d;
+  --warning-soft: rgba(242, 181, 77, 0.15);
+  --danger: #ff6680;
+  --danger-soft: rgba(255, 102, 128, 0.15);
+
+  /* liquid glass */
+  --glass: linear-gradient(150deg, rgba(255, 255, 255, 0.11) 0%, rgba(255, 255, 255, 0.035) 42%, rgba(255, 255, 255, 0.015) 100%), rgba(20, 14, 12, 0.46);
+  --glass-strong: linear-gradient(150deg, rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.03) 50%), rgba(22, 15, 13, 0.78);
+  --glass-edge: rgba(255, 255, 255, 0.13);
+  --glass-blur: blur(28px) saturate(170%);
+  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), inset 0 -1px 0 rgba(255, 255, 255, 0.03), 0 20px 50px rgba(0, 0, 0, 0.32);
 
   --font: 'Inter', system-ui, -apple-system, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 
   --r-sm: 10px;
   --r-md: 14px;
-  --r-lg: 20px;
+  --r-lg: 22px;
   --r-full: 999px;
 
   --topbar: 60px;
@@ -49,7 +57,7 @@
 html { color-scheme: dark; }
 body {
   margin: 0;
-  background: var(--bg);
+  background: var(--canvas);
   color: var(--text);
   font-family: var(--font);
   font-size: 14px;
@@ -1299,6 +1307,103 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.72); }
   background: var(--surface-3);
   color: var(--text);
   font-variant-numeric: tabular-nums;
+}
+
+/* ==========================================================================
+   Ambient light — four soft colour fields drifting in slow loops behind
+   everything; the glass surfaces blur and reflect them. Transform only.
+   ========================================================================== */
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: radial-gradient(120% 90% at 50% -10%, #1c110c 0%, var(--canvas) 62%);
+}
+.ambient i {
+  position: absolute;
+  width: 72vmax;
+  height: 72vmax;
+  border-radius: 50%;
+  will-change: transform;
+  animation: 30s ease-in-out infinite alternate;
+}
+.ambient i:nth-child(1) { top: -30vmax; left: -18vmax; background: radial-gradient(circle, rgba(255, 107, 31, 0.55) 0%, rgba(255, 107, 31, 0) 64%); animation-name: drift-a; }
+.ambient i:nth-child(2) { bottom: -34vmax; right: -20vmax; background: radial-gradient(circle, rgba(255, 176, 66, 0.42) 0%, rgba(255, 176, 66, 0) 64%); animation-name: drift-b; animation-duration: 34s; }
+.ambient i:nth-child(3) { top: 10vh; right: -26vmax; background: radial-gradient(circle, rgba(214, 64, 110, 0.38) 0%, rgba(214, 64, 110, 0) 64%); animation-name: drift-c; animation-duration: 38s; }
+.ambient i:nth-child(4) { bottom: -30vmax; left: -22vmax; background: radial-gradient(circle, rgba(92, 58, 140, 0.40) 0%, rgba(92, 58, 140, 0) 64%); animation-name: drift-d; animation-duration: 42s; }
+@keyframes drift-a { 50% { transform: translate(22vw, 18vh) scale(1.12); } 100% { transform: translate(38vw, 6vh) scale(0.94); } }
+@keyframes drift-b { 50% { transform: translate(-24vw, -16vh) scale(1.1); } 100% { transform: translate(-8vw, -34vh) scale(1.02); } }
+@keyframes drift-c { 50% { transform: translate(-30vw, 22vh) scale(0.92); } 100% { transform: translate(-12vw, 40vh) scale(1.14); } }
+@keyframes drift-d { 50% { transform: translate(26vw, -20vh) scale(1.15); } 100% { transform: translate(44vw, -4vh) scale(0.96); } }
+
+/* ==========================================================================
+   Liquid glass — frosted, translucent, a sheen from the top-left and a
+   bright top edge. Nested panels stay plain translucent layers (no blur).
+   ========================================================================== */
+.topbar, .step, .panel, .result-stage, .composer, .pill-pop, dialog, .toast, .demo-bar-inner {
+  background: var(--glass);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-edge);
+  box-shadow: var(--glass-shadow);
+}
+.topbar { border-width: 0 0 1px; box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.04); }
+.step[data-state="locked"] {
+  background: rgba(255, 255, 255, 0.025);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.composer { background: linear-gradient(150deg, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.03) 45%), rgba(20, 14, 12, 0.58); border-radius: 26px; }
+.composer:focus-within { border-color: rgba(255, 255, 255, 0.24); }
+.pill-pop, dialog { background: var(--glass-strong); }
+/* a menu inside the composer cannot blur through its glass parent, so it stays nearly opaque */
+.pill-pop { background: linear-gradient(150deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.02) 50%), rgba(26, 18, 16, 0.95); }
+.tech-dialog { background: linear-gradient(150deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02) 50%), rgba(14, 10, 9, 0.86); }
+dialog::backdrop, .demo-dialog::backdrop, .tech-dialog::backdrop {
+  background: rgba(8, 5, 4, 0.5);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+select option { background: #1c1412; color: var(--text); }
+
+/* controls on glass */
+.btn { background: rgba(255, 255, 255, 0.05); }
+.btn:hover:not(:disabled) { background: rgba(255, 255, 255, 0.11); border-color: rgba(255, 255, 255, 0.3); }
+.btn-ghost, .btn.tool-btn { background: none; }
+.btn-primary { background: rgba(255, 255, 255, 0.94); box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.08), 0 6px 20px rgba(0, 0, 0, 0.25); }
+.btn-primary:hover:not(:disabled) { background: #ffffff; border-color: #ffffff; }
+.btn-danger { background: none; border-color: rgba(255, 102, 128, 0.4); }
+.btn-ghost:hover:not(:disabled) { background: rgba(255, 255, 255, 0.08); border-color: transparent; }
+.btn-danger:hover:not(:disabled) { background: var(--danger-soft); border-color: var(--danger); }
+.nav-btn { color: rgba(255, 255, 255, 0.62); }
+.nav-btn.active { color: var(--accent-text); }
+.comp-item:hover { background: rgba(255, 255, 255, 0.1); }
+.comp-item:has(input:checked) { box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.35); }
+.batch-prompt-card:hover { background: rgba(255, 255, 255, 0.04); }
+.pill { background: rgba(255, 255, 255, 0.08); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08); }
+.pill:hover, .pill-menu.open .pill { background: rgba(255, 255, 255, 0.15); }
+.segmented.seg-list button:hover { background: rgba(255, 255, 255, 0.08); }
+.segmented.seg-list button.active { background: rgba(255, 255, 255, 0.12); }
+.composer .prompt-list textarea:focus { background: rgba(255, 255, 255, 0.05); }
+.composer .prompt-extra { border-top-color: rgba(255, 255, 255, 0.08); }
+.btn-generate {
+  background: linear-gradient(180deg, #ff8d4d 0%, var(--accent) 52%, #f05510 100%);
+  color: #1a0b03;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -2px 0 rgba(0, 0, 0, 0.12), 0 12px 30px rgba(255, 107, 31, 0.32);
+}
+.btn-generate:hover:not(:disabled) { background: linear-gradient(180deg, #ffa064 0%, var(--accent-hover) 52%, #f5651f 100%); }
+
+/* the gallery lets the light through its gaps */
+.history.gallery { gap: 6px; padding: 0 6px; }
+.history.gallery > button { border-radius: var(--r-md); background: var(--surface); }
+.stage-current img, .stage-current video { box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ambient i { animation: none; }
 }
 
 /* ==========================================================================
