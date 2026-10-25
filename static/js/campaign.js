@@ -653,12 +653,14 @@
     const btn = $(`btn_${id}`);
     if (!empty) return;
     const showImage = has && state !== "rendering";
+    const wasRendering = empty.classList.contains("is-rendering");
     empty.hidden = showImage;
     img.hidden = !showImage;
-    empty.className = `media-empty ${state === "error" ? "error" : ""}`;
-    empty.innerHTML = state === "rendering" ? `<span class="spinner"></span><span>Rendering…</span>`
-      : state === "error" ? `<i class="fa-solid fa-triangle-exclamation"></i><span>${esc(message)}</span>`
+    empty.className = `media-empty ${state === "error" ? "error" : state === "rendering" ? "is-rendering" : ""}`;
+    if (state === "rendering") renderLoader(empty, "Rendering…", { ratio: flow.aspect, fill: true });
+    else empty.innerHTML = state === "error" ? `<i class="fa-solid fa-triangle-exclamation"></i><span>${esc(message)}</span>`
       : `<i class="fa-regular fa-image"></i><span>${esc(message || "Not rendered yet")}</span>`;
+    if (wasRendering && showImage) revealRendered(img);
     btn.disabled = state === "rendering";
     btn.innerHTML = has ? '<i class="fa-solid fa-rotate-right"></i> Re-render' : '<i class="fa-solid fa-play"></i> Render';
   }
@@ -831,12 +833,14 @@
     const video = $(`video_${id}`);
     const btn = $(`vbtn_${id}`);
     const showVideo = has && state !== "rendering";
+    const wasRendering = empty.classList.contains("is-rendering");
     empty.hidden = showVideo;
     video.hidden = !showVideo;
-    empty.className = `media-empty ${state === "error" ? "error" : ""}`;
-    empty.innerHTML = state === "rendering" ? `<span class="spinner"></span><span>${esc(message || "Rendering with Omni Flash…")}</span>`
-      : state === "error" ? `<i class="fa-solid fa-triangle-exclamation"></i><span>${esc(message)}</span>`
+    empty.className = `media-empty ${state === "error" ? "error" : state === "rendering" ? "is-rendering" : ""}`;
+    if (state === "rendering") renderLoader(empty, message || "Rendering with Omni Flash…", { ratio: "9:16", fill: true });
+    else empty.innerHTML = state === "error" ? `<i class="fa-solid fa-triangle-exclamation"></i><span>${esc(message)}</span>`
       : `<i class="fa-solid fa-film"></i><span>Not rendered yet</span>`;
+    if (wasRendering && showVideo) revealRendered(video);
     btn.disabled = state === "rendering";
     btn.innerHTML = has ? '<i class="fa-solid fa-rotate-right"></i> Re-render' : '<i class="fa-solid fa-clapperboard"></i> Render video';
   }

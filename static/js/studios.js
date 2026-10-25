@@ -7,8 +7,8 @@
     $(container).innerHTML = html;
   }
 
-  function busy(container, text) {
-    showResult(container, `<div class="media-empty"><span class="spinner"></span><span>${esc(text)}</span></div>`);
+  function busy(container, text, ratio) {
+    renderLoader(container, text, { ratio });
   }
 
   function failed(container, text) {
@@ -218,12 +218,13 @@
     $("img_submit").disabled = true;
 
     if (prompts.length === 1) {
-      busy("img_result", `${modelLabel} is generating… (${selectedRes})`);
+      busy("img_result", `${modelLabel} is generating… (${selectedRes})`, imgAspect() || "1:1");
       try {
         const res = await fetch("/api/image-studio/generate", { method: "POST", headers: apiHeaders(), body: fd });
         if (!res.ok) throw new Error(await readErrorDetail(res, "Image generation failed"));
         const data = await res.json();
         showImage(data.image_url, data);
+        revealRendered($("img_result").querySelector("img"));
         loadImageHistory();
         notify(`Image ready (${data.resolution || selectedRes}).`, "success");
       } catch (err) {
@@ -235,12 +236,12 @@
     }
 
     // Multiple prompts: display result grid
-    const spinner = (text) => `<div class="media-empty"><span class="spinner"></span><span>${esc(text)}</span></div>`;
     showResult("img_result", `<div class="result-grid">${prompts.map((p, i) => `
       <div class="result-tile">
         <div class="tile-label" title="${esc(p)}">Prompt ${i + 1} · ${esc(p.slice(0, 60))}</div>
-        <div id="img_tile_${i}">${spinner(`${modelLabel} is generating…`)}</div>
+        <div id="img_tile_${i}"></div>
       </div>`).join("")}</div>`);
+    prompts.forEach((_, i) => renderLoader(`img_tile_${i}`, `${modelLabel} is generating…`, { ratio: imgAspect() || "1:1" }));
 
     try {
       const res = await fetch("/api/image-studio/generate", { method: "POST", headers: apiHeaders(), body: fd });
@@ -262,6 +263,7 @@
               <button type="button" class="btn-link small" data-view-img><i class="fa-solid fa-expand"></i> View</button>
               <a href="${esc(item.image_url)}" download="${esc(item.filename || `image_${i+1}.png`)}" class="btn-link small" target="_blank"><i class="fa-solid fa-download"></i> Save</a>
             </div>`;
+          revealRendered(tileEl.querySelector("img"));
           tileEl.querySelector("img").addEventListener("click", () => showImage(item.image_url, item));
           const viewBtn = tileEl.querySelector("[data-view-img]");
           if (viewBtn) viewBtn.addEventListener("click", () => showImage(item.image_url, item));
@@ -401,7 +403,7 @@
     if (mode === "edit_video") fd.append("source_video", $("vid_source").files[0]);
 
     $("vid_submit").disabled = true;
-    busy("vid_result", prompts.length > 1 ? `Sending ${prompts.length} prompts to Omni Flash…` : "Sending to Omni Flash…");
+    busy("vid_result", prompts.length > 1 ? `Sending ${prompts.length} prompts to Omni Flash…` : "Sending to Omni Flash…", vidAspect() || "9:16");
     try {
       // One request uploads the shared images once and starts every prompt in parallel
       const res = await fetch("/api/studio/generate-video", { method: "POST", headers: apiHeaders(), body: fd });
@@ -410,23 +412,26 @@
       const jobIds = data.job_ids || [data.job_id];
 
       if (jobIds.length === 1) {
-        busy("vid_result", "Omni Flash is rendering… usually a few minutes");
-        const job = await pollJob(jobIds[0], { onProgress: (j) => j.progress_msg && busy("vid_result", j.progress_msg) });
+        busy("vid_result", "Omni Flash is rendering… usually a few minutes", vidAspect() || "9:16");
+        const job = await pollJob(jobIds[0], { onProgress: (j) => j.progress_msg && busy("vid_result", j.progress_msg, vidAspect() || "9:16") });
         showVideo(job.video_url, job);
+        revealRendered($("vid_result").querySelector("video"));
         rememberVideo(job.video_url, job);
         notify("Video ready.", "success");
         return;
       }
 
-      const spinner = (text) => `<div class="media-empty"><span class="spinner"></span><span>${esc(text)}</span></div>`;
+      const ratio = vidAspect() || "9:16";
+      const loading = (i, text) => renderLoader(`vid_tile_${i}`, text, { ratio });
       showResult("vid_result", `<div class="result-grid">${jobIds.map((_, i) => `
         <div class="result-tile">
           <div class="tile-label" title="${esc(prompts[i])}">Prompt ${i + 1} · ${esc(prompts[i].slice(0, 60))}</div>
-          <div id="vid_tile_${i}">${spinner("Rendering… usually a few minutes")}</div>
+          <div id="vid_tile_${i}"></div>
         </div>`).join("")}</div>`);
+      jobIds.forEach((_, i) => loading(i, "Rendering… usually a few minutes"));
 
       const results = await Promise.allSettled(jobIds.map((id, i) =>
-        pollJob(id, { onProgress: (j) => j.progress_msg && tileState(i, spinner(j.progress_msg)) })
+        pollJob(id, { onProgress: (j) => j.progress_msg && loading(i, j.progress_msg) })
           .then((job) => {
             const rBadge = (job.resolution || vidResolution() || "1080p").toUpperCase();
             tileState(i, `<video src="${esc(job.video_url)}" controls playsinline></video>
@@ -434,6 +439,7 @@
                 <span class="badge badge-accent">${esc(rBadge)}</span>
                 <a href="${esc(job.video_url)}" download="video_${i+1}_${rBadge.toLowerCase()}.mp4" class="btn-link small" title="Download video"><i class="fa-solid fa-download"></i> Save</a>
               </div>`);
+            revealRendered($(`vid_tile_${i}`).querySelector("video"));
             rememberVideo(job.video_url, job);
           })
           .catch((err) => {

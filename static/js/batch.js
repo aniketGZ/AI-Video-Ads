@@ -446,6 +446,8 @@
       }
 
       if (item.status === "success" && item.image_url) {
+        if (card.classList.contains("success")) return; // already shown; don't replay the reveal
+        const wasRendering = card.classList.contains("processing");
         card.className = "batch-res-card success";
         card.innerHTML = `
           <div class="batch-res-thumb">
@@ -460,17 +462,17 @@
             </div>
           </div>
         `;
+        if (wasRendering) revealRendered(card.querySelector(".batch-res-thumb img"));
       } else if (item.status === "processing") {
+        if (card.classList.contains("processing")) return; // keep the running loader and its timer
         card.className = "batch-res-card processing";
         card.innerHTML = `
-          <div class="batch-res-placeholder">
-            <span class="spinner"></span>
-            <span>Generating #${item.id}…</span>
-          </div>
+          <div class="batch-res-placeholder"></div>
           <div class="batch-res-info">
             <div class="batch-res-title">${esc(item.title)}</div>
             <span class="badge badge-warning">Rendering</span>
           </div>`;
+        renderLoader(card.querySelector(".batch-res-placeholder"), `Generating #${item.id}…`, { ratio: "1:1", fill: true });
       } else if (item.status === "retrying") {
         card.className = "batch-res-card retrying";
         card.innerHTML = `
