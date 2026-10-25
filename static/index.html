@@ -10,12 +10,12 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css?v=4.5.2">
+  <link rel="stylesheet" href="css/style.css?v=5.0.1">
 </head>
 <body>
 
-  <!-- Shell: a sidebar on desktop, a top bar on tablet, a top bar plus bottom tabs on a phone -->
-  <aside class="sidebar">
+  <!-- Shell: one top bar (brand, studios, tools) over a full-width canvas -->
+  <header class="topbar">
     <div class="brand">
       <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
         <rect x="4" y="2.5" width="16" height="19" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
@@ -24,17 +24,17 @@
       <span>Ad Studio</span>
     </div>
     <nav class="nav" aria-label="Main">
-      <button type="button" class="nav-btn active" data-view="campaign"><i class="fa-solid fa-bullhorn"></i><span class="nav-label">Campaign</span></button>
-      <button type="button" class="nav-btn" data-view="image"><i class="fa-regular fa-image"></i><span class="nav-label">Image<span class="nav-label-x"> studio</span></span></button>
-      <button type="button" class="nav-btn" data-view="video"><i class="fa-solid fa-film"></i><span class="nav-label">Video<span class="nav-label-x"> studio</span></span></button>
-      <button type="button" class="nav-btn" data-view="batch"><i class="fa-solid fa-layer-group"></i><span class="nav-label">Batch<span class="nav-label-x"> studio</span></span></button>
+      <button type="button" class="nav-btn active" data-view="campaign">Campaign</button>
+      <button type="button" class="nav-btn" data-view="image">Image</button>
+      <button type="button" class="nav-btn" data-view="video">Video</button>
+      <button type="button" class="nav-btn" data-view="batch">Batch</button>
     </nav>
-    <div class="sidebar-tools">
+    <div class="sidebar-tools topbar-tools">
       <button type="button" class="btn btn-sm btn-ghost tool-btn key-btn" id="key_btn" aria-label="Gemini API key" title="Gemini API key">
         <i class="fa-solid fa-key"></i><span class="tool-label">API key</span><span class="key-state" id="key_state"></span><span class="key-dot" id="key_dot"></span>
       </button>
     </div>
-  </aside>
+  </header>
 
   <!-- ================================================================== -->
   <!-- Campaign: one guided page                                          -->
@@ -189,163 +189,168 @@
   </main>
 
   <!-- ================================================================== -->
-  <!-- Image studio                                                       -->
+  <!-- Image studio: the gallery is the canvas, the composer floats on it -->
   <!-- ================================================================== -->
-  <main class="page" id="view_image" data-view-panel="image" hidden>
-    <div class="page-head">
-      <div>
-        <h1>Image studio</h1>
-        <p>One-off image ads with Nano Banana Pro and Nano Banana 2.1. Add reference images to place real products or styling in the scene.</p>
-      </div>
-    </div>
-    <div class="studio">
-      <form class="panel" id="img_form">
-        <div class="field">
-          <span class="label">Model</span>
-          <div class="segmented" id="img_model">
-            <button type="button" data-model="nano-banana-pro" class="active">Nano Banana Pro</button>
-            <button type="button" data-model="nano-banana-2.1">Nano Banana 2.1</button>
-          </div>
+  <main class="page page-studio" id="view_image" data-view-panel="image" hidden>
+    <h1 class="sr-only">Image studio</h1>
+    <section class="canvas" aria-label="Image results">
+      <div class="stage-current" id="img_result"><div class="media-empty"><i class="fa-regular fa-image"></i><span>Your image appears here</span></div></div>
+      <div class="gallery history" id="img_history" data-empty="Your generated images will appear here"></div>
+    </section>
+
+    <form class="composer" id="img_form">
+      <div class="composer-main">
+        <div class="thumbs composer-thumbs" id="img_thumbs"></div>
+        <label class="sr-only" for="img_prompt" id="img_prompt_label">Prompt</label>
+        <div class="prompt-list" id="img_prompts">
+          <textarea class="textarea composer-input" id="img_prompt" data-prompt rows="2" placeholder="Describe the image ad: a bottle of our serum on a sunlit bathroom shelf, headline 'Glow in 7 days', CTA 'Shop now'"></textarea>
         </div>
-        <div class="field">
-          <label class="label" for="img_prompt" id="img_prompt_label">Prompt <span class="muted">· drop a .md file to import</span></label>
-          <div class="prompt-list" id="img_prompts">
-            <textarea class="textarea" id="img_prompt" data-prompt rows="6" placeholder="A bottle of our serum on a sunlit bathroom shelf, bold headline 'Glow in 7 days', CTA 'Shop now'"></textarea>
-          </div>
-          <button type="button" class="btn-link prompt-add" id="img_add_prompt"><i class="fa-solid fa-plus"></i> Add another prompt <span class="muted">· up to 5, one image each</span></button>
-        </div>
-        <div class="field">
-          <span class="label">Reference images <span class="muted" id="img_refs_hint">· optional, up to 6 · product photos, styling or packaging</span></span>
-          <div class="dropzone" id="img_drop" role="button" tabindex="0" aria-label="Add reference images">
-            <div class="dropzone-cta"><i class="fa-solid fa-cloud-arrow-up"></i><span>Drop or browse</span></div>
-            <div class="thumbs" id="img_thumbs"></div>
+        <div class="composer-bar">
+          <div class="dropzone pill pill-icon" id="img_drop" role="button" tabindex="0" aria-label="Add reference images" title="Add reference images (up to 6)">
+            <i class="fa-solid fa-plus"></i>
             <input type="file" id="img_files" accept="image/*" multiple hidden>
           </div>
-        </div>
-        <div class="field">
-          <span class="label">Format &amp; Resolution</span>
-          <div class="toolbar-group">
-            <div class="segmented" id="img_aspect" aria-label="Aspect ratio">
-              <button type="button" data-ratio="1:1" class="active">1:1</button>
-              <button type="button" data-ratio="4:5">4:5</button>
-              <button type="button" data-ratio="9:16">9:16</button>
-              <button type="button" data-ratio="16:9">16:9</button>
-            </div>
-            <div class="segmented" id="img_resolution" aria-label="Resolution">
-              <button type="button" data-res="1K" class="active" title="Standard resolution (~1024px)">1K</button>
-              <button type="button" data-res="2K" title="High resolution (~2048px)">2K</button>
-              <button type="button" data-res="4K" title="Ultra high resolution (~4096px)">4K</button>
+          <span class="sr-only" id="img_refs_hint">· optional, up to 6 · product photos, styling or packaging</span>
+          <div class="pill-menu">
+            <button type="button" class="pill" aria-haspopup="true" aria-expanded="false" aria-label="Model"><i class="fa-solid fa-cube"></i><span class="pill-value"></span><i class="fa-solid fa-chevron-up pill-caret"></i></button>
+            <div class="pill-pop" hidden>
+              <div class="pill-pop-title">Model</div>
+              <div class="segmented seg-list" id="img_model" aria-label="Model">
+                <button type="button" data-model="nano-banana-pro" class="active">Nano Banana Pro</button>
+                <button type="button" data-model="nano-banana-2.1">Nano Banana 2.1</button>
+              </div>
             </div>
           </div>
-        </div>
-        <div class="field">
-          <label class="label" for="img_style">Style</label>
-          <select class="select" id="img_style">
-            <option value="">None — use my prompt as is</option>
-            <option value="minimal_dtc">Minimal DTC studio</option>
-            <option value="luxury_podium">Luxury podium</option>
-            <option value="ugc_lifestyle">UGC lifestyle</option>
-            <option value="nature_botanical">Nature &amp; botanical</option>
-            <option value="dramatic_splash">Dramatic splash</option>
-          </select>
-        </div>
-        <button type="submit" class="btn btn-primary btn-lg" id="img_submit"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate image</button>
-      </form>
-      <div class="result-stage">
-        <div class="result-main" id="img_result"><div class="media-empty"><i class="fa-regular fa-image"></i><span>Your image appears here</span></div></div>
-        <div>
-          <div class="label" style="margin-bottom: 8px;">Recent</div>
-          <div class="history" id="img_history"></div>
+          <div class="pill-menu">
+            <button type="button" class="pill" aria-haspopup="true" aria-expanded="false" aria-label="Aspect ratio"><i class="fa-regular fa-square"></i><span class="pill-value"></span><i class="fa-solid fa-chevron-up pill-caret"></i></button>
+            <div class="pill-pop" hidden>
+              <div class="pill-pop-title">Aspect ratio</div>
+              <div class="segmented seg-list" id="img_aspect" aria-label="Aspect ratio">
+                <button type="button" data-ratio="1:1" class="active">1:1</button>
+                <button type="button" data-ratio="4:5">4:5</button>
+                <button type="button" data-ratio="9:16">9:16</button>
+                <button type="button" data-ratio="16:9">16:9</button>
+              </div>
+            </div>
+          </div>
+          <div class="pill-menu">
+            <button type="button" class="pill" aria-haspopup="true" aria-expanded="false" aria-label="Resolution"><i class="fa-solid fa-expand"></i><span class="pill-value"></span><i class="fa-solid fa-chevron-up pill-caret"></i></button>
+            <div class="pill-pop" hidden>
+              <div class="pill-pop-title">Resolution</div>
+              <div class="segmented seg-list" id="img_resolution" aria-label="Resolution">
+                <button type="button" data-res="1K" class="active" title="Standard resolution (~1024px)">1K</button>
+                <button type="button" data-res="2K" title="High resolution (~2048px)">2K</button>
+                <button type="button" data-res="4K" title="Ultra high resolution (~4096px)">4K</button>
+              </div>
+            </div>
+          </div>
+          <label class="pill pill-select" title="Style preset">
+            <i class="fa-solid fa-palette"></i>
+            <span class="sr-only">Style</span>
+            <select id="img_style">
+              <option value="">No style</option>
+              <option value="minimal_dtc">Minimal DTC studio</option>
+              <option value="luxury_podium">Luxury podium</option>
+              <option value="ugc_lifestyle">UGC lifestyle</option>
+              <option value="nature_botanical">Nature &amp; botanical</option>
+              <option value="dramatic_splash">Dramatic splash</option>
+            </select>
+          </label>
+          <button type="button" class="pill prompt-add" id="img_add_prompt" title="Add another prompt (up to 5, one image each)"><i class="fa-solid fa-plus"></i> Prompt</button>
         </div>
       </div>
-    </div>
+      <button type="submit" class="btn-generate" id="img_submit"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate image</button>
+    </form>
   </main>
 
   <!-- ================================================================== -->
-  <!-- Video studio                                                       -->
+  <!-- Video studio: same canvas and composer                             -->
   <!-- ================================================================== -->
-  <main class="page" id="view_video" data-view-panel="video" hidden>
-    <div class="page-head">
-      <div>
-        <h1>Video studio</h1>
-        <p>One-off videos with Omni Flash: from a prompt and reference images, between two frames, or by editing a clip.</p>
-      </div>
-    </div>
-    <div class="studio">
-      <form class="panel" id="vid_form">
-        <div class="field">
-          <span class="label">Mode</span>
-          <div class="segmented" id="vid_mode">
-            <button type="button" data-mode="prompt_images" class="active">Prompt + images</button>
-            <button type="button" data-mode="first_last_frame">Two frames</button>
-            <button type="button" data-mode="edit_video">Edit a clip</button>
+  <main class="page page-studio" id="view_video" data-view-panel="video" hidden>
+    <h1 class="sr-only">Video studio</h1>
+    <section class="canvas" aria-label="Video results">
+      <div class="stage-current" id="vid_result"><div class="media-empty"><i class="fa-solid fa-film"></i><span>Your video appears here</span></div></div>
+      <div class="gallery history" id="vid_history" data-empty="Videos you make this session will appear here"></div>
+    </section>
+
+    <form class="composer" id="vid_form">
+      <div class="composer-main">
+        <div class="composer-frames" data-for-mode="first_last_frame" hidden>
+          <div class="dropzone frame-slot" id="vid_first_drop" role="button" tabindex="0" aria-label="Add start frame">
+            <div class="dropzone-cta"><i class="fa-solid fa-plus"></i><span>Start frame</span></div>
+            <div class="thumbs" id="vid_first_thumbs"></div>
+            <input type="file" id="vid_first_file" accept="image/*" hidden>
+          </div>
+          <div class="dropzone frame-slot" id="vid_last_drop" role="button" tabindex="0" aria-label="Add end frame">
+            <div class="dropzone-cta"><i class="fa-solid fa-plus"></i><span>End frame <span class="muted">· optional</span></span></div>
+            <div class="thumbs" id="vid_last_thumbs"></div>
+            <input type="file" id="vid_last_file" accept="image/*" hidden>
           </div>
         </div>
-        <div class="field">
-          <label class="label" for="vid_prompt"><span id="vid_prompt_label">Prompt</span> <span class="muted">· drop a .md file to import</span></label>
-          <div class="prompt-list" id="vid_prompts">
-            <textarea class="textarea" id="vid_prompt" data-prompt rows="6" placeholder="Close-up of the product on a rainy window sill, slow push-in, warm light"></textarea>
-          </div>
-          <button type="button" class="btn-link prompt-add" id="vid_add_prompt"><i class="fa-solid fa-plus"></i> Add another prompt <span class="muted">· up to 5, one video each</span></button>
-        </div>
-        <div class="field" data-for-mode="prompt_images">
-          <span class="label">Reference images <span class="muted">· optional, up to 7</span></span>
-          <div class="dropzone" id="vid_drop" role="button" tabindex="0" aria-label="Add reference images">
-            <div class="dropzone-cta"><i class="fa-solid fa-cloud-arrow-up"></i><span>Drop or browse</span></div>
-            <div class="thumbs" id="vid_thumbs"></div>
-            <input type="file" id="vid_files" accept="image/*" multiple hidden>
-          </div>
-        </div>
-        <div class="field" data-for-mode="first_last_frame" hidden>
-          <span class="label">Start and end frames <span class="muted">· end frame is optional</span></span>
-          <div class="frame-pair">
-            <div class="dropzone" id="vid_first_drop" role="button" tabindex="0" aria-label="Add start frame">
-              <div class="dropzone-cta"><span>Start frame</span></div>
-              <div class="thumbs" id="vid_first_thumbs"></div>
-              <input type="file" id="vid_first_file" accept="image/*" hidden>
-            </div>
-            <div class="dropzone" id="vid_last_drop" role="button" tabindex="0" aria-label="Add end frame">
-              <div class="dropzone-cta"><span>End frame <span class="muted">(optional)</span></span></div>
-              <div class="thumbs" id="vid_last_thumbs"></div>
-              <input type="file" id="vid_last_file" accept="image/*" hidden>
-            </div>
-          </div>
-        </div>
-        <div class="field" data-for-mode="edit_video" hidden>
+        <div class="composer-clip" data-for-mode="edit_video" hidden>
           <label class="label" for="vid_source">Source clip</label>
           <input type="file" class="input" id="vid_source" accept="video/mp4,video/quicktime,video/webm">
         </div>
-        <div class="field">
-          <span class="label">Format</span>
-          <div class="toolbar-group">
-            <div class="segmented" id="vid_aspect" aria-label="Aspect ratio">
-              <button type="button" data-ratio="9:16" class="active">9:16</button>
-              <button type="button" data-ratio="16:9">16:9</button>
-              <button type="button" data-ratio="1:1">1:1</button>
-            </div>
-            <div class="segmented" id="vid_resolution" aria-label="Resolution">
-              <button type="button" data-res="720p" title="Draft (720p HD)">720p</button>
-              <button type="button" data-res="1080p" class="active" title="Full HD (1080p)">1080p</button>
-              <button type="button" data-res="4k" title="Ultra HD (4K)">4K</button>
-            </div>
-            <div class="segmented" id="vid_duration" aria-label="Duration">
-              <button type="button" data-dur="4">4s</button>
-              <button type="button" data-dur="6">6s</button>
-              <button type="button" data-dur="8" class="active">8s</button>
-              <button type="button" data-dur="10">10s</button>
+        <div class="thumbs composer-thumbs" id="vid_thumbs"></div>
+        <label class="sr-only" for="vid_prompt" id="vid_prompt_label">Prompt</label>
+        <div class="prompt-list" id="vid_prompts">
+          <textarea class="textarea composer-input" id="vid_prompt" data-prompt rows="2" placeholder="Describe the shot: close-up of the product on a rainy window sill, slow push-in, warm light"></textarea>
+        </div>
+        <div class="composer-bar">
+          <div class="dropzone pill pill-icon" id="vid_drop" data-for-mode="prompt_images" role="button" tabindex="0" aria-label="Add reference images" title="Add reference images (up to 7)">
+            <i class="fa-solid fa-plus"></i>
+            <input type="file" id="vid_files" accept="image/*" multiple hidden>
+          </div>
+          <div class="pill-menu">
+            <button type="button" class="pill" aria-haspopup="true" aria-expanded="false" aria-label="Mode"><i class="fa-solid fa-film"></i><span class="pill-value"></span><i class="fa-solid fa-chevron-up pill-caret"></i></button>
+            <div class="pill-pop" hidden>
+              <div class="pill-pop-title">Mode</div>
+              <div class="segmented seg-list" id="vid_mode" aria-label="Mode">
+                <button type="button" data-mode="prompt_images" class="active">Prompt + images</button>
+                <button type="button" data-mode="first_last_frame">Two frames</button>
+                <button type="button" data-mode="edit_video">Edit a clip</button>
+              </div>
             </div>
           </div>
-        </div>
-        <button type="submit" class="btn btn-primary btn-lg" id="vid_submit"><i class="fa-solid fa-clapperboard"></i> Generate video</button>
-      </form>
-      <div class="result-stage">
-        <div class="result-main" id="vid_result"><div class="media-empty"><i class="fa-solid fa-film"></i><span>Your video appears here</span></div></div>
-        <div>
-          <div class="label" style="margin-bottom: 8px;">This session</div>
-          <div class="history" id="vid_history"></div>
+          <div class="pill-menu">
+            <button type="button" class="pill" aria-haspopup="true" aria-expanded="false" aria-label="Aspect ratio"><i class="fa-regular fa-square"></i><span class="pill-value"></span><i class="fa-solid fa-chevron-up pill-caret"></i></button>
+            <div class="pill-pop" hidden>
+              <div class="pill-pop-title">Aspect ratio</div>
+              <div class="segmented seg-list" id="vid_aspect" aria-label="Aspect ratio">
+                <button type="button" data-ratio="9:16" class="active">9:16</button>
+                <button type="button" data-ratio="16:9">16:9</button>
+                <button type="button" data-ratio="1:1">1:1</button>
+              </div>
+            </div>
+          </div>
+          <div class="pill-menu">
+            <button type="button" class="pill" aria-haspopup="true" aria-expanded="false" aria-label="Resolution"><i class="fa-solid fa-expand"></i><span class="pill-value"></span><i class="fa-solid fa-chevron-up pill-caret"></i></button>
+            <div class="pill-pop" hidden>
+              <div class="pill-pop-title">Resolution</div>
+              <div class="segmented seg-list" id="vid_resolution" aria-label="Resolution">
+                <button type="button" data-res="720p" title="Draft (720p HD)">720p</button>
+                <button type="button" data-res="1080p" class="active" title="Full HD (1080p)">1080p</button>
+                <button type="button" data-res="4k" title="Ultra HD (4K)">4K</button>
+              </div>
+            </div>
+          </div>
+          <div class="pill-menu">
+            <button type="button" class="pill" aria-haspopup="true" aria-expanded="false" aria-label="Duration"><i class="fa-regular fa-clock"></i><span class="pill-value"></span><i class="fa-solid fa-chevron-up pill-caret"></i></button>
+            <div class="pill-pop" hidden>
+              <div class="pill-pop-title">Duration</div>
+              <div class="segmented seg-list" id="vid_duration" aria-label="Duration">
+                <button type="button" data-dur="4">4s</button>
+                <button type="button" data-dur="6">6s</button>
+                <button type="button" data-dur="8" class="active">8s</button>
+                <button type="button" data-dur="10">10s</button>
+              </div>
+            </div>
+          </div>
+          <button type="button" class="pill prompt-add" id="vid_add_prompt" title="Add another prompt (up to 5, one video each)"><i class="fa-solid fa-plus"></i> Prompt</button>
         </div>
       </div>
-    </div>
+      <button type="submit" class="btn-generate" id="vid_submit"><i class="fa-solid fa-clapperboard"></i> Generate video</button>
+    </form>
   </main>
 
   <!-- ================================================================== -->
@@ -504,7 +509,8 @@
   <script src="js/core.js?v=3.4.0"></script>
   <script src="js/render_loader.js?v=3.1.0"></script>
   <script src="js/campaign.js?v=3.1.0"></script>
-  <script src="js/studios.js?v=3.2.0"></script>
+  <script src="js/studios.js?v=3.3.0"></script>
+  <script src="js/composer.js?v=1.0.0"></script>
   <script src="js/batch.js?v=1.2.0"></script>
   <script src="js/demo_session.js?v=1.1.0"></script>
 </body>

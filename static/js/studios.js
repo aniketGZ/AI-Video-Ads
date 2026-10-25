@@ -47,7 +47,7 @@
       const mdFiles = files.filter(isMdFile);
       if (!mdFiles.length) {
         if (files.some((f) => f.type.startsWith("image/"))) {
-          notify("Drop reference images into the Reference Images box below.", "info");
+          notify("Add reference images with the + button under the prompt.", "info");
         }
         return;
       }
@@ -178,7 +178,7 @@
       const { images } = await res.json();
       $("img_history").innerHTML = (images || []).map((i) =>
         `<button type="button" data-url="${esc(i.url)}" aria-label="Show this image"><img src="${esc(i.url)}" alt="" loading="lazy"></button>`
-      ).join("") || '<span class="muted small">Nothing yet</span>';
+      ).join(""); // empty: the gallery shows its own data-empty message
     } catch (e) { /* history is optional */ }
   }
 
