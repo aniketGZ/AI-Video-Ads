@@ -8,24 +8,33 @@
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css?v=3.0.7">
+  <link rel="stylesheet" href="css/style.css?v=4.0.1">
 </head>
 <body>
 
-  <header class="topbar">
-    <div class="topbar-inner">
-      <div class="brand"><div class="brand-mark"><i class="fa-solid fa-bolt"></i></div><span>Ad Studio</span></div>
-      <nav class="nav" aria-label="Main">
-        <button type="button" class="nav-btn active" data-view="campaign"><i class="fa-solid fa-bullhorn"></i><span class="nav-label">Campaign</span></button>
-        <button type="button" class="nav-btn" data-view="image"><i class="fa-regular fa-image"></i><span class="nav-label">Image studio</span></button>
-        <button type="button" class="nav-btn" data-view="video"><i class="fa-solid fa-film"></i><span class="nav-label">Video studio</span></button>
-        <button type="button" class="nav-btn" data-view="batch"><i class="fa-solid fa-layer-group"></i><span class="nav-label">Batch studio</span></button>
-      </nav>
-      <button type="button" class="btn btn-sm key-btn" id="key_btn"><span class="key-dot" id="key_dot"></span> API key</button>
+  <!-- Shell: a sidebar on desktop, a top bar on tablet, a top bar plus bottom tabs on a phone -->
+  <aside class="sidebar">
+    <div class="brand">
+      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="4" y="2.5" width="16" height="19" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        <path d="M10 8.6v6.8l5.6-3.4z" fill="currentColor"/>
+      </svg>
+      <span>Ad Studio</span>
     </div>
-  </header>
+    <nav class="nav" aria-label="Main">
+      <button type="button" class="nav-btn active" data-view="campaign"><i class="fa-solid fa-bullhorn"></i><span class="nav-label">Campaign</span></button>
+      <button type="button" class="nav-btn" data-view="image"><i class="fa-regular fa-image"></i><span class="nav-label">Image<span class="nav-label-x"> studio</span></span></button>
+      <button type="button" class="nav-btn" data-view="video"><i class="fa-solid fa-film"></i><span class="nav-label">Video<span class="nav-label-x"> studio</span></span></button>
+      <button type="button" class="nav-btn" data-view="batch"><i class="fa-solid fa-layer-group"></i><span class="nav-label">Batch<span class="nav-label-x"> studio</span></span></button>
+    </nav>
+    <div class="sidebar-tools">
+      <button type="button" class="btn btn-sm btn-ghost tool-btn key-btn" id="key_btn" aria-label="Gemini API key" title="Gemini API key">
+        <i class="fa-solid fa-key"></i><span class="tool-label">API key</span><span class="key-state" id="key_state"></span><span class="key-dot" id="key_dot"></span>
+      </button>
+    </div>
+  </aside>
 
   <!-- ================================================================== -->
   <!-- Campaign: one guided page                                          -->
@@ -33,8 +42,8 @@
   <main class="page" id="view_campaign" data-view-panel="campaign">
     <div class="page-head">
       <div>
-        <h1>Build a Meta campaign from a link</h1>
-        <p>We research your brand, its audience and competitors' live ads, then write and render image and video ads for your bullseye customer.</p>
+        <h1>Campaign</h1>
+        <p>Paste a brand link. We research the brand, its audience and competitors' live Meta ads, then write and render image and video ads for your bullseye customer.</p>
       </div>
       <button type="button" class="btn btn-ghost" id="btn_new_campaign" hidden><i class="fa-solid fa-plus"></i> New campaign</button>
     </div>
@@ -345,13 +354,13 @@
   <main class="page" id="view_batch" data-view-panel="batch" hidden>
     <div class="page-head">
       <div>
-        <h1>Batch prompt studio</h1>
-        <p>Bulk image generation from Markdown files with automatic rate-limit cooldowns, sequential queueing, and ZIP export.</p>
+        <h1>Batch studio</h1>
+        <p>Render up to 100 image prompts from Markdown files in one queue, with rate-limit cooldowns and a ZIP of the results.</p>
       </div>
     </div>
     <div class="studio batch-studio">
       <div class="panel">
-        <h2>1. Import markdown prompts</h2>
+        <h2>Prompts</h2>
         <div class="field">
           <label class="label">Markdown / Text files <span class="muted">· up to 100 prompts total</span></label>
           <div class="dropzone" id="batch_md_drop" role="button" tabindex="0" aria-label="Drop markdown files">
@@ -378,7 +387,7 @@
           </div>
         </div>
 
-        <h2 style="margin-top: 24px;">2. Reference style / branding</h2>
+        <h2 class="panel-section">References</h2>
         <div class="field">
           <span class="label">Reference images <span class="muted" id="batch_ref_limit_label">· optional, up to 6 for Pro / 14 for 2.1</span></span>
           <div class="dropzone" id="batch_ref_drop" role="button" tabindex="0" aria-label="Add reference images">
@@ -388,7 +397,7 @@
           </div>
         </div>
 
-        <h2 style="margin-top: 24px;">3. Queue settings</h2>
+        <h2 class="panel-section">Queue settings</h2>
         <div class="field">
           <span class="label">Model</span>
           <div class="segmented" id="batch_model">
@@ -408,12 +417,12 @@
         </div>
 
         <div class="field">
-          <span class="label">API rate limit spacing delay</span>
+          <span class="label">Delay between requests <span class="muted">· longer is safer on the free tier</span></span>
           <div class="segmented" id="batch_delay">
             <button type="button" data-delay="1.5">1.5s</button>
             <button type="button" data-delay="2.5" class="active">2.5s</button>
-            <button type="button" data-delay="4.0">4.0s (Safer)</button>
-            <button type="button" data-delay="6.0">6.0s (Strict Free Tier)</button>
+            <button type="button" data-delay="4.0">4s</button>
+            <button type="button" data-delay="6.0" title="Strict free tier">6s</button>
           </div>
         </div>
 
@@ -421,7 +430,7 @@
           <i class="fa-solid fa-wand-magic-sparkles"></i> Start batch generation (0)
         </button>
 
-        <div class="batch-history-box" style="margin-top: 24px;">
+        <div class="batch-history-box">
           <div class="label" style="margin-bottom: 8px;">Recent batch jobs</div>
           <div class="batch-history-list" id="batch_history_list"></div>
         </div>
@@ -437,22 +446,20 @@
 
         <div id="batch_stage_active" hidden>
           <div class="batch-stage-header">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-              <div>
-                <strong>Generation queue progress</strong>
-                <span id="batch_model_badge" class="badge badge-accent" style="margin-left: 8px;" hidden></span>
+            <div class="meter-row">
+              <div class="batch-stage-title">
+                <strong>Queue</strong>
+                <span id="batch_model_badge" class="badge badge-accent" hidden></span>
               </div>
-              <span id="batch_meter_val" class="badge">0 / 0</span>
+              <span id="batch_meter_val" class="meter-value num">0 / 0</span>
             </div>
-            <div class="progress" style="height: 8px; background: var(--bg); border-radius: 999px; overflow: hidden; border: 1px solid var(--border);">
-              <div id="batch_meter_fill" style="width: 0%; height: 100%; background: var(--accent); transition: width 0.3s ease;"></div>
-            </div>
+            <div class="meter"><div id="batch_meter_fill" style="width: 0%"></div></div>
 
             <div class="batch-stage-toolbar">
               <button type="button" class="btn btn-sm btn-ghost" id="batch_pause_btn"><i class="fa-solid fa-pause"></i> Pause queue</button>
               <button type="button" class="btn btn-sm btn-ghost" id="batch_resume_btn" hidden><i class="fa-solid fa-play"></i> Resume queue</button>
-              <button type="button" class="btn btn-sm btn-ghost" id="batch_cancel_btn" style="color: var(--danger);"><i class="fa-solid fa-stop"></i> Cancel queue</button>
-              <a href="#" download class="btn btn-sm btn-primary" id="batch_zip_btn" hidden style="margin-left: auto;"><i class="fa-solid fa-file-zipper"></i> Download all as ZIP</a>
+              <button type="button" class="btn btn-sm btn-danger" id="batch_cancel_btn"><i class="fa-solid fa-stop"></i> Cancel queue</button>
+              <a href="#" download class="btn btn-sm btn-primary push-right" id="batch_zip_btn" hidden><i class="fa-solid fa-file-zipper"></i> Download all as ZIP</a>
             </div>
 
             <div id="batch_alert" class="batch-alert info" hidden></div>
@@ -491,9 +498,10 @@
 
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
-  <script src="js/core.js?v=3.0.2"></script>
+  <script src="js/core.js?v=3.1.0"></script>
   <script src="js/campaign.js?v=3.0.9"></script>
   <script src="js/studios.js?v=3.0.8"></script>
-  <script src="js/batch.js?v=1.0.0"></script>
+  <script src="js/batch.js?v=1.1.0"></script>
+  <script src="js/demo_session.js?v=1.1.0"></script>
 </body>
 </html>

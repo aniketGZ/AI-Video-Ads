@@ -100,7 +100,10 @@ function askConfirm(title, text, okLabel = "Continue") {
 
 // ---------------------------------------------------------------- API key dialog
 function updateKeyDot() {
-  document.getElementById("key_dot").classList.toggle("ok", !!getGeminiKey());
+  const ok = !!getGeminiKey();
+  document.getElementById("key_dot").classList.toggle("ok", ok);
+  const state = document.getElementById("key_state");
+  if (state) state.textContent = ok ? "Saved" : "Not set";
 }
 
 function openKeyDialog() {
@@ -207,5 +210,5 @@ function imageDropzone({ zone, input, thumbs, max = 4 }) {
 window.addEventListener("DOMContentLoaded", () => {
   let view = "campaign";
   try { view = localStorage.getItem("ad_studio_view") || "campaign"; } catch (e) { /* ignore */ }
-  showView(["campaign", "image", "video"].includes(view) ? view : "campaign");
+  showView(["campaign", "image", "video", "batch"].includes(view) ? view : "campaign");
 });

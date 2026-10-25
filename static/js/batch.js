@@ -590,12 +590,11 @@
         item.className = "batch-hist-item";
         const modelLabel = b.model === "nano-banana-2.1" ? "Nano Banana 2.1" : "Nano Banana Pro";
         item.innerHTML = `
-          <div>
-            <strong>${esc(b.batch_id)}</strong>
-            <span class="badge badge-accent" style="font-size:0.7rem; margin-left:6px;">${esc(modelLabel)}</span>
-            <span class="muted" style="font-size:0.75rem;">· ${b.completed_count}/${b.total_count} generated</span>
+          <div class="batch-hist-main">
+            <strong class="batch-hist-id">${esc(b.batch_id)}</strong>
+            <span class="muted small">${esc(modelLabel)} · <span class="num">${b.completed_count}/${b.total_count}</span> generated</span>
           </div>
-          <div>
+          <div class="batch-hist-actions">
             ${b.zip_url ? `<a href="${esc(b.zip_url)}" class="btn-link" title="Download ZIP"><i class="fa-solid fa-download"></i> ZIP</a>` : ""}
             <button type="button" class="btn-link batch-load-job" data-id="${esc(b.batch_id)}">View</button>
           </div>
