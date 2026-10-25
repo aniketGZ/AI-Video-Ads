@@ -200,7 +200,8 @@
     if (prompts.length > 1 && !(await askConfirm(
       `Generate ${prompts.length} images?`,
       `Each prompt is a separate ${modelLabel} render (${selectedRes}).`,
-      `Generate ${prompts.length}`
+      `Generate ${prompts.length}`,
+      { skipKey: "multi_image" }
     ))) return;
 
     const fd = new FormData();
@@ -387,6 +388,7 @@
     if (!requireKey()) return;
     if (prompts.length > 1 && !(await askConfirm(
       `Generate ${prompts.length} videos?`, "Each prompt is a separate Omni Flash render.", `Generate ${prompts.length}`,
+      { skipKey: "multi_video" },
     ))) return;
 
     const fd = new FormData();

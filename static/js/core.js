@@ -85,16 +85,34 @@ function requireKey() {
 
 // ---------------------------------------------------------------- confirm dialog
 // In-page replacement for window.confirm(), which some embedded browsers block (returning false).
-function askConfirm(title, text, okLabel = "Continue") {
+// With { skipKey }, the dialog offers "Don't ask again this session"; once ticked and confirmed,
+// later calls with the same key resolve true straight away until the tab is closed.
+function askConfirm(title, text, okLabel = "Continue", { skipKey } = {}) {
+  const storeKey = skipKey && `confirm_skip_${skipKey}`;
+  if (storeKey) {
+    try {
+      if (sessionStorage.getItem(storeKey) === "1") return Promise.resolve(true);
+    } catch (e) { /* storage blocked: just ask */ }
+  }
   const dialog = document.getElementById("confirm_dialog");
+  const skipRow = document.getElementById("confirm_skip_row");
+  const skip = document.getElementById("confirm_skip");
   document.getElementById("confirm_title").textContent = title;
   document.getElementById("confirm_text").textContent = text || "";
   document.getElementById("confirm_ok").textContent = okLabel;
+  skipRow.hidden = !storeKey;
+  skip.checked = false;
   dialog.returnValue = "";
   dialog.showModal();
   document.getElementById("confirm_ok").focus();
   return new Promise((resolve) => {
-    dialog.addEventListener("close", () => resolve(dialog.returnValue === "ok"), { once: true });
+    dialog.addEventListener("close", () => {
+      const ok = dialog.returnValue === "ok";
+      if (ok && storeKey && skip.checked) {
+        try { sessionStorage.setItem(storeKey, "1"); } catch (e) { /* storage blocked: keep asking */ }
+      }
+      resolve(ok);
+    }, { once: true });
   });
 }
 
