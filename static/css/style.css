@@ -610,10 +610,10 @@ input[type="file"].input::file-selector-button {
 .quote { margin: 2px 0 0; padding-left: 10px; border-left: 2px solid var(--surface-3); color: var(--text-2); font-style: italic; }
 
 /* ==========================================================================
-   Render loader — a Tetris well in the ad's aspect ratio
-   Drawn on a canvas by js/render_loader.js: blue pieces fall and settle
-   grey, full rows clear; the finished media is revealed by pieces that
-   carry their slice of it.
+   Render loader — a retro space shooter in the ad's aspect ratio
+   Drawn on a canvas by js/render_loader.js: invaders drift down a
+   starfield, the ship can be steered (autopilot when left alone), and the
+   finished media is uncovered by the ship's laser, column by column.
    ========================================================================== */
 :root {
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -669,6 +669,9 @@ input[type="file"].input::file-selector-button {
 .result-tile .render-loader { padding: 0; }
 
 .rl-frame canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.rl-frame::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--surface-3); pointer-events: none; }
+.render-loader.is-fill .rl-frame::after { display: none; }
+.rl-frame[tabindex] { cursor: crosshair; touch-action: pan-y; user-select: none; -webkit-tap-highlight-color: transparent; }
 .rl-reveal { position: absolute; z-index: 2; pointer-events: none; }
 @keyframes rl-in { from { opacity: 0; transform: scale(0.97); } }
 
