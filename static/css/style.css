@@ -610,10 +610,10 @@ input[type="file"].input::file-selector-button {
 .quote { margin: 2px 0 0; padding-left: 10px; border-left: 2px solid var(--surface-3); color: var(--text-2); font-style: italic; }
 
 /* ==========================================================================
-   Render loader — a retro space shooter in the ad's aspect ratio
-   Drawn on a canvas by js/render_loader.js: invaders drift down a
-   starfield, the ship can be steered (autopilot when left alone), and the
-   finished media is uncovered by the ship's laser, column by column.
+   Render loader — a dot matrix in the ad's aspect ratio
+   A ripple loops outwards from the centre (each dot's --d is its distance
+   from it); js/render_loader.js then grows the same dots into the
+   finished image. Transform and opacity only, plus the peak's colour.
    ========================================================================== */
 :root {
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -668,10 +668,27 @@ input[type="file"].input::file-selector-button {
 }
 .result-tile .render-loader { padding: 0; }
 
-.rl-frame canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.rl-dots { position: absolute; inset: 5%; display: grid; }
+.rl-dots i {
+  align-self: center;
+  justify-self: center;
+  width: 24%;
+  min-width: 2px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #ffffff;
+  opacity: 0.24;
+  transform: scale(0.55);
+  animation: rl-ripple 2.4s cubic-bezier(0.37, 0, 0.63, 1) infinite;
+  animation-delay: calc(var(--d) * 1.1s - 2.4s);
+}
+@keyframes rl-ripple {
+  0%, 50%, 100% { opacity: 0.24; transform: scale(0.55); background: #ffffff; }
+  14% { opacity: 1; transform: scale(1.15); background: var(--accent); }
+  28% { opacity: 0.5; transform: scale(0.8); background: #ffffff; }
+}
 .rl-frame::after { content: ""; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1px var(--surface-3); pointer-events: none; }
 .render-loader.is-fill .rl-frame::after { display: none; }
-.rl-frame[tabindex] { cursor: crosshair; touch-action: pan-y; user-select: none; -webkit-tap-highlight-color: transparent; }
 .rl-reveal { position: absolute; z-index: 2; pointer-events: none; }
 @keyframes rl-in { from { opacity: 0; transform: scale(0.97); } }
 
@@ -1183,4 +1200,7 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.72); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
   .spinner { animation-duration: 0.8s !important; }
+  /* The ripple keeps its timing as a gentle fade; the dots stop swelling */
+  .rl-dots i { animation: rl-fade 2.4s ease-in-out infinite !important; animation-delay: calc(var(--d) * 1.1s - 2.4s) !important; transform: scale(0.7); }
 }
+@keyframes rl-fade { 14% { opacity: 0.75; } }
