@@ -75,59 +75,6 @@ async function pollJob(jobId, { intervalMs = 5000, maxMs = 30 * 60 * 1000, onPro
   throw new Error("Rendering is taking longer than expected. Please try again later.");
 }
 
-// ---------------------------------------------------------------- render loader
-// A frame in the ad's aspect ratio whose tiles develop in a diagonal wave under a sweeping scan line,
-// with the status text and an elapsed timer. Calling it again on the same host only swaps the text,
-// so progress updates keep the timer and the animation running instead of restarting them.
-// { ratio: "4:5", fill: true } fills a host that already has the ad's shape (a campaign card).
-function renderLoader(host, text, { ratio = "1:1", fill = false } = {}) {
-  if (typeof host === "string") host = document.getElementById(host);
-  if (!host) return;
-  const existing = host.querySelector(".render-loader");
-  if (existing) {
-    existing.querySelector(".rl-label").textContent = text;
-    return;
-  }
-  const [w, h] = String(ratio).split(":").map(Number);
-  const cols = w >= h ? 8 : 6;
-  const rows = Math.max(3, Math.round((cols * h) / w));
-  let tiles = "";
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) tiles += `<i style="--d:${r + c}"></i>`;
-  }
-  // The frame's height is capped, so its width follows the ratio
-  const size = fill ? "" : `width: min(100%, ${Math.round((340 * w) / h)}px);`;
-  host.innerHTML = `
-    <div class="render-loader${fill ? " is-fill" : ""}" role="status">
-      <div class="rl-frame" style="aspect-ratio: ${w} / ${h}; ${size}">
-        <div class="rl-tiles" style="grid-template-columns: repeat(${cols}, 1fr)">${tiles}</div>
-        <div class="rl-scan"></div>
-      </div>
-      <div class="rl-meta"><span class="rl-label">${escapeHtml(text)}</span><span class="rl-time" data-start="${Date.now()}">0:00</span></div>
-    </div>`;
-  tickRenderTimers();
-}
-
-let renderTimer = null;
-function tickRenderTimers() {
-  const clocks = document.querySelectorAll(".rl-time[data-start]");
-  clocks.forEach((el) => {
-    const s = Math.floor((Date.now() - Number(el.dataset.start)) / 1000);
-    el.textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
-  });
-  if (clocks.length && !renderTimer) renderTimer = setInterval(tickRenderTimers, 1000);
-  if (!clocks.length && renderTimer) { clearInterval(renderTimer); renderTimer = null; }
-}
-
-// Plays the top-to-bottom "develop" reveal once on media that just finished rendering.
-function revealRendered(el) {
-  if (!el) return;
-  el.classList.remove("rl-develop");
-  void el.offsetWidth; // restart the animation if it already ran
-  el.classList.add("rl-develop");
-  el.addEventListener("animationend", () => el.classList.remove("rl-develop"), { once: true });
-}
-
 // Every network call needs the key; send people to the key dialog instead of letting the request fail.
 function requireKey() {
   if (getGeminiKey()) return true;

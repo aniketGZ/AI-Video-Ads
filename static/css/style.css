@@ -610,9 +610,10 @@ input[type="file"].input::file-selector-button {
 .quote { margin: 2px 0 0; padding-left: 10px; border-left: 2px solid var(--surface-3); color: var(--text-2); font-style: italic; }
 
 /* ==========================================================================
-   Render loader — the ad's frame develops while the model works
-   Tiles brighten in a diagonal wave; a scan line sweeps the frame and
-   leaves a faint wash behind it. Transform and opacity only.
+   Render loader — a Tetris well in the ad's aspect ratio
+   Drawn on a canvas by js/render_loader.js: blue pieces fall and settle
+   grey, full rows clear; the finished media is revealed by pieces that
+   carry their slice of it.
    ========================================================================== */
 :root {
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
@@ -633,38 +634,7 @@ input[type="file"].input::file-selector-button {
   max-width: 100%;
   overflow: hidden;
   border-radius: var(--r-sm);
-  background: var(--surface);
-}
-.rl-tiles {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  grid-auto-rows: 1fr;
-  gap: 3px;
-  padding: 3px;
-}
-.rl-tiles i {
-  border-radius: 3px;
-  background: #3a3a3a;
-  opacity: 0.2;
-  animation: rl-wave 2.6s var(--ease-in-out) infinite;
-  animation-delay: calc(var(--d) * 100ms);
-}
-.rl-scan {
-  position: absolute;
-  inset: 0;
-  background: rgba(76, 179, 240, 0.06);
-  transform: translateY(-100%);
-  animation: rl-scan 3.2s var(--ease-in-out) infinite alternate;
-}
-.rl-scan::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  background: var(--accent);
+  background: var(--bg);
 }
 .rl-meta {
   display: flex;
@@ -698,19 +668,10 @@ input[type="file"].input::file-selector-button {
 }
 .result-tile .render-loader { padding: 0; }
 
+.rl-frame canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.rl-reveal { position: absolute; z-index: 2; pointer-events: none; }
 @keyframes rl-in { from { opacity: 0; transform: scale(0.97); } }
-@keyframes rl-wave {
-  0%, 100% { opacity: 0.2; transform: scale(0.9); }
-  40% { opacity: 1; transform: scale(1); }
-}
-@keyframes rl-scan { to { transform: translateY(0); } }
 
-/* The finished media develops top to bottom, continuing the scan */
-.rl-develop { animation: rl-develop 700ms var(--ease-out); }
-@keyframes rl-develop {
-  from { clip-path: inset(0 0 100% 0); opacity: 0.4; }
-  to { clip-path: inset(0 0 0 0); opacity: 1; }
-}
 
 /* ==========================================================================
    Studios — a settings panel beside the result stage
@@ -1216,8 +1177,4 @@ dialog::backdrop { background: rgba(0, 0, 0, 0.72); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
   .spinner { animation-duration: 0.8s !important; }
-  /* Keep the tiles breathing (opacity only), drop the travel */
-  .rl-tiles i { animation: rl-fade 2.6s ease-in-out infinite !important; animation-delay: calc(var(--d) * 100ms) !important; transform: none; }
-  .rl-scan { display: none; }
 }
-@keyframes rl-fade { 50% { opacity: 0.7; } }
