@@ -38,7 +38,7 @@ from meta_creative_engine import NO_FABRICATED_CLAIMS_RULE, build_native_in_imag
 from competitor_ad_engine import load_competitor_run_summary, load_reference_ads, clean_market
 from brand_research import crawl_brand_site, crawl_digest, check_proof_bank, appears_in, voice_flags
 from brand_assets import find_brand_logo, save_uploaded_logo
-from media_utils import resolve_generated_path
+from media_utils import resolve_generated_path, hex_to_color_name, sanitize_video_prompt, NO_END_SCREEN_LINE, NO_END_SCREEN_AVOID
 from creative_strategist import CreativeStrategist, CampaignMatrix
 from creative_director import CreativeDirector
 from prompt_writers import StaticPromptWriter, VideoScriptWriter
@@ -50,7 +50,7 @@ router = APIRouter(prefix="/api/flow", tags=["Campaign Flow"])
 TEXT_MODEL = "gemini-3.6-flash"
 MAX_REFERENCE_IMAGES = 4
 FRAMEWORK_KEYS = ["problem_solution", "feature_callout", "social_proof", "us_vs_them", "lifestyle_hero"]
-VIDEO_DURATION_S = 10
+VIDEO_DURATION_S = 15
 DEFAULT_IMAGE_PROMPTS = 25
 DEFAULT_VIDEO_PROMPTS = 25
 MAX_PROMPTS = 50
@@ -265,6 +265,7 @@ class PromptsRequest(BaseModel):
     meta_refs: Optional[Dict[str, Any]] = None
     style_tokens: Optional[Dict[str, Any]] = None
     campaign_matrix: Optional[Dict[str, Any]] = None
+    preset_id: Optional[str] = None
 
 
 class StrategyRequest(BaseModel):
@@ -560,9 +561,9 @@ def _omni_prompt(intel: Dict[str, Any], ad: Dict[str, Any], has_refs: bool, feat
             "reference image (same shape, colours, materials, cap or pump, label artwork and label text). Never "
             "redesign them, swap in a generic product, add other products or invent label text."
         )
-        lines += [f"- <IMAGE_REF_{i}> is {p['lock']}" for i, p in enumerate(featured)]
+        lines += [f"- <IMAGE_REF_{i}> is {sanitize_video_prompt(p['lock'])}" for i, p in enumerate(featured)]
     elif has_refs:
-        look = intel.get("product_visual_description") or ""
+        look = sanitize_video_prompt(intel.get("product_visual_description") or "")
         lines.append(
             f"PRODUCT LOCK: the reference images (<IMAGE_REF_0> onward) show the real {product}. The product on screen "
             "must be the referenced product, reproduced exactly: same shape, colours, materials and label layout. "
@@ -573,25 +574,45 @@ def _omni_prompt(intel: Dict[str, Any], ad: Dict[str, Any], has_refs: bool, feat
         lines.append(f"CASTING: {bs['casting_description']}")
     kit = intel.get("brand_kit") or {}
     if kit:
+        primary_name = hex_to_color_name(kit.get("primary_hex", "")) if kit.get("primary_hex") else ""
+        accent_name = hex_to_color_name(kit.get("accent_hex", "")) if kit.get("accent_hex") else ""
+        bg_name = hex_to_color_name(kit.get("background_hex", "")) if kit.get("background_hex") else ""
+        palette_names = [c for c in dict.fromkeys([primary_name, accent_name, bg_name]) if c]
+        if len(palette_names) > 1:
+            palette_desc = ", ".join(palette_names[:-1]) + " and " + palette_names[-1]
+        elif palette_names:
+            palette_desc = palette_names[0]
+        else:
+            palette_desc = "brand accent tones"
         lines.append(
-            f"BRAND LOOK: {kit.get('visual_mood')}; colour accents in the brand palette {kit.get('primary_hex')}, "
-            f"{kit.get('accent_hex')} and {kit.get('background_hex')} (props, wardrobe, set), never overpowering the product."
+            f"BRAND LOOK: {kit.get('visual_mood')}; colour accents in the brand palette {palette_desc} "
+            "(props, wardrobe, set), never overpowering the product."
         )
     lines.append("TIMELINE:")
     for b in ad.get("beats") or []:
-        text = f' On-screen text: "{b.get("on_screen_text")}".' if b.get("on_screen_text") else ""
-        lines.append(f"- {b.get('time')}: {b.get('visual')}{text} Audio: {b.get('audio')}")
+        on_screen = sanitize_video_prompt(b.get("on_screen_text") or "")
+        text = f' On-screen text: "{on_screen}".' if on_screen else ""
+        vis = sanitize_video_prompt(b.get("visual") or "")
+        lines.append(f"- {b.get('time')}: {vis}{text} Audio: {b.get('audio')}")
     if ad.get("voiceover"):
         language = _primary_language(intel)
         spoken = f"spoken in {language}, " if language and language.lower() not in ("english", "en") else ""
         lines.append(f'VOICEOVER ({spoken}natural, matches the timeline): "{ad["voiceover"]}"')
-    lines.append(f"DIRECTION: {ad.get('video_prompt', '')}")
+    lines.append(f"DIRECTION: {sanitize_video_prompt(ad.get('video_prompt', ''))}")
+    lines.append(NO_END_SCREEN_LINE)
     lines.append(
-        "AVOID: celebrity likeness, famous actors or public figures, glamorous airbrushed influencer aesthetic, "
-        "competitor brands or logos, star ratings, prices, discounts, fake reviews, extra products, "
-        "warped hands, garbled or misspelled on-screen text, more than six words of on-screen text at once."
+        "DEVICE ORIENTATION & SCREEN INTEGRITY: Every laptop, smartphone, tablet, and computer monitor must appear strictly upright in its natural, physically correct orientation. Laptops sit flat on desks with keyboards at the bottom and screens upright. Phones are held vertically upright with front cameras at the top. All UI, dashboards, software screens, and text must be horizontal and right-side up, NEVER inverted, upside-down, or mirrored."
     )
-    return "\n".join(lines)
+    lines.append(
+        "AVOID: hex color codes, raw hex codes, hash codes, color code labels, printed hex strings, "
+        "inverted laptop screens, upside-down laptops, backward laptops, laptops held upside-down or flipped, "
+        "inverted phones, upside-down phone screens, mirrored screens, reverse UI, backwards display, "
+        "floating distorted keyboards, impossible hinge angles, backward screens, celebrity likeness, "
+        "famous actors or public figures, glamorous airbrushed influencer aesthetic, competitor brands or logos, "
+        "star ratings, prices, discounts, fake reviews, extra products, warped hands, garbled or misspelled on-screen text, "
+        "more than six words of on-screen text at once, " + NO_END_SCREEN_AVOID + "."
+    )
+    return sanitize_video_prompt("\n".join(lines))
 
 
 def _prompt_batch_instructions(
@@ -651,12 +672,17 @@ def _prompt_batch_instructions(
         "more only for a routine or kit story).\n"
         f"{video_source}"
         "- hook_line: the first-second hook.\n"
-        f"- voiceover: one continuous spoken line that fits {VIDEO_DURATION_S} seconds (about 20 words).\n"
-        "- beats: 3 or 4 beats covering 0s to the end (time like '0-2s'), each with visual, on_screen_text (at most 5 "
-        "words, may be empty) and audio. Start with a scroll-stopping hook, show the product in use, end on the CTA.\n"
+        f"- voiceover: one continuous spoken line that fits {VIDEO_DURATION_S} seconds (about 30-35 words).\n"
+        "- beats: 3 or 4 beats covering 0s to 15s (e.g. 0-3s, 3-8s, 8-12s, 12-15s), each with visual, on_screen_text (at most 5 "
+        "words, may be empty) and audio. Start with a scroll-stopping hook, show the product in use, and end on a payoff "
+        "moment inside the live scene. NO END SCREEN: never write an end screen, end card, logo slate, title card, CTA card "
+        "or button, packshot on a plain background, or a fade to a brand-colour screen; the CTA is the Meta button outside "
+        "the video.\n"
         "- video_prompt: a single paragraph of direction for the whole clip in ONE of these formats: UGC (a real person "
         "talking to a phone camera), product demo, or motion graphics with kinetic type. Never a cinematic brand film. "
         "Cover casting, setting, camera moves, lighting, pacing and how the product is handled.\n"
+        "- DEVICE ORIENTATION & SCREEN INTEGRITY: When laptops, monitors, or smartphones appear, they MUST be strictly upright in normal gravity. Laptops sit flat with screen open upright; phones held vertically upright. Never describe laptops flipped, turned backward, or upside down. All UI and dashboards must be horizontal and right-side up.\n"
+        "- NO HEX CODES OR RAW COLOR VALUES: Never include hex codes (e.g. #FF5252, #FFFFFF) or color hashes in visual beats, on-screen text, voiceover, or video_prompt. Always describe colors using natural descriptive words (e.g. 'vibrant coral red', 'warm cream', 'dark navy').\n"
         "- proof_ids: ids of the PROOF BANK claims the voiceover or on-screen text relies on; empty if none.\n"
         "- rationale: one sentence on why this hook works for the bullseye target.\n\n"
         "VOICE AND CLAIMS: all copy (headlines, CTA, primary text, hook, voiceover, on-screen text) follows the VOICE "
@@ -975,6 +1001,23 @@ async def analyze_brand(
     intelligence["logo"] = logo_info
     intelligence["references"] = references
     _apply_voice_proof(intelligence, voice_proof, crawl, research_text, research_sources, (comp or {}).get("market"))
+
+    # Auto-detect best matching creative library preset from Pinterest reference atlas
+    try:
+        from creative_library_presets import detect_best_preset_for_brand, get_presets_for_industry, DIVERSE_PRESET
+        detected = detect_best_preset_for_brand(
+            brand_category=intelligence.get("product_category", ""),
+            business_type=intelligence.get("business_type", ""),
+            product_name=intelligence.get("product_name", ""),
+            brand_name=intelligence.get("brand_name", "")
+        )
+        intelligence["detected_preset"] = DIVERSE_PRESET
+        intelligence["industry_preset"] = detected
+        ind_presets = get_presets_for_industry(intelligence.get("product_category", ""))
+        intelligence["available_presets"] = [DIVERSE_PRESET] + [p for p in ind_presets if p["id"] != "diverse"]
+    except Exception as e:
+        logger.warning(f"[flow/analyze] could not detect creative preset: {e}")
+
     _save_brand_profile(url, intelligence)
 
     return {
@@ -1136,6 +1179,11 @@ async def write_ad_prompts(req: PromptsRequest, x_api_key: Optional[str] = Heade
     static_briefs = matrix.statics[:image_count]
     video_briefs = matrix.videos[:video_count]
 
+    # Creative Library Preset resolution (defaults to Diverse Creative Mix for maximum campaign theme variety)
+    preset_id = req.preset_id or intel.get("selected_preset_id") or "diverse"
+    if not preset_id:
+        preset_id = "diverse" 
+
     # -----------------------------------------------------------------------
     # Step 3.2: Parallel Batched Prompt Writing (A6 Static Writer & A7 Video Writer)
     # Batches of 5 briefs per model call as specified in architecture doc
@@ -1148,7 +1196,7 @@ async def write_ad_prompts(req: PromptsRequest, x_api_key: Optional[str] = Heade
     for i in range(0, len(static_briefs), BATCH_SIZE):
         chunk = static_briefs[i : i + BATCH_SIZE]
         static_tasks.append(
-            static_writer.write_batch(chunk, intel, refs, req.style_tokens, default_aspect=aspect)
+            static_writer.write_batch(chunk, intel, refs, req.style_tokens, default_aspect=aspect, preset_id=preset_id)
         )
 
     video_tasks = []
@@ -1196,10 +1244,15 @@ async def write_ad_prompts(req: PromptsRequest, x_api_key: Optional[str] = Heade
     audited_videos = audit["video_ads"]
     audit_stats = audit["stats"]
 
+    from creative_library_presets import get_preset_by_id
+    preset_info = get_preset_by_id(preset_id) if preset_id else None
+
     return {
         "brand_mode": mode,
         "uses_product_lock": has_product_ref,
         "aspect_ratio": aspect,
+        "preset_id": preset_id,
+        "preset_info": preset_info,
         "test_plan": [t.model_dump() for t in matrix.test_plan],
         "image_ads": audited_images,
         "video_ads": audited_videos,

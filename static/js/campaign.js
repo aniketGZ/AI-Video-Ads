@@ -26,6 +26,10 @@
     analysing: false,   // brand analysis / prompt writing in flight: only one at a time
     productPaths: [],
     intelligence: null,
+    selectedPresetId: "diverse",
+    allPresets: [],
+    presetIndustryFilter: "all",
+    presetSearchQuery: "",
     competitor: null,
     prompts: null,
     aspect: "4:5",
@@ -58,6 +62,143 @@
     flow.pollTimer = null;
   }
 
+  // ------------------------------------------------------------ creative reference presets
+  async function loadCreativePresets() {
+    try {
+      const res = await fetch("/api/campaign/presets");
+      if (res.ok) {
+        const data = await res.json();
+        flow.allPresets = data.presets || [];
+        const active = getActivePreset();
+        const toolbarName = $("active_preset_name");
+        if (toolbarName && active) toolbarName.textContent = active.name;
+      }
+    } catch (err) {
+      console.warn("Could not load creative presets:", err);
+    }
+  }
+  loadCreativePresets();
+
+  function getActivePreset() {
+    const selId = flow.selectedPresetId || "diverse";
+    if (flow.allPresets.length) {
+      const found = flow.allPresets.find((p) => p.id === selId);
+      if (found) return found;
+      const diverse = flow.allPresets.find((p) => p.id === "diverse");
+      if (diverse) return diverse;
+    }
+    if (flow.intelligence && flow.intelligence.detected_preset) {
+      return flow.intelligence.detected_preset;
+    }
+    return flow.allPresets[0] || null;
+  }
+
+  function openPresetModal() {
+    const modal = $("preset_modal");
+    if (!modal) return;
+    renderPresetCards();
+    if (typeof modal.showModal === "function") modal.showModal();
+    else modal.hidden = false;
+  }
+
+  function closePresetModal() {
+    const modal = $("preset_modal");
+    if (!modal) return;
+    if (typeof modal.close === "function") modal.close();
+    else modal.hidden = true;
+  }
+
+  function selectPreset(presetId) {
+    flow.selectedPresetId = presetId;
+    const preset = flow.allPresets.find((p) => p.id === presetId);
+    if (preset) {
+      const toolbarName = $("active_preset_name");
+      if (toolbarName) toolbarName.textContent = preset.name;
+      const intelName = $("preset_intel_active_name");
+      if (intelName) intelName.textContent = preset.name;
+      const intelMv = $("preset_intel_active_movement");
+      if (intelMv) intelMv.textContent = preset.movement;
+      notify(`Design preset set to "${preset.name}".`, "success");
+    }
+    closePresetModal();
+  }
+
+  function renderPresetCards(industry = flow.presetIndustryFilter, query = flow.presetSearchQuery) {
+    flow.presetIndustryFilter = industry;
+    flow.presetSearchQuery = query;
+
+    const grid = $("preset_cards_grid");
+    if (!grid) return;
+
+    let filtered = flow.allPresets.slice();
+    if (industry && industry !== "all") {
+      filtered = filtered.filter((p) => p.industry_slug === industry);
+    }
+    if (query && query.trim()) {
+      const q = query.toLowerCase().trim();
+      filtered = filtered.filter((p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.movement.toLowerCase().includes(q) ||
+        p.industry_label.toLowerCase().includes(q) ||
+        p.summary.toLowerCase().includes(q)
+      );
+    }
+
+    if (!filtered.length) {
+      grid.innerHTML = `<div class="media-empty" style="grid-column: 1 / -1; padding: 40px;"><i class="fa-solid fa-magnifying-glass"></i><span>No presets found matching "${esc(query || industry)}".</span></div>`;
+      return;
+    }
+
+    const activePreset = getActivePreset();
+    const activeId = activePreset ? activePreset.id : null;
+
+    grid.innerHTML = filtered.map((p) => {
+      const isSel = p.id === activeId;
+      const refPins = (p.reference_pins || []).slice(0, 3);
+      const palette = (p.colors?.palette || []).slice(0, 5);
+      const fonts = (p.typography?.recommended_headline_fonts || []).slice(0, 2);
+
+      return `
+      <article class="preset-card ${isSel ? "is-active" : ""}" data-preset-id="${esc(p.id)}">
+        <div class="preset-card-head">
+          <div class="preset-card-title">
+            <span class="preset-card-industry">${esc(p.industry_label)}</span>
+            <h4>${esc(p.name)}</h4>
+            <div class="preset-card-movement">${esc(p.movement)}</div>
+          </div>
+          ${isSel ? '<span class="badge done"><i class="fa-solid fa-check"></i> Active</span>' : ""}
+        </div>
+
+        <p class="preset-card-desc">${esc(p.summary)}</p>
+
+        <div class="preset-ref-gallery">
+          ${refPins.map((pin) => `
+            <a class="preset-ref-item" href="${esc(pin.pin_url || pin.image_url)}" target="_blank" rel="noopener" title="${esc(pin.title || 'Pinterest Reference')}">
+              <img src="${esc(pin.image_url)}" alt="${esc(pin.title || 'Reference')}" loading="lazy">
+              <div class="pin-overlay"><i class="fa-brands fa-pinterest"></i></div>
+            </a>
+          `).join("")}
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          <div class="preset-palette-chips" title="Color Mood: ${esc(p.colors?.mood || '')}">
+            ${palette.map((hex) => `<span class="preset-color-dot" style="background:${esc(hex)}" title="${esc(hex)}"></span>`).join("")}
+          </div>
+          <div class="preset-typography-chips">
+            ${fonts.map((f) => `<span class="preset-tag"><i class="fa-solid fa-font"></i> ${esc(f)}</span>`).join("")}
+          </div>
+        </div>
+
+        <div class="preset-card-foot">
+          <span class="muted small"><i class="fa-solid fa-lightbulb"></i> ${(p.decorative_elements || []).slice(0, 2).join(", ")}</span>
+          <button type="button" class="btn btn-sm ${isSel ? "btn-ghost" : "btn-primary"}" data-select-preset="${esc(p.id)}">
+            ${isSel ? '<i class="fa-solid fa-check"></i> Selected' : '<i class="fa-solid fa-wand-magic-sparkles"></i> Use Preset'}
+          </button>
+        </div>
+      </article>`;
+    }).join("");
+  }
+
   function resetCampaign({ keepBrand }) {
     flow.token++;
     stopPolling();
@@ -80,6 +221,7 @@
     $("brand_summary").textContent = "Paste the product page and add reference images.";
     setStep("step_research", "locked");
     $("research_body").hidden = true;
+    $("btn_toggle_research").hidden = true;
     $("research_results").hidden = true;
     $("research_results").innerHTML = "";
     badge("research_badge", "");
@@ -107,11 +249,10 @@
   $("btn_continue").addEventListener("click", () => {
     const url = normalizeUrl($("brand_url").value);
     if (!url) {
-      notify("Enter a valid brand or product URL, e.g. https://yourbrand.com", "warning");
-      $("brand_url").focus();
+      showUrlError($("brand_url").value.trim() ? "That doesn't look like a web address. Try https://yourbrand.com" : "Paste your brand or product URL to start.");
       return;
     }
-    if (!requireKey()) return;
+    if (!requireKey(() => $("btn_continue").click())) return;
     flow.url = url;
     flow.files = refs.files();
     flow.logoFile = logoDrop.files()[0] || null;
@@ -125,10 +266,57 @@
   });
   $("brand_url").addEventListener("keydown", (e) => { if (e.key === "Enter") $("btn_continue").click(); });
 
+  // The error sits on the field it is about, and leaves as soon as the field changes
+  function showUrlError(message) {
+    const input = $("brand_url");
+    const box = input.closest(".input-with-icon");
+    $("brand_url_error").innerHTML = `<i class="fa-solid fa-circle-exclamation"></i><span>${esc(message)}</span>`;
+    $("brand_url_error").hidden = false;
+    input.setAttribute("aria-invalid", "true");
+    box.classList.remove("shake");
+    void box.offsetWidth; // restart the shake on a repeat attempt
+    box.classList.add("shake");
+    input.focus();
+  }
+  $("brand_url").addEventListener("input", () => {
+    $("brand_url_error").hidden = true;
+    $("brand_url").removeAttribute("aria-invalid");
+  });
+
+  // Research holds a lot of reading; once it is done it can fold away to leave room for the ads
+  $("btn_toggle_research").addEventListener("click", () => {
+    const body = $("research_body");
+    body.hidden = !body.hidden;
+    $("btn_toggle_research").textContent = body.hidden ? "Show" : "Hide";
+    $("btn_toggle_research").setAttribute("aria-expanded", String(!body.hidden));
+  });
+
   $("btn_edit_brand").addEventListener("click", async () => {
     if (flow.pollTimer && !(await askConfirm("Stop research?", "Research is running. Stop it and edit your brand?", "Stop and edit"))) return;
     resetCampaign({ keepBrand: true });
     $("brand_url").focus();
+  });
+
+    $("btn_close_presets")?.addEventListener("click", closePresetModal);
+  $("btn_active_preset")?.addEventListener("click", openPresetModal);
+
+  $("preset_search_input")?.addEventListener("input", (e) => {
+    renderPresetCards(flow.presetIndustryFilter, e.target.value);
+  });
+
+  $("preset_industry_pills")?.addEventListener("click", (e) => {
+    const pill = e.target.closest("[data-industry]");
+    if (!pill) return;
+    $("preset_industry_pills").querySelectorAll(".preset-pill").forEach((p) => p.classList.remove("active"));
+    pill.classList.add("active");
+    renderPresetCards(pill.dataset.industry, flow.presetSearchQuery);
+  });
+
+  $("preset_cards_grid")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("[data-select-preset]");
+    if (btn) {
+      selectPreset(btn.dataset.selectPreset);
+    }
   });
 
   $("btn_new_campaign").addEventListener("click", async () => {
@@ -354,6 +542,9 @@
     renderIntelligence();
     setStep("step_research", "done");
     badge("research_badge", "Done", "done");
+    $("btn_toggle_research").hidden = false;
+    $("btn_toggle_research").textContent = "Hide";
+    $("btn_toggle_research").setAttribute("aria-expanded", "true");
     flow.analysing = false;
     writePrompts();
   }
@@ -424,7 +615,39 @@
         <div class="brand-type">${esc([kit.headline_type, kit.visual_mood, market && market.country ? `Selling in ${market.country}${market.language ? ` (${market.language})` : ""}` : ""].filter(Boolean).join(" · "))}${
           refCount ? ` · Layouts and concepts from ${refCount} analysed competitor image ads${vRefCount ? ` and ${vRefCount} video ads` : ""}` : " · No competitor ads analysed, so built-in layouts are used"}</div>
       </div>`;
-    $("research_results").innerHTML = brandStrip + `
+    const activePreset = getActivePreset();
+    if (activePreset && !flow.selectedPresetId) {
+      flow.selectedPresetId = activePreset.id;
+    }
+    if (flow.intelligence && !flow.intelligence.detected_preset && activePreset) {
+      flow.intelligence.detected_preset = activePreset;
+    }
+    const presetToolbarName = $("active_preset_name");
+    if (presetToolbarName && activePreset) presetToolbarName.textContent = activePreset.name;
+
+    const presetBanner = activePreset ? `
+      <div class="preset-intel-card" id="preset_intel_card">
+        <div class="preset-intel-info">
+          <div class="preset-intel-eyebrow"><i class="fa-solid fa-wand-magic-sparkles"></i> Creative Reference Preset  Pinterest Atlas</div>
+          <div class="preset-intel-name" id="preset_intel_active_name">${esc(activePreset.name)}</div>
+          <div class="preset-intel-movement" id="preset_intel_active_movement">${esc(activePreset.movement)}</div>
+          <div class="muted small">${esc(activePreset.summary || "")}</div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div class="preset-intel-refs">
+            ${(activePreset.reference_pins || []).slice(0, 3).map((pin) => `
+              <a href="${esc(pin.pin_url || pin.image_url)}" target="_blank" rel="noopener" title="${esc(pin.title || 'Pinterest Reference')}">
+                <img class="preset-intel-ref-thumb" src="${esc(pin.image_url)}" alt="" loading="lazy">
+              </a>
+            `).join("")}
+          </div>
+          <button type="button" class="btn btn-sm btn-ghost" id="btn_change_preset">
+            <i class="fa-solid fa-palette"></i> Change preset
+          </button>
+        </div>
+      </div>` : "";
+
+    $("research_results").innerHTML = brandStrip + presetBanner + `
       <div class="bullseye">
         <div class="bullseye-icon"><i class="fa-solid fa-bullseye"></i></div>
         <div>
@@ -461,6 +684,7 @@
         ${customersCard}
       </div>`;
     $("research_results").hidden = false;
+    $("btn_change_preset")?.addEventListener("click", openPresetModal);
   }
 
   // ------------------------------------------------------------ step 3: prompts
@@ -486,6 +710,7 @@
           image_count: IMAGE_COUNT,
           video_count: VIDEO_COUNT,
           meta_refs: (flow.intelligence || {}).references || null,
+          preset_id: flow.selectedPresetId || ((flow.intelligence && flow.intelligence.detected_preset) ? flow.intelligence.detected_preset.id : null),
         }),
       });
       if (!res.ok) throw new Error(await readErrorDetail(res, "Prompt writing failed"));
@@ -535,7 +760,7 @@
   segmented("aspect_group", "ratio", (ratio) => {
     flow.aspect = ratio;
     document.querySelectorAll("#image_grid .media").forEach((m) => { m.className = `media ${ratioClass(ratio)}`; });
-    notify("New size applies to the next render. Use Render all to render every image.", "info");
+    if (Object.keys(flow.images).length) notify("New size applies to the next render. Use Render all to render every image.", "info");
   });
 
   flow.videoRes = "1080p";
@@ -550,12 +775,14 @@
         if (tag) tag.textContent = res;
       }
     });
-    notify(`Video resolution set to ${res}.`, "info");
   });
 
   document.querySelectorAll("[data-ads-tab]").forEach((btn) => btn.addEventListener("click", () => {
     const tab = btn.dataset.adsTab;
-    document.querySelectorAll("[data-ads-tab]").forEach((b) => b.classList.toggle("active", b === btn));
+    document.querySelectorAll("[data-ads-tab]").forEach((b) => {
+      b.classList.toggle("active", b === btn);
+      b.setAttribute("aria-selected", String(b === btn));
+    });
     $("image_grid").hidden = tab !== "images";
     $("image_tools").hidden = tab !== "images";
     $("video_grid").hidden = tab !== "videos";
@@ -600,6 +827,7 @@
         </div>
         <div class="ad-body">
           <div class="ad-tag">${esc(ad.angle_name)}${ad.product_name ? ` · ${esc(ad.product_name)}` : ""}</div>
+          ${ad.preset_name ? `<div class="preset-chip" title="${esc(ad.preset_movement || '')}"><i class="fa-solid fa-wand-magic-sparkles"></i> ${esc(ad.preset_name)}</div>` : ""}
           <div class="ad-headline" id="hl_${ad.id}">${esc(bp.image_headline)}</div>
           <div class="ad-sub">${esc(bp.primary_text)}</div>
           <details>
@@ -617,9 +845,12 @@
           </details>
           <div class="why"><i class="fa-solid fa-lightbulb"></i>${esc(ad.rationale)} · ${esc(ad.template_name)}</div>
           ${checksLine(ad.checks)}
-          ${ad.reference ? `<a class="ref-chip" href="${esc(ad.reference.image_url)}" target="_blank" rel="noopener"><img src="${esc(ad.reference.image_url)}" alt="">Concept and layout from this ${esc(ad.reference.competitor)} ad</a>` : ""}
+          ${(ad.preset_references && ad.preset_references.length) ? `
+            <a class="ref-chip" href="${esc(ad.preset_references[0].pin_url || ad.preset_references[0].image_url)}" target="_blank" rel="noopener">
+              <img src="${esc(ad.preset_references[0].image_url)}" alt="">Design reference: ${esc(ad.preset_references[0].title || ad.preset_name || 'Pinterest Pin')}
+            </a>` : (ad.reference ? `<a class="ref-chip" href="${esc(ad.reference.image_url)}" target="_blank" rel="noopener"><img src="${esc(ad.reference.image_url)}" alt="">Concept and layout from this ${esc(ad.reference.competitor)} ad</a>` : "")}
           <div class="ad-actions">
-            <button type="button" class="btn btn-sm btn-primary" id="btn_${ad.id}" data-render="${ad.id}"><i class="fa-solid fa-play"></i> Render</button>
+            <button type="button" class="btn btn-sm" id="btn_${ad.id}" data-render="${ad.id}"><i class="fa-solid fa-play"></i> Render</button>
             <a class="btn btn-sm" id="dl_${ad.id}" hidden download><i class="fa-solid fa-download"></i> Download</a>
           </div>
         </div>
@@ -682,6 +913,8 @@
     const bullseye = intel.bullseye_target || {};
     const fd = new FormData();
     fd.append("blueprint_json", JSON.stringify(ad.blueprint));
+    const activePreset = ad.preset_id || ad.blueprint.preset_id || flow.selectedPresetId || "";
+    if (activePreset) fd.append("preset_id", activePreset);
     fd.append("brand_name", intel.brand_name || "");
     fd.append("product_name", ad.product_name || intel.product_name || "");
     fd.append("product_category", intel.product_category || "");
@@ -701,6 +934,7 @@
     // Render with the photo of the product this ad is about, not just the first upload
     const productPath = flow.productPaths[ad.product_image_index || 0];
     if (flow.prompts.uses_product_lock && productPath) fd.append("product_image_path", productPath);
+    fd.append("model", "nano-banana-2.1");
 
     try {
       const res = await fetch("/api/campaign/meta-creative-suite/render-one", { method: "POST", headers: apiHeaders(), body: fd });
@@ -796,7 +1030,7 @@
               <option value="1080p" ${resVal === "1080p" ? "selected" : ""}>1080p</option>
               <option value="4k" ${resVal === "4k" ? "selected" : ""}>4K</option>
             </select>
-            <button type="button" class="btn btn-sm btn-primary" id="vbtn_${ad.id}" data-vrender="${ad.id}"><i class="fa-solid fa-clapperboard"></i> Render video</button>
+            <button type="button" class="btn btn-sm" id="vbtn_${ad.id}" data-vrender="${ad.id}"><i class="fa-solid fa-clapperboard"></i> Render video</button>
             <a class="btn btn-sm" id="vdl_${ad.id}" hidden download><i class="fa-solid fa-download"></i> Download</a>
           </div>
         </div>
@@ -858,7 +1092,7 @@
     fd.append("prompt", ad.omni_prompt);
     fd.append("aspect_ratio", ad.aspect_ratio || "9:16");
     fd.append("resolution", chosenRes);
-    fd.append("duration", String(ad.duration_s || 8));
+    fd.append("duration", String(ad.duration_s || 15));
     // Attach only the featured products' photos, in the <IMAGE_REF_n> order the prompt describes them
     const refFiles = (ad.ref_image_indexes || []).length
       ? ad.ref_image_indexes.map((i) => flow.files[i]).filter(Boolean)

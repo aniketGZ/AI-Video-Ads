@@ -104,6 +104,22 @@ class AgentLogger:
         except Exception as e:
             logger.warning(f"Failed to append to stream file: {e}")
 
+        # Mirror to active live demo session if active
+        try:
+            from demo_session_engine import demo_session_manager
+            if demo_session_manager.is_active():
+                demo_session_manager.log_event(
+                    actor="AGENT_A3",
+                    action_type="COMPETITOR_RESEARCH",
+                    step=f"Step {step}",
+                    level=level,
+                    message=message,
+                    details=details,
+                    screenshot=screenshot,
+                )
+        except Exception:
+            pass
+
         # Update run_log.md summary
         self._append_markdown_log(step, timestamp, level, message)
 

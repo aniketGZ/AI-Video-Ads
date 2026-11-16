@@ -18,6 +18,8 @@ from media_utils import (
     resolve_generated_path,
     mime_for_path,
     generate_gemini_image,
+    image_model,
+    DEFAULT_IMAGE_MODEL,
 )
 
 logger = logging.getLogger(__name__)
@@ -59,17 +61,20 @@ def build_native_in_image_ad_prompt(
     has_logo: bool = False,
     logo_tone: str = "dark",
     has_layout_ref: bool = False,
+    preset_id: Optional[str] = None,
 ) -> str:
     """
     Builds the image prompt. With a competitor reference in the blueprint, the ad borrows that ad's concept
-    and layout and applies our brand kit and logo; otherwise it uses the blueprint's layout template.
+    and layout and applies our brand kit and logo; otherwise it uses the creative reference preset or layout template.
     Only the logo/wordmark, a short headline and the CTA are rendered in the image.
     """
+    # 1. Competitor reference layout takes absolute precedence if present
     if blueprint.get("reference"):
+        concept_text = blueprint.get("concept") or (f"Layout inspired by {blueprint['reference'].get('competitor')}" if blueprint.get("reference", {}).get("competitor") else "")
         callouts = [c for c in (blueprint.get("callout_points") or []) if c]
         return build_reference_prompt(
             reference=blueprint["reference"],
-            concept=blueprint.get("concept") or "",
+            concept=concept_text,
             brand_name=brand_name,
             product_name=product_name,
             product_category=product_category,
@@ -89,9 +94,49 @@ def build_native_in_image_ad_prompt(
             talent=talent,
             custom_directive=custom_directive,
         )
+
+    # 2. Check if a specific single creative preset is selected (and not "diverse")
+    active_preset_id = preset_id or blueprint.get("preset_id")
+    preset = None
+    if active_preset_id and active_preset_id != "diverse":
+        try:
+            from creative_library_presets import get_preset_by_id
+            preset = get_preset_by_id(active_preset_id)
+        except Exception:
+            preset = None
+
+    if preset and preset.get("id") != "diverse":
+        from creative_library_presets import build_preset_creative_prompt
+        callouts = [c for c in (blueprint.get("callout_points") or []) if c]
+        scene_hint = blueprint.get("visual_prompt") or ""
+        if callouts and not scene_hint:
+            scene_hint = f"Highlight key benefit: {callouts[0]}."
+        return build_preset_creative_prompt(
+            preset["id"],
+            brand_name=brand_name,
+            product_name=product_name,
+            headline=short_headline(blueprint.get("image_headline") or blueprint.get("headline") or ""),
+            cta=blueprint.get("cta") or "Shop Now",
+            aspect_ratio=aspect_ratio,
+            product_visual_description=product_visual_description,
+            color_palette=color_palette,
+            custom_directive=custom_directive,
+            has_product_ref=has_product_ref,
+            has_logo=has_logo,
+            setting=setting,
+            talent=talent,
+            scene_hint=scene_hint,
+            brand_kit=brand_kit,
+        )
+
+    # 3. Dynamic layout template resolution (split_contrast, macro_texture, model_lifestyle, etc.)
     mode = detect_brand_mode(business_type, product_category, has_product_ref)
     template_id = resolve_template_id(blueprint, mode, product_category)
     callouts = [c for c in (blueprint.get("callout_points") or []) if c]
+    effective_palette = color_palette
+    if not effective_palette and brand_kit:
+        effective_palette = f"Primary {brand_kit.get('primary_hex', '')}, Accent {brand_kit.get('accent_hex', '')}, Mood: {brand_kit.get('visual_mood', '')}"
+
     return build_template_prompt(
         template_id=template_id,
         mode=mode,
@@ -104,7 +149,7 @@ def build_native_in_image_ad_prompt(
         cta=blueprint.get("cta") or "Shop Now",
         scene_hint=blueprint.get("visual_prompt") or "",
         product_visual_description=product_visual_description,
-        color_palette=color_palette,
+        color_palette=effective_palette,
         setting=setting,
         talent=talent,
         benefit=callouts[0] if callouts else "",
@@ -135,15 +180,19 @@ async def generate_single_meta_creative(
     brand_kit: Optional[Dict[str, Any]] = None,
     logo_path: Optional[str] = None,
     logo_tone: str = "dark",
+    model: str = DEFAULT_IMAGE_MODEL,
 ) -> Dict[str, Any]:
     """
-    Renders one finished Meta ad (in-image wordmark, headline and CTA) with Nano Banana Pro
+    Renders one finished Meta ad (in-image wordmark, headline and CTA) with Gemini Nano Banana 2.1
     and saves it to static/generated.
     """
     from google.genai import types
 
+    chosen_model = (model or DEFAULT_IMAGE_MODEL).strip()
+    model_meta = image_model(chosen_model)
+
     if not client:
-        raise RuntimeError("A Gemini API key is required for Nano Banana Pro. Add it under API Keys.")
+        raise RuntimeError(f"A Gemini API key is required for {model_meta['label']}. Add it under API Keys.")
 
     cid = blueprint.get("creative_id", 1)
     target_w, target_h = META_RATIO_DIMENSIONS.get(aspect_ratio, (1024, 1280))
@@ -171,8 +220,17 @@ async def generate_single_meta_creative(
         with open(logo_local, "rb") as f:
             logo_bytes = f.read()
 
+    preset_id = blueprint.get("preset_id")
+    preset_info = None
+    if preset_id:
+        try:
+            from creative_library_presets import get_preset_by_id
+            preset_info = get_preset_by_id(preset_id)
+        except Exception:
+            preset_info = None
+
     mode = detect_brand_mode(business_type, product_category, bool(product_bytes))
-    template_id = resolve_template_id(blueprint, mode)
+    template_id = resolve_template_id(blueprint, mode, product_category)
     blueprint = {**blueprint, "template_id": template_id}
 
     visual_prompt = build_native_in_image_ad_prompt(
@@ -193,9 +251,10 @@ async def generate_single_meta_creative(
         has_logo=bool(logo_bytes),
         logo_tone=logo_tone,
         has_layout_ref=bool(layout_bytes),
+        preset_id=preset_id,
     )
 
-    logger.info(f"[Meta Creative #{cid}] Generating with Gemini Nano Banana Pro...")
+    logger.info(f"[Meta Creative #{cid}] Generating with Gemini {model_meta['label']} ({model_meta['id']})...")
     contents = []
     # Order must match the IMAGE numbers in the prompt: product, layout reference, logo
     if product_bytes:
@@ -205,9 +264,9 @@ async def generate_single_meta_creative(
     if logo_bytes:
         contents.append(types.Part.from_bytes(data=logo_bytes, mime_type="image/png"))
     contents.append(visual_prompt)
-    image_bytes = await asyncio.to_thread(generate_gemini_image, client, contents, aspect_ratio)
+    image_bytes = await asyncio.to_thread(generate_gemini_image, client, contents, aspect_ratio, model=chosen_model)
     if not image_bytes:
-        raise RuntimeError("Nano Banana Pro did not return an image.")
+        raise RuntimeError(f"{model_meta['label']} did not return an image.")
 
     filename = f"meta_suite_{cid}_{uuid.uuid4().hex}.png"
     with open(os.path.join(GENERATED_DIR, filename), "wb") as f:
@@ -224,7 +283,10 @@ async def generate_single_meta_creative(
         "cta": blueprint.get("cta", "Shop Now"),
         "image_headline": short_headline(blueprint.get("image_headline") or blueprint.get("headline")),
         "template_id": template_id,
-        "template_name": f"Layout from a {ref.get('competitor')} ad" if layout_bytes else TEMPLATES[template_id]["name"],
+        "template_name": preset_info["name"] if preset_info else (f"Layout from a {ref.get('competitor')} ad" if layout_bytes else (TEMPLATES.get(template_id, {}).get("name") or "Meta Creative")),
+        "preset_id": preset_id,
+        "preset_name": preset_info["name"] if preset_info else blueprint.get("preset_name"),
+        "preset_movement": preset_info["movement"] if preset_info else blueprint.get("preset_movement"),
         "brand_mode": mode,
         "brand_name": brand_name,
         "image_url": image_url,
@@ -232,7 +294,8 @@ async def generate_single_meta_creative(
         "aspect_ratio": aspect_ratio,
         "width": target_w,
         "height": target_h,
-        "model_used": "nano-banana-pro-preview",
+        "model_used": model_meta["id"],
+        "model_label": model_meta["label"],
         "visual_prompt": visual_prompt,
         "has_product_reference": bool(product_bytes),
     }

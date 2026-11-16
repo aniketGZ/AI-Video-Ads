@@ -119,13 +119,17 @@ def test_omni_prompt_builder():
         voiceover="Never worry about white cast again. Absorbs invisibly.",
         direction="UGC style close-up selfie angle",
     )
-    assert "10-second vertical 9:16 Meta Reels ad" in prompt
+    assert "15-second vertical 9:16 Meta Reels ad" in prompt
     assert "<IMAGE_REF_0> is matte yellow pump bottle" in prompt
     assert "CASTING: Young female" in prompt
     assert "BRAND LOOK: playful pastel" in prompt
+    assert "hot pink" in prompt
+    assert "#FF6B81" not in prompt
+    assert "#" not in prompt
     assert 'VOICEOVER (natural conversational tone, matches timeline): "Never worry about white cast again. Absorbs invisibly."' in prompt
     assert "AVOID:" in prompt
-    print("[PASS] Omni Flash prompt builder correctly structures references and timelines.")
+    assert "raw hex codes" in prompt
+    print("[PASS] Omni Flash prompt builder correctly structures references and eliminates hex codes.")
 
 
 def test_creative_director_hard_checks():
@@ -349,10 +353,234 @@ def test_anti_celebrity_and_persona_sanitization():
     print("[PASS] Anti-celebrity guardrails and persona name sanitization verified.")
 
 
+def test_hex_code_sanitization_in_video_prompts():
+    """Verify that hex codes are stripped/converted from video prompts and flagged by CreativeDirector."""
+    from media_utils import sanitize_video_prompt, hex_to_color_name
+    from creative_director import CreativeDirector
+    from unittest.mock import MagicMock
+
+    # 1. Test hex_to_color_name
+    assert hex_to_color_name("#FF5252") == "coral red"
+    assert hex_to_color_name("#FFFFFF") == "white"
+    assert hex_to_color_name("#000000") == "black"
+    assert hex_to_color_name("#D3E935") == "chartreuse"
+    assert hex_to_color_name("#152B36") == "dark navy"
+
+    # 2. Test sanitize_video_prompt across various prompt patterns
+    raw_prompt = (
+        "10-second vertical 9:16 Meta Reels ad for Kulfi. "
+        "BRAND LOOK: playful, intimate; color accents in brand palette #FF5252, #FFFFFF, #FF5252 (props, wardrobe, set). "
+        "Talent holding neon chartreuse (#D3E935) bottle with dark navy lettering (#152B36). "
+        "Bottom right CTA pill in dark navy #152B36 with crisp white text. "
+        "Salad Container; exact colours: base #1E2022, lid #939A9D, sleeve #F3F3F5, text #111113. "
+        "On-screen text: \"#FF5252 Save Now\". "
+        "accent button in #FF5252."
+    )
+    cleaned = sanitize_video_prompt(raw_prompt)
+    assert "#" not in cleaned
+    assert "#FF5252" not in cleaned
+    assert "#D3E935" not in cleaned
+    assert "#152B36" not in cleaned
+    assert "#1E2022" not in cleaned
+    assert "coral red and white" in cleaned
+    assert "neon chartreuse bottle" in cleaned
+    assert "dark navy lettering" in cleaned
+    assert "dark navy with crisp white text" in cleaned
+    assert "base dark charcoal" in cleaned
+    assert "accent button in coral red" in cleaned
+
+    # 3. Test CreativeDirector flags raw hex codes in video prompts
+    mock_client = MagicMock()
+    director = CreativeDirector(mock_client)
+    bad_video_ad = {
+        "id": "vid_hex_01",
+        "format": "ugc",
+        "voiceover": "Tired of dull skin? Try this glow serum today for instant hydration.",
+        "direction": "Talent wearing #FF5252 hoodie holding product",
+        "beats": [
+            {"time": "0-3s", "visual": "Holds bottle with #D3E935 cap", "on_screen_text": "Glow Now", "audio": "Whoosh"}
+        ],
+        "proof_ids": [],
+    }
+    from creative_director import RubricReview, CriterionScore
+    initial_review = RubricReview(
+        prompt_id="vid_hex_01",
+        product_fidelity=CriterionScore(score=5, reasoning="Good"),
+        url_grounding=CriterionScore(score=5, reasoning="Good"),
+        brand_fit=CriterionScore(score=5, reasoning="Good"),
+        persona_stage_fit=CriterionScore(score=5, reasoning="Good"),
+        hook_strength=CriterionScore(score=5, reasoning="Good"),
+        trend_fit=CriterionScore(score=5, reasoning="Good"),
+        distinctness=CriterionScore(score=5, reasoning="Good"),
+        executability=CriterionScore(score=5, reasoning="Good"),
+        average_score=5.0,
+        passed=True,
+        rewrite_notes="",
+    )
+    mock_response = MagicMock()
+    mock_response.text = json.dumps({"reviews": [initial_review.model_dump()]})
+    mock_client.models.generate_content.return_value = mock_response
+
+    reviews = asyncio.run(director.review_prompts_batch(
+        [bad_video_ad],
+        context="Hyphen brand",
+        avoid_words=[],
+        proof_ids=set(),
+    ))
+    review = reviews[0]
+    assert review.passed is False
+    assert review.executability.score <= 2
+    assert "raw hex color codes" in review.executability.reasoning.lower()
+    assert "Remove all raw hex codes" in review.rewrite_notes
+    print("[PASS] Hex code sanitization and CreativeDirector QA audit verified.")
+
+
+def test_static_creative_themes_diversity():
+    """Verify static creative theme variety, distinct Pinterest pins, and prompt routing."""
+    import creative_library_presets as clp
+    from meta_creative_engine import build_native_in_image_ad_prompt
+    from ad_templates import resolve_template_id
+
+    # 1. Diverse theme assignment across multiple marketing frameworks
+    frameworks = ["problem_solution", "feature_callout", "lifestyle_hero", "social_proof", "sensory_immersion", "bento_features"]
+    assigned_themes = []
+    assigned_pins = []
+    for idx, fw in enumerate(frameworks):
+        theme = clp.get_diverse_theme_for_brief(fw, category="skincare", business_type="physical", index=idx)
+        assigned_themes.append(theme["id"])
+        pins = theme.get("reference_pins", [])
+        assert len(pins) > 0, f"Theme {theme['id']} missing Pinterest reference pins"
+        assigned_pins.append(pins[0]["image_url"])
+
+    # Verify high theme variety (not all identical presets)
+    unique_themes = set(assigned_themes)
+    assert len(unique_themes) >= 5, f"Expected at least 5 distinct themes across 6 frameworks, got {len(unique_themes)}: {assigned_themes}"
+    # Verify Pinterest pins are diverse
+    unique_pins = set(assigned_pins)
+    assert len(unique_pins) >= 4, f"Expected diverse Pinterest reference pins, got: {assigned_pins}"
+
+    # 2. Template resolution honors blueprint template_id
+    bp_split = {"framework_key": "problem_solution", "template_id": "split_contrast", "preset_id": "diverse"}
+    tid = resolve_template_id(bp_split, mode="product", category="skincare")
+    assert tid == "split_contrast", f"Expected split_contrast, got {tid}"
+
+    # 3. meta_creative_engine routing
+    # Case A: Competitor reference takes priority
+    bp_ref = {
+        "framework_key": "problem_solution",
+        "template_id": "split_contrast",
+        "preset_id": "diverse",
+        "reference": {
+            "ref_id": "R01",
+            "competitor": "CompetitorX",
+            "image_url": "https://example.com/ref.jpg",
+            "composition": "Split screen comparison with red X and green checkmark",
+        },
+        "image_headline": "Stop Wasting Time",
+        "cta": "Get Started",
+    }
+    prompt_ref = build_native_in_image_ad_prompt(
+        blueprint=bp_ref,
+        brand_name="BrandAlpha",
+        product_name="ProductOmega",
+        product_category="skincare",
+        preset_id="diverse",
+    )
+    assert "CompetitorX" in prompt_ref
+
+    # Case B: Diverse mix uses layout template without being intercepted by detect_best_preset_for_brand
+    bp_macro = {
+        "framework_key": "feature_callout",
+        "template_id": "macro_texture",
+        "preset_id": "diverse",
+        "image_headline": "Pure Hyaluronic Texture",
+        "cta": "Shop Now",
+        "visual_prompt": "Extreme macro close-up of glistening clear gel drop resting on honeysuckle petal.",
+    }
+    prompt_macro = build_native_in_image_ad_prompt(
+        blueprint=bp_macro,
+        brand_name="BrandAlpha",
+        product_name="ProductOmega",
+        product_category="skincare",
+        preset_id="diverse",
+    )
+    assert "Macro Texture" in prompt_macro or "macro" in prompt_macro.lower()
+    # Confirm it was NOT intercepted by an unconditional preset override
+    assert "travertine stone pedestal" not in prompt_macro.lower()
+
+    # Case C: Explicit single preset choice respected with brand_kit
+    bp_preset = {
+        "framework_key": "problem_solution",
+        "template_id": "beauty_editorial_rhode",
+        "preset_id": "beauty_editorial_rhode",
+        "image_headline": "Dewy Radiance",
+        "cta": "Shop Now",
+        "visual_prompt": "Morning sunbeams lighting amber serum bottle.",
+    }
+    prompt_rhode = build_native_in_image_ad_prompt(
+        blueprint=bp_preset,
+        brand_name="BrandAlpha",
+        product_name="ProductOmega",
+        product_category="skincare",
+        preset_id="beauty_editorial_rhode",
+        brand_kit={"primary_hex": "#112233", "accent_hex": "#EE5522", "visual_mood": "warm organic"},
+    )
+    assert "Rhode Editorial" in prompt_rhode or "Rhode" in prompt_rhode
+    assert "#EE5522" in prompt_rhode
+
+    # 4. Batch generation with StaticPromptWriter distributes diverse themes
+    mock_client = MagicMock()
+    mock_response = MagicMock()
+    mock_response.text = json.dumps({
+        "scenes": [
+            {"brief_id": "S01", "template_id": "split_contrast", "scene_description": "Split screen comparison"},
+            {"brief_id": "S02", "template_id": "macro_texture", "scene_description": "Macro dew drop texture"},
+            {"brief_id": "S03", "template_id": "model_lifestyle", "scene_description": "Model applying cream in morning sun"},
+        ]
+    })
+    mock_client.models.generate_content.return_value = mock_response
+
+    writer = StaticPromptWriter(mock_client)
+    briefs = [
+        StaticBrief(
+            id="S01", persona="P1", stage="problem_aware", angle="Angle 1", framework="problem_solution",
+            concept_source=[], product_index=0, proof_ids=[], market="US/en", scene_direction="Split screen",
+            copy=StaticCopy(image_headline="Before vs After", meta_headline="Before vs After", cta="Try Now", primary_text="Text 1"),
+        ),
+        StaticBrief(
+            id="S02", persona="P1", stage="solution_aware", angle="Angle 2", framework="feature_callout",
+            concept_source=[], product_index=0, proof_ids=[], market="US/en", scene_direction="Macro shot",
+            copy=StaticCopy(image_headline="Hydration Detail", meta_headline="Hydration Detail", cta="Explore", primary_text="Text 2"),
+        ),
+        StaticBrief(
+            id="S03", persona="P1", stage="unaware", angle="Angle 3", framework="lifestyle_hero",
+            concept_source=[], product_index=0, proof_ids=[], market="US/en", scene_direction="Lifestyle moment",
+            copy=StaticCopy(image_headline="Everyday Ritual", meta_headline="Everyday Ritual", cta="Shop Now", primary_text="Text 3"),
+        ),
+    ]
+    brand_profile = {
+        "brand_name": "GlowCo",
+        "product_name": "Dew Serum",
+        "product_category": "skincare",
+        "business_type": "physical",
+        "featured_products": [{"name": "Dew Serum", "lock": "frosted glass bottle"}],
+        "brand_kit": {"primary_hex": "#000000", "accent_hex": "#FF0000", "visual_mood": "modern"},
+    }
+    results = asyncio.run(writer.write_batch(briefs, brand_profile, {}, "", default_aspect="4:5", preset_id="diverse"))
+    assert len(results) == 3
+    themes_in_batch = [r["preset_name"] for r in results]
+    assert len(set(themes_in_batch)) == 3, f"Expected 3 distinct theme names in batch, got: {themes_in_batch}"
+    pins_in_batch = [r["preset_references"][0]["image_url"] for r in results if r["preset_references"]]
+    assert len(set(pins_in_batch)) >= 2, f"Expected distinct Pinterest pin references in batch, got: {pins_in_batch}"
+    print("[PASS] Static creative theme diversity and multi-theme Pinterest utilization verified.")
+
+
 if __name__ == "__main__":
     test_models_serialization()
     test_omni_prompt_builder()
     test_creative_director_hard_checks()
     test_creative_director_rewrite_loop()
     test_anti_celebrity_and_persona_sanitization()
+    test_hex_code_sanitization_in_video_prompts()
+    test_static_creative_themes_diversity()
     print("\nALL STEP 3 TESTS PASSED PERFECTLY!")

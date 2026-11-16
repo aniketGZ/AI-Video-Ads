@@ -35,15 +35,15 @@ MAX_CTA_WORDS = 3
 TEMPLATES: Dict[str, Dict[str, Any]] = {
     # ----------------------------- product mode -----------------------------
     "studio_graphic": {
-        "name": "Studio Graphic Hero",
+        "name": "Architectural Studio Plinth",
         "mode": PRODUCT_MODE,
         "frameworks": ["feature_callout", "lifestyle_hero"],
         "style": "photo",
-        "summary": "Product on a plinth, solid brand-colour set, one hard graphic shadow.",
-        "set": "Seamless solid studio set in the lightest brand colour, floor curving into the wall. One or two simple geometric plinths in tints of the same hue. Nothing else in frame.",
-        "hero": "The product stands upright on the front plinth, centred, about 40% of the frame height, label square to the camera.",
-        "camera": "Eye level to slightly low, 85mm product lens, the whole product in sharp focus.",
-        "light": "Hard directional key light from the upper left casting one crisp graphic shadow of the product across the floor at about 45 degrees; soft fill so the label stays readable.",
+        "summary": "Curated architectural plinth on a textured tonal set with directional raking light and crisp contact shadows.",
+        "set": "Architectural studio set with polished travertine stone or honed micro-cement plinths against a seamless matte curved wall tinted in 60% brand canvas hue. Generous negative space, zero visual clutter.",
+        "hero": "The hero product commands the primary plinth in the golden ratio zone (approx 55% frame height), label perfectly squared, tack-sharp focal depth, grounded by natural contact shadow and ambient occlusion.",
+        "camera": "85mm prime commercial lens, eye level with subtle 5-degree low heroic perspective, razor-sharp focus on brand packaging.",
+        "light": "Sculpted 45-degree directional key light creating soft raking shadow roll-off, with delicate 20% bounce fill preserving label micro-typography and authentic material finish.",
         "talent": False,
         "square": "Headline across the top 20%, centred. Product zone 24-82%. Bottom 14%: brand wordmark on the left, CTA pill on the right.",
     },
@@ -52,11 +52,11 @@ TEMPLATES: Dict[str, Dict[str, Any]] = {
         "mode": PRODUCT_MODE,
         "frameworks": ["feature_callout"],
         "style": "photo",
-        "summary": "Product beside a macro swatch of its own formula or material.",
-        "set": "Clean tabletop in a pale tint of the brand accent. In the foreground, one confident swatch of the product's own formula or material (cream, gel, liquid, powder or fabric, whichever fits this product), with a fingertip lifting a glossy peak from it.",
-        "hero": "The product stands upright in the right third, about 45% of the frame height, just behind the swatch, label facing the camera and in sharp focus.",
-        "camera": "100mm macro, 30 degrees from above, shallow depth of field with the product and swatch both sharp.",
-        "light": "Soft top-down light with a clean specular highlight on the swatch; bright, fresh, high-key.",
+        "summary": "Hero product anchored beside an authentic macro swatch of its formulation or material with raking specular texture.",
+        "set": "Curated tabletop in a warm matte neutral tint of the brand canvas. In the foreground, an authentic macro swatch of the product's own formula or material (rich cream, glistening serum gel, tactile woven textile, or polished mineral), capturing microscopic tactile depth and physical realism.",
+        "hero": "The product stands upright in the golden ratio vertical third, about 50% of the frame height, just behind the swatch, label facing the camera with surgical optical sharpness.",
+        "camera": "100mm macro lens, 30-degree overhead angle, shallow depth of field with both product and swatch in crisp focus.",
+        "light": "Soft top-down diffused daylight with clean specular highlights defining the material texture; bright, fresh, high-key commercial fidelity.",
         "talent": False,
         "square": "Headline top-left in the upper 20%, left-aligned, up to two lines. Brand wordmark small at the top-right. CTA pill bottom-left.",
     },
@@ -127,15 +127,15 @@ TEMPLATES: Dict[str, Dict[str, Any]] = {
     },
     # ----------------------------- service mode -----------------------------
     "chaos_grid": {
-        "name": "Chaos Grid",
+        "name": "Bento Grid Focus",
         "mode": SERVICE_MODE,
         "frameworks": ["problem_solution"],
-        "style": "illustration",
-        "summary": "A crowded UI surface with one calm block in the brand accent.",
-        "set": "A flat UI-style illustration of a {chaos_surface}, edge to edge in the top 60% of the frame, oppressively full of overlapping blocks in muted greys, slate blues and dull reds. All UI text is drawn as abstract grey bars, never readable words or numbers.",
-        "hero": "Exactly ONE block is rendered in the brand accent with a small check-mark icon and breathing room around it: calm signal in the noise.",
-        "camera": "Straight-on flat view.",
-        "light": "Even, flat, clean.",
+        "style": "photo",
+        "summary": "Linear/Stripe-style bento grid: chaotic workflow rendered as muted glass cards, with ONE illuminated hero module in vibrant brand accent.",
+        "set": "Modern architectural glassmorphism bento layout on deep slate canvas (#090d16). Surrounding modules rendered as semi-translucent frosted glass panels with delicate 1px border glows and muted abstract data lines.",
+        "hero": "ONE focal bento module in the upper 55% glows in the brand accent with a crisp micro-metric card, status pill, and clean vector visual: pure signal emerging from noise.",
+        "camera": "Direct straight-on architectural perspective with subtle isometric depth.",
+        "light": "Luminous chromatic bloom behind the hero bento card, rich ambient occlusion and subtle rim lighting.",
         "talent": False,
         "square": "Visual in the top 60%. Headline centred in the band below it. Bottom 14%: brand wordmark on the left, CTA pill on the right.",
     },
@@ -143,64 +143,64 @@ TEMPLATES: Dict[str, Dict[str, Any]] = {
         "name": "In-Product Moment",
         "mode": SERVICE_MODE,
         "frameworks": ["feature_callout"],
-        "style": "illustration",
-        "summary": "Device showing the app mid-action with one highlighted confirmation card.",
-        "set": "A sleek generic {device} (no real manufacturer branding) at a gentle 12-degree tilt on a soft gradient field built from the brand palette.",
-        "hero": "The screen shows a clean {brand} interface in the brand palette: abstract UI bars instead of words, any amounts masked as bullets, and ONE highlighted card in the brand accent with a check mark, the product doing its job. The device fills the right 55% of the frame.",
-        "camera": "Three-quarter view, gentle perspective, crisp edges.",
-        "light": "Soft studio light, subtle reflection on the glass.",
+        "style": "photo",
+        "summary": "Elevated bezel-less device displaying an authentic modern UI card mid-action with crisp typographic hierarchy.",
+        "set": "Minimalist architectural studio set with subtle gradient floor. A premium bezel-less {device} sits upright at a gentle 10-degree tilt (screen oriented normally and upright, never inverted).",
+        "hero": "The screen reveals a clean {brand} interface in the brand palette: clean typographic headers, masked data pills, and ONE highlighted status card in the brand accent confirming success.",
+        "camera": "Three-quarter architectural view, gentle perspective, crisp device edges.",
+        "light": "Soft studio light with subtle perimeter rim highlight on the glass and chassis.",
         "talent": False,
         "square": "Left 45% column: brand wordmark small at the top, headline in the middle, CTA pill below it.",
     },
     "control_panel": {
-        "name": "Control Room",
+        "name": "Tactile Modern Control",
         "mode": SERVICE_MODE,
         "frameworks": ["social_proof"],
-        "style": "illustration",
-        "summary": "Tactile panel of toggles switched on in the brand accent: control and trust.",
-        "set": "A tactile soft-touch control panel filling the top 58% of the frame, seen at a slight angle.",
-        "hero": "Three physical toggle switches all set to ON, their tracks lit in the brand accent, each with a tiny engraved icon (no words, no numbers).",
-        "camera": "45-degree three-quarter view, shallow depth of field on the nearest toggle.",
-        "light": "Soft overhead studio light with a crisp highlight along the panel edge.",
+        "style": "photo",
+        "summary": "Tactile precision panel in frosted glass and matte metal with luminous toggle indicators in brand accent.",
+        "set": "A tactile architectural control surface in matte dark aluminum or frosted glass filling the top 58% of the frame.",
+        "hero": "Three physical toggle switches or tactile sliders all set to active state, their tracks lit in the vibrant brand accent with clean engraved minimalist glyphs.",
+        "camera": "45-degree three-quarter view, shallow depth of field focused sharply on the primary control toggle.",
+        "light": "Soft overhead studio key light with a crisp specular line along the brushed metal bevel.",
         "talent": False,
         "square": "Panel in the top 58%. Headline centred below it. Bottom 14%: brand wordmark on the left, CTA pill on the right.",
     },
     "consolidation": {
-        "name": "Before / After Consolidation",
+        "name": "Bento Workflow Consolidation",
         "mode": SERVICE_MODE,
         "frameworks": ["us_vs_them"],
-        "style": "illustration",
-        "summary": "Scattered tool windows collapse into one clean app tile.",
-        "set": "Thin line-art illustration on the brand field. UPPER area: five or six small generic app windows scattered and overlapping at slight angles, each with a red notification dot (no numbers, no real logos). A single downward arrow leads to the LOWER area: one large clean rounded app tile in the brand accent showing the brand's initial.",
-        "hero": "The single app tile, centred, isolated in calm space.",
-        "camera": "Straight-on flat view.",
-        "light": "Even and clean.",
+        "style": "photo",
+        "summary": "Scattered fragmented tool windows streamline into one unified, elegant glassmorphic hub.",
+        "set": "Minimalist architectural canvas with subtle directional lighting. Upper zone: fragmented small translucent cards floating with red alert indicators. Downward flow connects to the lower focal zone: one large, unified frosted glass tile glowing in brand accent with the brand initial.",
+        "hero": "The unified hero tile stands isolated in calm, generous negative space, communicating effortless resolution.",
+        "camera": "Straight-on architectural perspective.",
+        "light": "Clean, directional studio lighting with subtle ambient bloom.",
         "talent": False,
         "square": "Illustration in the top 64%. Headline centred below it. Brand wordmark and CTA pill centred in the bottom 14%.",
     },
     "metaphor_object": {
-        "name": "Abstract 3D Metaphor",
+        "name": "Sculptural Art Metaphor",
         "mode": SERVICE_MODE,
         "frameworks": ["lifestyle_hero"],
-        "style": "illustration",
-        "summary": "One sculptural 3D object that embodies the core promise.",
-        "set": "A smooth gradient field derived from the brand palette.",
-        "hero": "ONE sculptural 3D object that embodies the promise '{benefit}' ({metaphor_examples}). Choose one; render it in matte and glossy materials in the brand palette, floating with a soft contact shadow, centred in the upper 60%.",
-        "camera": "Slight low angle, 85mm, object in crisp focus.",
-        "light": "Soft key light with a gentle rim glow in the brand accent.",
+        "style": "photo",
+        "summary": "Tactile sculptural art piece embodying the core product promise, crafted from authentic materials (frosted glass, brushed aluminum, matte travertine).",
+        "set": "Minimalist architectural gallery alcove or seamless warm tonal cyclorama adhering to 60% brand canvas hue.",
+        "hero": "ONE sculptural art object embodying '{benefit}' ({metaphor_examples}). Rendered in authentic physical materials (frosted cast glass, precision-machined brass, or honed stone) grounded by a soft contact shadow, centered in the upper 60%.",
+        "camera": "Slight low angle, 85mm prime lens, object in crisp surgical focus.",
+        "light": "Museum gallery directional spotlighting, delicate caustic refraction, rich textural depth and soft shadow falloff.",
         "talent": False,
         "square": "Object in the upper 60%. Headline centred below it. Brand wordmark and CTA pill centred in the bottom 14%.",
     },
     "levitation_device": {
-        "name": "Dark Levitation",
+        "name": "Dark Minimalist Bloom",
         "mode": SERVICE_MODE,
         "frameworks": ["lifestyle_hero", "feature_callout"],
-        "style": "illustration",
-        "summary": "Device floating over a deep brand-tinted field with an accent bloom.",
-        "set": "A deep field in the darkest brand colour with a soft bloom of the brand accent rising behind the hero.",
-        "hero": "A sleek generic {device} floats at a 15-degree tilt in the upper-centre, about 55% of the frame height, screen showing a calm {brand} interface: abstract UI bars, masked values as bullets, one accent element.",
-        "camera": "Slight low angle, 85mm, crisp edges.",
-        "light": "Rim light tracing the device edges, glow from the accent bloom.",
+        "style": "photo",
+        "summary": "Upright premium device centered over a deep slate field with an atmospheric brand accent bloom.",
+        "set": "A deep obsidian field (#090d16) with a soft, cinematic chromatic bloom of the brand accent emanating behind the device.",
+        "hero": "A sleek generic {device} sits upright (never inverted, screen right-side up) in the upper-centre, occupying 55% of the frame height, screen displaying an authentic {brand} dashboard in clean dark mode.",
+        "camera": "Straight-on commercial lens, tack-sharp edges.",
+        "light": "Precise edge rim light tracing the device chassis, ambient fill from the accent bloom.",
         "talent": False,
         "square": "Device in the upper 62%. Headline centred below it. Brand wordmark and CTA pill centred in the bottom 14%.",
     },
@@ -442,6 +442,32 @@ TEMPLATES: Dict[str, Dict[str, Any]] = {
 }
 
 # ---------------------------------------------------------------------------
+# Creative Library Presets Registration (Pinterest Reference Design Atlas)
+# ---------------------------------------------------------------------------
+try:
+    from creative_library_presets import CREATIVE_PRESETS
+    for _pid, _p in CREATIVE_PRESETS.items():
+        if _pid not in TEMPLATES:
+            TEMPLATES[_pid] = {
+                "name": _p["name"],
+                "mode": PRODUCT_MODE if _p["industry_slug"] in (
+                    "beauty-cosmetics", "fashion-apparel", "food-beverage",
+                    "jewelry-luxury", "fitness-sports", "ecommerce-retail"
+                ) else SERVICE_MODE,
+                "frameworks": ["problem_solution", "feature_callout", "social_proof", "us_vs_them", "lifestyle_hero"],
+                "style": "photo",
+                "summary": _p["summary"],
+                "set": _p["layout"]["composition"],
+                "hero": _p["layout"]["hierarchy"],
+                "camera": "Eye-level commercial lens with crisp focal depth",
+                "light": _p["lighting"],
+                "talent": False,
+                "square": "Meta 1:1 master layout with headline top 20%, hero center, wordmark and CTA bottom",
+            }
+except Exception:
+    pass
+
+# ---------------------------------------------------------------------------
 # Industry Category Classification
 # ---------------------------------------------------------------------------
 CATEGORY_KEYWORDS: Dict[str, Tuple[str, ...]] = {
@@ -489,6 +515,10 @@ CATEGORY_KEYWORDS: Dict[str, Tuple[str, ...]] = {
         "attorney", "consultant", "consulting", "coach", "coaching", "accounting", "cpa",
         "plumbing", "roofing", "cleaning", "contractor", "repair", "agency", "service", "services",
         "local service", "professional service"
+    ),
+    "fintech": (
+        "fintech", "finance", "financial", "banking", "bank", "crypto", "trading",
+        "investment", "invest", "loan", "wallet", "tax", "accounting", "insurance", "card", "money", "payment"
     ),
     "saas_tech": (
         "software", "saas", "app", "platform", "cloud", "api", "crm", "dashboard", "analytics",
@@ -604,12 +634,20 @@ CATEGORY_DEFAULTS: Dict[str, Dict[str, str]] = {
         "_single": "studio_graphic",
     },
     "saas_tech": {
-        "problem_solution": "chaos_grid",
-        "feature_callout": "product_moment",
-        "social_proof": "control_panel",
-        "us_vs_them": "consolidation",
-        "lifestyle_hero": "metaphor_object",
-        "_single": "levitation_device",
+        "problem_solution": "saas_bento_grid",
+        "feature_callout": "saas_bento_grid",
+        "social_proof": "saas_bento_grid",
+        "us_vs_them": "saas_bento_grid",
+        "lifestyle_hero": "saas_dark_gradient_bloom",
+        "_single": "saas_bento_grid",
+    },
+    "fintech": {
+        "problem_solution": "fintech_swiss_trust",
+        "feature_callout": "fintech_dark_glassmorphism",
+        "social_proof": "fintech_swiss_trust",
+        "us_vs_them": "fintech_dark_glassmorphism",
+        "lifestyle_hero": "fintech_dark_glassmorphism",
+        "_single": "fintech_dark_glassmorphism",
     },
 }
 
@@ -624,12 +662,12 @@ FRAMEWORK_DEFAULTS = {
         "_single": "studio_graphic",
     },
     SERVICE_MODE: {
-        "problem_solution": "chaos_grid",
-        "feature_callout": "product_moment",
-        "social_proof": "control_panel",
-        "us_vs_them": "consolidation",
-        "lifestyle_hero": "metaphor_object",
-        "_single": "levitation_device",
+        "problem_solution": "saas_bento_grid",
+        "feature_callout": "saas_bento_grid",
+        "social_proof": "saas_bento_grid",
+        "us_vs_them": "saas_bento_grid",
+        "lifestyle_hero": "saas_dark_gradient_bloom",
+        "_single": "saas_bento_grid",
     },
 }
 
@@ -658,10 +696,18 @@ def _service_flavour(business_type: Optional[str], category: Optional[str]) -> s
 
 
 def templates_for_mode(mode: str) -> List[Dict[str, Any]]:
-    return [
-        {"id": tid, "name": t["name"], "summary": t["summary"], "frameworks": t["frameworks"]}
+    try:
+        from creative_library_presets import CREATIVE_PRESETS
+        preset_ids = set(CREATIVE_PRESETS.keys())
+    except Exception:
+        preset_ids = set()
+
+    items = [
+        {"id": tid, "name": t["name"], "summary": t["summary"], "frameworks": t["frameworks"], "is_preset": tid in preset_ids}
         for tid, t in TEMPLATES.items() if t["mode"] == mode
     ]
+    items.sort(key=lambda x: 0 if x.get("is_preset") else 1)
+    return items
 
 
 def resolve_template_id(blueprint: Any, mode: str, category: str = "") -> str:
@@ -671,13 +717,25 @@ def resolve_template_id(blueprint: Any, mode: str, category: str = "") -> str:
     elif not isinstance(blueprint, dict):
         blueprint = {}
 
+    # 1. If blueprint has an explicit template_id (from theme assignment or art direction), prioritize it
     tid = (blueprint.get("template_id") or "").strip()
-    if tid in TEMPLATES and TEMPLATES[tid]["mode"] == mode:
-        return tid
+    if tid and tid != "diverse":
+        try:
+            from creative_library_presets import CREATIVE_PRESETS
+            if tid in CREATIVE_PRESETS:
+                return tid
+        except Exception:
+            pass
+        if tid in TEMPLATES:
+            return tid
 
+    # 2. If a specific creative library preset is specified (and not diverse), respect it
+    preset_id = (blueprint.get("preset_id") or "").strip()
+    if preset_id and preset_id != "diverse" and preset_id in TEMPLATES:
+        return preset_id
+
+    # 3. Prioritize industry category mapping
     framework = blueprint.get("framework_key") or "_single"
-
-    # Prioritize industry category mapping
     cat_key = detect_product_category(category)
     if cat_key in CATEGORY_DEFAULTS:
         cat_map = CATEGORY_DEFAULTS[cat_key]
@@ -686,7 +744,11 @@ def resolve_template_id(blueprint: Any, mode: str, category: str = "") -> str:
         if "_single" in cat_map:
             return cat_map["_single"]
 
-    return FRAMEWORK_DEFAULTS[mode].get(framework, FRAMEWORK_DEFAULTS[mode]["_single"])
+    # 4. If tid fits the mode and is valid
+    if tid and tid in TEMPLATES and TEMPLATES[tid]["mode"] == mode:
+        return tid
+
+    return FRAMEWORK_DEFAULTS.get(mode, {}).get(framework, FRAMEWORK_DEFAULTS.get(mode, {}).get("_single", "saas_bento_grid" if mode == SERVICE_MODE else "studio_graphic"))
 
 
 def short_headline(text: Optional[str], max_words: int = MAX_HEADLINE_WORDS) -> str:
@@ -745,6 +807,26 @@ def build_template_prompt(
     elif template_id in ("chaos_grid", "product_moment", "control_panel", "consolidation") and cat_key == "local_service":
         template_id = "service_consultation"
 
+    try:
+        from creative_library_presets import CREATIVE_PRESETS, build_preset_creative_prompt
+        if template_id in CREATIVE_PRESETS:
+            return build_preset_creative_prompt(
+                template_id,
+                brand_name=brand_name,
+                product_name=product_name,
+                headline=short_headline(headline) or f"Meet {product_name or 'the product'}",
+                cta=short_headline(cta, MAX_CTA_WORDS) or "Shop Now",
+                aspect_ratio=aspect_ratio,
+                product_visual_description=product_visual_description,
+                color_palette=color_palette,
+                custom_directive=custom_directive,
+                has_product_ref=has_product_ref,
+                setting=setting,
+                talent=talent,
+            )
+    except Exception:
+        pass
+
     t = TEMPLATES.get(template_id, TEMPLATES["studio_graphic"])
     brand = (brand_name or "Brand").strip()
     product = (product_name or "the product").strip()
@@ -772,90 +854,104 @@ def build_template_prompt(
         return text
 
     photo = t["style"] == "photo"
-    lines: List[str] = []
+    lines: List[str] = [
+        "[ROLE: Senior Executive Art Director & Master Commercial Graphic Designer]",
+        f"Craft an award-winning Meta {aspect_ratio} commercial ad creative for {brand} ({product_category or 'Commercial'}).",
+        "Strictly enforce core graphic design principles: dominant visual hierarchy, 60-30-10 color theory, generous negative space, tactile materiality, and typographic craft.",
+        "",
+    ]
 
     # REFERENCE ROLES — the product lock comes first so the model treats the photo as the hero, not inspiration
     if mode == PRODUCT_MODE:
-        lines.append("REFERENCE ROLES")
+        lines.append("REFERENCE ROLES & PRODUCT FIDELITY")
         if has_product_ref:
             ref_name = "IMAGE 1"
             desc = (product_visual_description or "").strip()
             lines.append(
-                f"{ref_name} = PRODUCT-REF: the real {product} by {brand}. Use THIS exact product as the hero of the ad. "
-                "Reproduce it exactly: identical shape, proportions, cap or closure, colours, materials, finish and label layout. "
-                "Do not redesign, restyle, recolour or invent packaging. Keep large label words legible and correctly spelled; "
-                "never replace label text with invented words."
-                + (f" Product spec from the photo: {desc[:900]}" if desc else "")
+                f"{ref_name} = PRODUCT-REF: the authentic {product} by {brand}. Use THIS exact product as the hero of the ad. "
+                "Reproduce it with absolute commercial fidelity: identical silhouette, proportions, cap or closure, materials, finish, and label graphics. "
+                "Do NOT redesign, restyle, recolour, warp, or invent packaging. Keep label typography tack-sharp and legible; "
+                "never replace brand text with invented words."
+                + (f" Product spec from reference: {desc[:900]}" if desc else "")
             )
         else:
             desc = (product_visual_description or "").strip()
             lines.append(
-                f"No product photo supplied. The hero product is {product} by {brand}"
+                f"The hero product is {product} by {brand}"
                 + (f": {desc[:500]}" if desc else ".")
-                + " Keep the packaging simple and believable; do not invent claims on the label."
+                + " Grounded, believable commercial execution. Never invent fake claims on packaging."
             )
         lines.append("")
 
-    lines.append("FORMAT")
-    lines.append(f"Meta {aspect_ratio} social ad. {_ratio_layout(t['square'], aspect_ratio)} Keep 6% clear margin on every edge.")
+    lines.append("FORMAT & VISUAL HIERARCHY")
+    lines.append(
+        f"Meta {aspect_ratio} commercial feed format. {_ratio_layout(t['square'], aspect_ratio)} "
+        "The hero subject commands 55-60% of visual weight as the primary optical entry point. "
+        "Preserve 25-35% calm, uncluttered negative space for thumb-stopping clarity on mobile screens. "
+        "Maintain an 8% outer boundary margin safety buffer."
+    )
     lines.append("")
 
-    lines.append("STYLE")
+    lines.append("STYLE & AESTHETIC")
     if photo:
-        lines.append(f"{t['name']}: real high-end D2C campaign photograph for {product_category or 'a consumer brand'}, shot on a full-frame camera, not CGI.")
+        lines.append(f"{t['name']}: high-end editorial commercial photograph for {product_category or 'a consumer brand'}, shot on a full-frame 85mm prime lens, authentic photographic depth, not CGI.")
     else:
-        lines.append(f"{t['name']}: premium, clean 3D and UI illustration for a {product_category or 'digital'} brand, studio-crisp, no photographic noise.")
+        lines.append(f"{t['name']}: premium, clean modern design for a {product_category or 'digital'} brand, studio-crisp, elegant glassmorphic surfaces, zero visual clutter.")
     lines.append("")
 
-    lines.append("SET")
+    lines.append("STUDIO SET & MATERIAL TEXTURES")
     lines.append(f(t["set"]))
     if scene_hint:
         lines.append(f"Scene detail: {scene_hint.strip()[:400]}")
+    lines.append("Materiality: authentic physical textures (honed stone, brushed aluminum, frosted glass, organic caustics, micro-shadows).")
     lines.append("")
 
     if t["talent"]:
-        lines.append("TALENT")
+        lines.append("TALENT CASTING")
         lines.append(
-            (talent.strip()[:700] if talent else f"One model who reflects {target_audience_persona or 'the target audience'}.")
-            + " Genuine, relaxed expression, eye contact with the lens, natural skin texture, everyday relatable appearance. Not a celebrity, actor, or glamorous influencer."
+            (talent.strip()[:700] if talent else f"One model reflecting {target_audience_persona or 'the target audience'}.")
+            + " Genuine, relaxed posture, authentic eye contact, natural skin texture with real pores and fine micro-details. Not a celebrity, actor, or glamorous influencer."
         )
         lines.append("")
 
-    lines.append("HERO" if mode == SERVICE_MODE else "PRODUCT PLACEMENT")
+    lines.append("HERO SUBJECT PLACEMENT")
     lines.append(f(t["hero"]))
     if mode == PRODUCT_MODE:
-        lines.append("Show ONE unit of the product at true real-world size. Nothing overlaps or hides the label. No text or graphics are drawn over the product.")
+        lines.append("Show ONE unit of the product at authentic scale. Physically grounded with realistic contact shadow and ambient occlusion. Nothing overlaps or hides the label.")
+    else:
+        lines.append("Ensure any tech device or screen is strictly upright and oriented normally (never inverted, upside-down, or backwards).")
     lines.append("")
 
     lines.append("CAMERA")
     lines.append(t["camera"])
     lines.append("")
-    lines.append("LIGHT")
-    lines.append(t["light"])
+    lines.append("LIGHTING & SHADOW ARCHITECTURE")
+    lines.append(f"{t['light']} Sculpted 45-degree directional key light, soft natural fill, and physically accurate contact shadows.")
     lines.append("")
 
-    lines.append("BRAND COLOURS")
+    lines.append("60-30-10 CHROMATIC HARMONY")
     lines.append(
-        f"Use only this palette: {color_palette}. The most saturated colour is the accent (CTA pill and at most one other touch)."
+        f"Palette tokens: {color_palette}. "
+        "Apply 60% dominant canvas tone, 30% structural secondary palette, and 10% high-contrast accent pop dedicated strictly to the CTA pill and brand mark."
         if color_palette else
-        "A restrained palette of two neutrals plus one saturated brand accent used for the CTA pill."
+        "Restrained 60-30-10 chromatic harmony: 60% neutral canvas tone, 30% supporting tonal depth, and 10% saturated accent pop reserved for the CTA pill."
     )
     lines.append("")
 
-    lines.append("TYPOGRAPHY: exactly three text elements, nothing else")
-    lines.append(f'1. Brand wordmark: "{brand}", small, clean, in the brand colours.')
-    lines.append(f'2. Headline: "{image_headline}", bold modern sans-serif, large and high-contrast, at most two lines, each word rendered once.')
-    lines.append(f'3. CTA pill: "{cta_text}", a fully rounded pill in the brand accent with short white or dark text.')
-    lines.append("Spell every string exactly as quoted. No other words, numbers, badges, ratings, prices, labels or captions anywhere in the image (product packaging text excepted).")
+    lines.append("TYPOGRAPHY: STRICT META 3-ELEMENT BUDGET (nothing else)")
+    lines.append(f'1. Brand wordmark: "{brand}" rendered clean, refined, optically tracked in the brand palette.')
+    lines.append(f'2. Headline: "{image_headline}" rendered in bold modern sans or high-contrast editorial serif, large optical contrast, at most two lines, each word rendered once.')
+    lines.append(f'3. CTA pill: "{cta_text}" rendered as a tactile rounded pill capsule button in the saturated brand accent with centered legible label.')
+    lines.append("Spell every string exactly as quoted. STRICT RULE: No other words, numbers, badges, star ratings, or captions in the pixels (authentic product packaging excepted).")
     lines.append("")
 
     if photo:
-        lines.append("REALISM")
-        lines.append("Natural colour, fine grain, soft highlight roll-off, true depth of field. Skin with real texture, not airbrushed. Product edges crisp and physically grounded with a believable contact shadow.")
+        lines.append("COMMERCIAL REALISM & TACTILE DEPTH")
+        lines.append("True optical color science, fine cinematic grain, soft highlight roll-off, natural depth of field. Authentic unretouched skin texture. Tack-sharp product boundaries firmly grounded in space.")
         lines.append("")
 
     if custom_directive and custom_directive.strip():
-        lines.append("ART DIRECTOR NOTE")
+        lines.append("EXECUTIVE ART DIRECTOR NOTE")
         lines.append(custom_directive.strip()[:300])
         lines.append("")
 
@@ -886,7 +982,8 @@ def build_reference_prompt(
     talent: str = "",
     custom_directive: Optional[str] = None,
 ) -> str:
-    """Ad prompt that borrows concept and layout from an analysed competitor ad and applies our branding.
+    """Ad prompt that borrows concept and layout from an analysed competitor ad and applies our branding
+    under senior graphic design principles.
 
     Attached images, in order: product photo (if any), the competitor layout reference, our logo (if any)."""
     brand = (brand_name or "Brand").strip()
@@ -908,86 +1005,93 @@ def build_reference_prompt(
         n += 1
         logo_img = n
 
-    lines: List[str] = ["REFERENCE ROLES"]
+    lines: List[str] = [
+        "[ROLE: Senior Executive Art Director & Master Commercial Graphic Designer]",
+        f"Craft an award-winning Meta {aspect_ratio} commercial ad creative for {brand} borrowing proven compositional hierarchy from reference.",
+        "Strictly enforce core design principles: visual hierarchy, 60-30-10 color theory, 25-35% negative space, and typographic craft.",
+        "",
+        "REFERENCE ROLES & STRUCTURAL ANCHORS",
+    ]
     desc = (product_visual_description or "").strip()
     if product_img:
         lines.append(
-            f"IMAGE {product_img} = PRODUCT-REF: the real {product} by {brand}, the hero of this ad. Reproduce it exactly: "
-            "identical shape, proportions, cut, colours, materials, finish and label or print. Never redesign it or "
-            "invent label text." + (f" Product spec: {desc[:900]}" if desc else "")
+            f"IMAGE {product_img} = PRODUCT-REF: the real {product} by {brand}, the hero of this ad. Reproduce it with absolute fidelity: "
+            "identical silhouette, proportions, cut, materials, finish, and label graphics. Never redesign or warp packaging."
+            + (f" Product spec: {desc[:900]}" if desc else "")
         )
     else:
         lines.append(f"The hero product is {product} by {brand}" + (f": {desc[:700]}" if desc else ".")
-                     + " Keep it simple and believable; never invent label text or claims.")
+                     + " Grounded, believable commercial execution; never invent fake label claims.")
     if layout_img:
         lines.append(
-            f"IMAGE {layout_img} = LAYOUT-REF: a live competitor ad, used ONLY for its concept and layout: composition, "
-            "framing, camera distance, pose type, where the text sits, how much text there is and the visual hierarchy. "
-            "Do NOT copy its brand, logo, model's face, celebrity likeness or identity, garments, product, packaging, colours or any of its words. "
+            f"IMAGE {layout_img} = LAYOUT-REF: a live competitor ad, used ONLY for its compositional architecture: framing, "
+            "camera distance, focal hierarchy, where text sits, and visual balance. "
+            "Do NOT copy its competitor brand, logo, celebrity face, garments, packaging, or colors. "
             "Depict an everyday, relatable real person with natural unretouched skin, NOT a celebrity, model, or influencer."
         )
     if logo_img:
         lines.append(
-            f"IMAGE {logo_img} = BRAND LOGO: the real {brand} logo. Place it as given (same letterforms, proportions and "
-            "colour), small and crisp, on a clean area"
-            + (" that is dark enough for this light logo" if logo_tone == "light" else "")
-            + ". Never redraw, restyle, recolour or retype it."
+            f"IMAGE {logo_img} = BRAND LOGO: the authentic {brand} logo. Place it as provided (same letterforms, proportions and "
+            "palette), small, clean, and optically balanced"
+            + (" on a sufficiently dark surface for this light logo" if logo_tone == "light" else "")
+            + ". Never redraw or distort the logo."
         )
     lines.append("")
 
-    lines.append("CONCEPT")
-    lines.append((concept or "").strip() or f"Adapt the reference ad's idea to {product} for {target_audience_persona or 'the target audience'}.")
+    lines.append("STRATEGIC CONCEPT")
+    lines.append((concept or "").strip() or f"Adapt the reference layout's core commercial hierarchy to {product} for {target_audience_persona or 'the target audience'}.")
     lines.append("")
 
-    lines.append("LAYOUT (keep from the reference)")
+    lines.append("COMPOSITIONAL ARCHITECTURE (from reference)")
     layout_bits = [
         f"composition: {r.get('composition')}" if r.get("composition") else "",
         f"product presence: {r.get('product_presence')}" if r.get("product_presence") else "",
         f"people: {r.get('people')}" if r.get("people") else "",
         f"lighting: {r.get('lighting')}" if r.get("lighting") else "",
     ]
-    lines.append("; ".join(b for b in layout_bits if b) + "." if any(layout_bits) else "Follow the reference layout.")
+    lines.append("; ".join(b for b in layout_bits if b) + "." if any(layout_bits) else "Follow the reference layout balance.")
     fit = {
-        "9:16": " Keep all text and the product out of the top 14% and bottom 20% (Meta's interface covers them).",
-        "16:9": " Re-flow it side by side if the reference is vertical: text in one third, the hero in the rest.",
-    }.get(aspect_ratio, " Keep the reference's order and alignment, adding or trimming space around the hero.")
-    lines.append(f"Adapt the layout to a Meta {aspect_ratio} frame.{fit} Keep 6% clear margin on every edge.")
+        "9:16": " Safe zone discipline: keep all critical text and hero subject out of top 14% and bottom 20% UI overlays.",
+        "16:9": " Golden ratio horizontal split: typography and CTA in left 40% column; hero subject in right 60%.",
+    }.get(aspect_ratio, " Maintain reference balance with 25-35% calm negative space around the hero subject.")
+    lines.append(f"Adapt layout to Meta {aspect_ratio} frame.{fit} Maintain an 8% outer margin safety zone.")
     lines.append("")
 
-    lines.append("SCENE")
-    lines.append((scene_hint or "").strip()[:400] or f"{(setting or r.get('setting') or 'a setting that suits the audience').strip()}.")
+    lines.append("STUDIO SCENE & MATERIALS")
+    lines.append((scene_hint or "").strip()[:400] or f"{(setting or r.get('setting') or 'a modern, premium environment that suits the audience').strip()}.")
+    lines.append("Emphasize authentic physical materiality: real textures, soft contact shadows, natural light reflections.")
     if talent and (r.get("people") or "none") != "none":
-        lines.append(f"Talent: {talent.strip()[:600]} Genuine expression, natural skin texture.")
+        lines.append(f"Talent: {talent.strip()[:600]} Natural expression, unforced posture, authentic unretouched skin texture.")
     lines.append("")
 
-    lines.append("BRAND STYLE")
+    lines.append("BRAND SYSTEM & 60-30-10 CHROMATIC HARMONY")
     if kit:
         lines.append(
-            f"Colours by role: background {kit.get('background_hex')}, text {kit.get('text_hex')}, primary {kit.get('primary_hex')}, "
-            f"CTA pill {kit.get('accent_hex')}"
+            f"Brand palette by role: 60% background canvas {kit.get('background_hex')}, 30% structural secondary {kit.get('primary_hex')}, "
+            f"10% conversion accent pop {kit.get('accent_hex')} for CTA pill and brand mark"
             + (f", supporting {', '.join(kit.get('supporting_hexes') or [])}" if kit.get("supporting_hexes") else "")
-            + ". Use no other brand colours."
+            + ". Use no extraneous colors."
         )
         if kit.get("visual_mood"):
             lines.append(f"Mood: {kit['visual_mood']}.")
     elif color_palette:
-        lines.append(f"Use only this palette: {color_palette}. The most saturated colour is the CTA pill.")
+        lines.append(f"Palette: {color_palette}. 60% dominant canvas tone, 30% secondary structure, 10% saturated accent on CTA pill.")
     lines.append("")
 
-    lines.append("TYPOGRAPHY: exactly three text elements, placed where the reference puts its text")
-    lines.append(f'1. Brand logo from IMAGE {logo_img}.' if logo_img else f'1. Brand wordmark: "{brand}", small, in the brand colours.')
-    headline_type = kit.get("headline_type") or "bold modern sans-serif"
-    lines.append(f'2. Headline: "{image_headline}" in {headline_type}, large and high-contrast, at most two lines, each word rendered once.')
-    lines.append(f'3. CTA pill: "{cta_text}", a fully rounded pill in {kit.get("accent_hex") or "the brand accent"} with short, legible text.')
-    lines.append("Spell every string exactly as quoted. No other words, numbers, badges, ratings, prices or captions (product labels excepted).")
+    lines.append("TYPOGRAPHY: STRICT META 3-ELEMENT BUDGET (nothing else)")
+    lines.append(f'1. Brand logo from IMAGE {logo_img}.' if logo_img else f'1. Brand wordmark: "{brand}" (refined, optically tracked).')
+    headline_type = kit.get("headline_type") or "bold modern sans-serif or editorial serif"
+    lines.append(f'2. Headline: "{image_headline}" in {headline_type}, high optical contrast, max two lines, each word rendered once.')
+    lines.append(f'3. CTA pill: "{cta_text}", rounded tactile pill button in {kit.get("accent_hex") or "the saturated brand accent"} with crisp legible label.')
+    lines.append("Spell each string exactly as quoted. STRICT RULE: No other words, badges, star ratings, or numbers in the image.")
     lines.append("")
 
-    lines.append("REALISM")
-    lines.append("Real high-end D2C campaign photograph, full-frame camera, natural colour, fine grain, true depth of field, real skin texture, crisp product edges.")
+    lines.append("COMMERCIAL REALISM & FINISH")
+    lines.append("Authentic high-end commercial photograph, full-frame camera lens, natural color science, fine cinematic grain, true depth of field, natural skin texture, physically grounded contact shadows.")
     lines.append("")
 
     if custom_directive and custom_directive.strip():
-        lines.append("ART DIRECTOR NOTE")
+        lines.append("EXECUTIVE ART DIRECTOR NOTE")
         lines.append(custom_directive.strip()[:300])
         lines.append("")
 
@@ -1003,16 +1107,18 @@ def _avoid_lines(mode: str, photo: bool, extra: Optional[List[str]] = None) -> L
         "any text other than the three quoted strings", "paragraphs or sub-headlines", "bullet lists or feature badges",
         "star ratings, review counts, percentages, prices or discounts", "watermarks", "logos of other companies",
         "cluttered layout", "text overlapping the hero",
+        "levitating orbs or floating geometric cubes", "garish cyan/purple neon cyber-mush", "plastic or waxy skin",
+        "unreadable pseudo-text or fake UI numbers", "warped anatomy or deformed fingers",
     ]
     if mode == PRODUCT_MODE:
         avoid += ["extra or duplicate products", "a redesigned or warped product", "misspelled or invented label text",
-                  "deformed hands", "extra fingers"]
+                  "deformed hands", "extra fingers", "floating ungrounded product"]
     else:
-        avoid += ["readable UI words or numbers", "real banking or card numbers", "stock-photo people", "glowing brains, robots, circuit boards"]
+        avoid += ["readable UI words or numbers", "real banking or card numbers", "stock-photo people", "glowing brains, robots, circuit boards", "upside-down or inverted device screens"]
     if photo:
         avoid += [
             "CGI or 3D-render look", "plastic skin", "HDR", "oversaturation", "visible studio equipment",
             "celebrity likeness", "famous actors or influencers", "glamorous airbrushed skin",
         ]
     avoid += [x for x in (extra or []) if x]
-    return ["AVOID", ", ".join(avoid) + "."]
+    return ["AVOID (STRICT ANTI-AI SLOP GUARDRAILS)", ", ".join(avoid) + "."]

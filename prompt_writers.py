@@ -13,7 +13,7 @@ A7: Video Script Writer
 - Takes VideoBrief objects from A5 Creative Strategist.
 - The hook and voiceover are used WORD FOR WORD.
 - Expands the brief into a beat-by-beat timeline script (hook -> demo/proof -> CTA).
-- Writes the Omni Flash 1.1 prompt beat-by-beat using <IMAGE_REF_i> product locks.
+- Writes the Omni Flash 1.2 prompt beat-by-beat using <IMAGE_REF_i> product locks.
 - Runs in parallel batches of 5 briefs.
 - Implements rewrite_video() for A8 critic loops.
 """
@@ -38,12 +38,12 @@ from ad_templates import (
 )
 from meta_creative_engine import NO_FABRICATED_CLAIMS_RULE, build_native_in_image_ad_prompt
 from creative_strategist import StaticBrief, VideoBrief
-from media_utils import sanitize_visual_prompt
+from media_utils import sanitize_visual_prompt, sanitize_device_actions, hex_to_color_name, sanitize_video_prompt, NO_END_SCREEN_LINE, NO_END_SCREEN_AVOID
 
 logger = logging.getLogger(__name__)
 
 TEXT_MODEL = "gemini-3.6-flash"
-VIDEO_DURATION_S = 10
+VIDEO_DURATION_S = 15
 MAX_VIDEO_PRODUCTS = 4
 
 
@@ -62,7 +62,7 @@ class StaticBatchArtDirection(BaseModel):
 
 
 class VideoBeatExpanded(BaseModel):
-    time: str = Field(description="Timestamp, e.g. '0-3s', '3-7s', '7-10s'")
+    time: str = Field(description="Timestamp, e.g. '0-3s', '3-8s', '8-12s', '12-15s'")
     visual: str = Field(description="Camera action, subject movement, and product interaction")
     on_screen_text: str = Field(default="", description="Overlay text, <= 5 words")
     audio: str = Field(description="Sound effect, ambient track, or spoken VO segment")
@@ -70,7 +70,7 @@ class VideoBeatExpanded(BaseModel):
 
 class VideoScriptDetail(BaseModel):
     brief_id: str
-    expanded_beats: List[VideoBeatExpanded] = Field(description="3-4 detailed beats covering 0-10 seconds")
+    expanded_beats: List[VideoBeatExpanded] = Field(description="3-4 detailed beats covering 0-15 seconds")
     direction: str = Field(description="Cinematography and performance direction for Omni Flash (camera moves, lighting, pacing)")
 
 
@@ -94,7 +94,7 @@ def build_omni_prompt(
     has_uploaded_images: bool = True,
     duration_s: int = VIDEO_DURATION_S,
 ) -> str:
-    """Produces the exact Omni Flash 1.1 prompt with <IMAGE_REF_i> bindings."""
+    """Produces the exact Omni Flash 1.2 prompt with <IMAGE_REF_i> bindings."""
     prod_label = " and ".join(p["name"] for p in featured_products) if featured_products else product_name
     lines = [
         f"{duration_s}-second vertical 9:16 Meta Reels ad for {prod_label} by {brand_name}. Photoreal, shot on high-end camera, natural physical motion.",
@@ -107,7 +107,8 @@ def build_omni_prompt(
             "Never invent variants or swap with generic containers."
         )
         for i, p in enumerate(featured_products):
-            lines.append(f"- <IMAGE_REF_{i}> is {p.get('lock', p.get('name'))}")
+            lock_desc = sanitize_video_prompt(p.get("lock") or p.get("name") or "")
+            lines.append(f"- <IMAGE_REF_{i}> is {lock_desc}")
     elif has_uploaded_images:
         lines.append(
             f"PRODUCT LOCK: Reference images show the real {product_name}. Reproduce it exactly with the same shape, "
@@ -119,31 +120,55 @@ def build_omni_prompt(
 
     if brand_kit:
         mood = brand_kit.get("visual_mood", "")
-        primary = brand_kit.get("primary_hex", "")
-        accent = brand_kit.get("accent_hex", "")
-        bg = brand_kit.get("background_hex", "")
+        primary_hex = brand_kit.get("primary_hex", "")
+        accent_hex = brand_kit.get("accent_hex", "")
+        bg_hex = brand_kit.get("background_hex", "")
+
+        primary_name = hex_to_color_name(primary_hex) if primary_hex else ""
+        accent_name = hex_to_color_name(accent_hex) if accent_hex else ""
+        bg_name = hex_to_color_name(bg_hex) if bg_hex else ""
+
+        palette_names = [c for c in dict.fromkeys([primary_name, accent_name, bg_name]) if c]
+        if len(palette_names) > 1:
+            palette_desc = ", ".join(palette_names[:-1]) + " and " + palette_names[-1]
+        elif palette_names:
+            palette_desc = palette_names[0]
+        else:
+            palette_desc = "brand accent tones"
+
         lines.append(
-            f"BRAND LOOK: {mood}; color accents in brand palette {primary}, {accent}, {bg} (props, wardrobe, set), "
+            f"BRAND LOOK: {mood}; color accents in brand palette {palette_desc} (props, wardrobe, set), "
             "never overpowering the product."
         )
 
     lines.append("TIMELINE:")
     for b in beats or []:
-        text = f' On-screen text: "{b.get("on_screen_text")}".' if b.get("on_screen_text") else ""
-        lines.append(f"- {b.get('time')}: {b.get('visual')}{text} Audio: {b.get('audio')}")
+        on_screen = sanitize_video_prompt(b.get("on_screen_text") or "")
+        text = f' On-screen text: "{on_screen}".' if on_screen else ""
+        vis = sanitize_video_prompt(b.get("visual") or "")
+        lines.append(f"- {b.get('time')}: {vis}{text} Audio: {b.get('audio')}")
 
     if voiceover:
         spoken = f"spoken in {language}, " if language and language.lower() not in ("english", "en") else ""
         lines.append(f'VOICEOVER ({spoken}natural conversational tone, matches timeline): "{voiceover}"')
 
     if direction:
-        lines.append(f"DIRECTION: {direction}")
+        lines.append(f"DIRECTION: {sanitize_video_prompt(direction)}")
+    lines.append(NO_END_SCREEN_LINE)
 
     lines.append(
-        "AVOID: celebrity likeness, famous actors or public figures, glamorous airbrushed influencer aesthetic, "
-        "competitor logos, hallucinated pack text, illegible on-screen text, distorted hands, generic 3D renders."
+        "DEVICE ORIENTATION & SCREEN INTEGRITY: Every laptop, smartphone, tablet, and computer monitor must appear strictly upright in its natural, physically correct orientation. Laptops sit flat on desks with keyboards at the bottom and screens upright. Phones are held vertically upright with front cameras at the top. All UI, dashboards, software screens, and text must be horizontal and right-side up, NEVER inverted, upside-down, or mirrored."
     )
-    return "\n".join(lines)
+    lines.append(
+        "AVOID: hex color codes, raw hex codes, color hashes, raw hex values, color code labels, printed hex strings, "
+        "inverted laptop screens, upside-down laptops, backward laptops, laptops held upside-down or flipped, "
+        "inverted phones, upside-down phone screens, mirrored screens, reverse UI, backwards display, "
+        "floating distorted keyboards, impossible hinge angles, backward screens, celebrity likeness, "
+        "famous actors or public figures, glamorous airbrushed influencer aesthetic, competitor logos, "
+        "hallucinated pack text, illegible on-screen text, distorted hands, extra fingers, generic 3D renders, "
+        + NO_END_SCREEN_AVOID + "."
+    )
+    return sanitize_video_prompt("\n".join(lines))
 
 
 # ---------------------------------------------------------------------------
@@ -162,6 +187,7 @@ class StaticPromptWriter:
         references: Dict[str, Any],
         style_tokens: Optional[Dict[str, Any]] = None,
         default_aspect: str = "4:5",
+        preset_id: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Processes a batch of up to 5 static briefs in one model call."""
         if not briefs:
@@ -178,6 +204,17 @@ class StaticPromptWriter:
         templates = templates_for_mode(mode)
         template_menu = "\n".join(f"- {t['id']}: {t['name']} ({', '.join(t['frameworks'])})" for t in templates)
 
+        # Resolve Creative Library Preset from Pinterest design reference atlas
+        effective_preset_id = preset_id or brand_profile.get("selected_preset_id") or "diverse"
+        preset = None
+        is_diverse_mix = (effective_preset_id == "diverse")
+        if not is_diverse_mix and effective_preset_id:
+            try:
+                from creative_library_presets import get_preset_by_id
+                preset = get_preset_by_id(effective_preset_id)
+            except Exception as e:
+                logger.warning(f"[StaticPromptWriter] could not resolve preset: {e}")
+
         # Build prompt for LLM art direction
         brief_summaries = []
         for b in briefs:
@@ -189,12 +226,37 @@ class StaticPromptWriter:
                 f"  Concept Sources: {', '.join(b.concept_source) or 'None'}"
             )
 
+        if is_diverse_mix or not preset:
+            preset_section = (
+                "CREATIVE THEME STRATEGY: DIVERSE CAMPAIGN THEME MIX (PINTEREST DESIGN ATLAS)\n"
+                "- CRITICAL MANDATE: To maximize thumb-stopping variety across Meta feeds, every ad in this batch MUST employ a distinct, high-contrast creative theme tailored to its marketing framework.\n"
+                "- NEVER make every ad look the same! Vary the composition, textures, lighting, and layout archetype across briefs.\n"
+                "- Select the most fitting template_id from AVAILABLE TEMPLATES for each brief (e.g. 'split_contrast' for us_vs_them/problem_solution, 'macro_texture' for ingredient/material detail, 'model_lifestyle' for lifestyle/human touch, 'elemental_set' for sensory splash/freshness, 'marketing_bold_statement' for social proof/bold claims, 'saas_bento_grid' for tech/features, 'outdoor_light' for golden hour naturalism).\n"
+            )
+        else:
+            preset_section = (
+                f"CREATIVE LIBRARY PRESET ({preset['name']}):\n"
+                f"- Movement: {preset['movement']}\n"
+                f"- Inspiration: {preset['inspiration_source']}\n"
+                f"- Set: {preset['layout']['composition']}\n"
+                f"- Typography: {preset['typography']['headline_font_style']}\n"
+                f"- Lighting: {preset['lighting']}\n"
+                f"- Suggest template_id '{preset['id']}' or adapt template to the brief's specific framework.\n"
+            )
+
         instructions = (
-            f"You are the Lead Art Director for {brand_name} ({category}).\n"
-            "For each of the following static ad briefs, write precise visual scene art direction.\n"
+            f"You are the Senior Executive Art Director and Master Commercial Graphic Designer for {brand_name} ({category}), producing work of Pentagram / Apple / Linear caliber.\n"
+            "For each of the following static ad briefs, write precise, award-winning visual scene art direction following master graphic design principles.\n"
             "THE COPY IS FINAL AND MUST NOT BE CHANGED.\n\n"
+            "CORE GRAPHIC DESIGN PRINCIPLES TO ENFORCE IN EVERY SCENE:\n"
+            "1. VISUAL HIERARCHY & FOCAL ANCHOR: The hero subject (product or device) must command 55-60% of visual weight as the primary optical entry point. Avoid competing secondary focal points.\n"
+            "2. COMPOSITION & NEGATIVE SPACE: Maintain 25-35% calm, uncluttered negative space. Keep an 8% outer margin safety zone for Meta mobile feeds.\n"
+            "3. 60-30-10 COLOR HARMONY: 60% dominant background canvas tone, 30% structural secondary palette, 10% intentional high-contrast accent pop reserved strictly for the CTA and brand mark.\n"
+            "4. TACTILE MATERIALITY & DIRECTIONAL LIGHTING: Specify 45-degree directional raking light, soft contact shadows grounding objects in physical space, and authentic physical materials (honed travertine, brushed metal, frosted glass, micro-cement, linen weave, natural dewy skin with real pores).\n"
+            "5. ANTI-AI SLOP GUARDRAILS: Strictly forbid levitating abstract cubes/orbs, generic purple/cyan neon cyber-mush, plastic airbrushed skin, and deformed anatomy. Any screens or devices must be strictly upright and oriented normally (never inverted or upside-down).\n\n"
             f"BRAND KIT: Primary {brand_kit.get('primary_hex')}, Accent {brand_kit.get('accent_hex')}, Mood {brand_kit.get('visual_mood')}\n"
-            f"AVAILABLE TEMPLATES:\n{template_menu}\n\n"
+            + preset_section
+            + f"\nAVAILABLE TEMPLATES:\n{template_menu}\n\n"
             f"BRIEFS TO ART DIRECT:\n" + "\n\n".join(brief_summaries) + "\n\n"
             "CRITICAL: Never use proper personal names (e.g., 'Ananya', 'Sarah') in scene descriptions. Describe talent "
             "anonymously and realistically ('A 25-year-old woman in casual office wear'). Avoid any celebrity likeness, famous actors, "
@@ -225,7 +287,30 @@ class StaticPromptWriter:
             scene_desc = art.get("scene_description") or brief.scene_direction
             forbidden_names = [brief.persona, (brand_profile.get("bullseye_target") or {}).get("persona_name", "")]
             scene_desc = sanitize_visual_prompt(scene_desc, forbidden_names)
-            chosen_tmpl = art.get("template_id") or ""
+            chosen_tmpl = (art.get("template_id") or "").strip()
+
+            # Theme resolution: if diverse mix or no preset, dynamically resolve contrasting theme
+            if is_diverse_mix or not preset:
+                from creative_library_presets import get_diverse_theme_for_brief
+                theme_info = get_diverse_theme_for_brief(
+                    framework=brief.framework,
+                    category=category,
+                    business_type=business_type,
+                    index=idx - 1,
+                    chosen_tmpl=chosen_tmpl,
+                )
+                brief_theme_id = theme_info["id"]
+                brief_theme_name = theme_info["name"]
+                brief_theme_movement = theme_info["movement"]
+                brief_theme_refs = theme_info.get("reference_pins", [])
+                chosen_tmpl = theme_info.get("template_id") or brief_theme_id
+            else:
+                brief_theme_id = preset["id"]
+                brief_theme_name = preset["name"]
+                brief_theme_movement = preset["movement"]
+                brief_theme_refs = preset.get("reference_pins", [])
+                if not chosen_tmpl or chosen_tmpl in ("chaos_grid", "metaphor_object", "consolidation", "product_moment", "control_panel", "levitation_device"):
+                    chosen_tmpl = preset["id"]
 
             # Resolve product
             prod = products[brief.product_index] if 0 <= brief.product_index < len(products) else None
@@ -278,6 +363,10 @@ class StaticPromptWriter:
                 "callout_points": [],
                 "comparison_theirs": "",
                 "target_audience_resonance": brief.angle,
+                "preset_id": brief_theme_id,
+                "preset_name": brief_theme_name,
+                "preset_movement": brief_theme_movement,
+                "preset_references": brief_theme_refs,
             }
             blueprint["template_id"] = resolve_template_id(blueprint, mode, category)
 
@@ -308,6 +397,7 @@ class StaticPromptWriter:
                     has_logo=bool(logo.get("path")),
                     logo_tone=logo.get("tone") or "dark",
                     has_layout_ref=bool(ref_match),
+                    preset_id=None if is_diverse_mix else (preset["id"] if preset else None),
                 )
 
             results.append({
@@ -321,7 +411,11 @@ class StaticPromptWriter:
                 "product_lock": prod_lock,
                 "product_image_index": prod_img_idx,
                 "proof_ids": brief.proof_ids,
-                "template_name": f"Layout from {ref_match['competitor']}" if ref_match else TEMPLATES[blueprint["template_id"]]["name"],
+                "preset_id": brief_theme_id,
+                "preset_name": brief_theme_name,
+                "preset_movement": brief_theme_movement,
+                "preset_references": brief_theme_refs,
+                "template_name": (f"Layout from {ref_match['competitor']}" if ref_match else (brief_theme_name or TEMPLATES.get(blueprint["template_id"], {}).get("name") or "Meta Creative")),
                 "reference": {"competitor": ref_match["competitor"], "image_url": ref_match["image_url"]} if ref_match else None,
                 "blueprint": blueprint,
                 "prompt_preview": aspect_prompts.get(default_aspect, aspect_prompts["4:5"]),
@@ -441,11 +535,14 @@ class VideoScriptWriter:
 
         instructions = (
             f"You are the Commercial Video Director for {brand_name}.\n"
-            "For each 10-second vertical video brief below, expand the beats into a full cinematography production script.\n"
+            "For each 15-second vertical video brief below, expand the beats into a full cinematography production script.\n"
             "THE HOOK LINE AND VOICEOVER ARE FINAL AND MUST BE USED VERBATIM.\n\n"
             f"CASTING: {casting}\n"
             f"BRIEFS TO EXPAND:\n" + "\n\n".join(brief_summaries) + "\n\n"
-            "Format: 3-4 beats covering 0-10 seconds (e.g. 0-3s, 3-7s, 7-10s). Provide detailed visual action and camera motion.\n"
+            "Format: 3-4 beats covering 0-15 seconds (e.g. 0-3s, 3-8s, 8-12s, 12-15s). Provide detailed visual action and camera motion.\n"
+            "NO END SCREEN (CRITICAL): the final beat stays inside the live scene (product in use or a natural hero moment). Never write an end screen, end card, logo slate, title card, CTA card or button, packshot on a plain background, or a fade to a brand-colour screen.\n"
+            "NO HEX CODES (CRITICAL): Never use hex color codes (e.g. #FF5252, #FFFFFF) or raw color codes in expanded visual beats, direction, or on-screen text. Always use natural descriptive color words (e.g. 'vibrant coral red', 'warm cream', 'dark navy').\n"
+            "DEVICE & SCREEN RULES (CRITICAL): All laptops, desktop monitors, tablets, and smartphones must remain strictly upright in normal gravity. Laptop keyboards sit flat on desk surfaces, screens hinge from the base right-side up. NEVER describe laptops being flipped, turned backward, rotated upside-down, or held awkwardly in mid-air. To show software or screens, describe clean over-the-shoulder views, direct desktop screencasts, or talent looking directly at the upright display. All on-screen UI, dashboards, and app interfaces must be oriented right-side up, never inverted or mirrored.\n"
             "CRITICAL: Never include proper character names (e.g. 'Ananya', 'Sarah') in expanded visual beats or direction. Always use "
             "anonymous physical descriptions ('A young commuter', 'A 25-year-old woman in casual office wear'). "
             "Avoid celebrity likeness, famous actors, or glamorous model tropes."
@@ -482,9 +579,14 @@ class VideoScriptWriter:
 
             forbidden_names = [brief.persona, (brand_profile.get("bullseye_target") or {}).get("persona_name", "")]
             for b in beats:
-                if isinstance(b, dict) and "visual" in b:
-                    b["visual"] = sanitize_visual_prompt(b["visual"], forbidden_names)
-            direction = sanitize_visual_prompt(direction, forbidden_names)
+                if isinstance(b, dict):
+                    if "visual" in b:
+                        cleaned_vis = sanitize_visual_prompt(b["visual"], forbidden_names)
+                        cleaned_vis = sanitize_device_actions(cleaned_vis)
+                        b["visual"] = sanitize_video_prompt(cleaned_vis)
+                    if "on_screen_text" in b:
+                        b["on_screen_text"] = sanitize_video_prompt(b["on_screen_text"])
+            direction = sanitize_video_prompt(sanitize_device_actions(sanitize_visual_prompt(direction, forbidden_names)))
 
             # Featured products
             featured = [products[p] for p in brief.product_indexes if 0 <= p < len(products)]
@@ -558,13 +660,15 @@ class VideoScriptWriter:
     ) -> Dict[str, Any]:
         """Rewrites a single video ad that failed critic check based on critic notes."""
         prompt = (
-            f"You are the Commercial Video Director revising a 10s video ad.\n"
+            f"You are the Commercial Video Director revising a 15s video ad.\n"
             f"Ad ID: {current_ad.get('id')}\n"
             f"Voiceover: \"{current_ad.get('voiceover')}\"\n"
             f"Current Direction: {current_ad.get('direction')}\n"
             f"CRITIC'S REWRITE NOTE: {critic_notes}\n\n"
             "Revise the timeline beats and direction to resolve the critic's concerns.\n"
-            "Ensure the hook is visually arresting, pacing fits 10 seconds, and product interaction is realistic."
+            "DEVICE RULE: Ensure all laptops, phones, and screens are strictly upright, flat on desk, right-side up, never inverted or backward.\n"
+            "NO END SCREEN: the final beat stays in the live scene; never an end screen, end card, logo slate, CTA card or fade to a brand-colour screen.\n"
+            "Ensure the hook is visually arresting, pacing fits 15 seconds, and product interaction is realistic."
         )
 
         try:
@@ -584,6 +688,17 @@ class VideoScriptWriter:
             logger.warning(f"[A7/Writer] Video rewrite call failed: {e}")
             beats = current_ad.get("beats", [])
             direction = current_ad.get("direction", "") + " " + critic_notes
+
+        forbidden_names = [brief.persona, (brand_profile.get("bullseye_target") or {}).get("persona_name", "")]
+        for b in beats:
+            if isinstance(b, dict):
+                if "visual" in b:
+                    cleaned_vis = sanitize_visual_prompt(b["visual"], forbidden_names)
+                    cleaned_vis = sanitize_device_actions(cleaned_vis)
+                    b["visual"] = sanitize_video_prompt(cleaned_vis)
+                if "on_screen_text" in b:
+                    b["on_screen_text"] = sanitize_video_prompt(b["on_screen_text"])
+        direction = sanitize_video_prompt(sanitize_device_actions(sanitize_visual_prompt(direction, forbidden_names)))
 
         updated = dict(current_ad)
         updated["beats"] = beats

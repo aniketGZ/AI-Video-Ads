@@ -20,6 +20,7 @@ Failing prompts receive targeted rewrite notes and can be looped back to the wri
 Also checks brand memory: any previously rejected angle/concept is an automatic fail.
 """
 
+import re
 import json
 import asyncio
 import logging
@@ -147,7 +148,7 @@ class CreativeDirector:
             "5. hook_strength: First frame/second is thumb-stopping, specific, not a generic floating bottle.\n"
             "6. trend_fit: Modern composition or format (split-screen, macro texture, UGC, kinetic type).\n"
             "7. distinctness: Unique hook and angle, not a duplicate of others in the batch.\n"
-            "8. executability: Static headline <= 6 words; video voiceover fits ~10s (~25 words); syntax clean.\n\n"
+            "8. executability: Static headline <= 6 words; video voiceover fits ~15s (~35 words); syntax clean; all laptops and screens must be strictly upright (never flipped backward, held in air, or inverted).\n\n"
             "PASSING THRESHOLD:\n"
             "- ALL 8 individual criteria MUST be >= 3.\n"
             "- The overall average MUST be >= 4.0.\n"
@@ -220,6 +221,35 @@ class CreativeDirector:
                 rev.url_grounding.reasoning = f"Cites unverified proof IDs: {', '.join(bad_ids)}"
                 rev.passed = False
                 rev.rewrite_notes = (rev.rewrite_notes or "") + f" Remove unverified proof IDs: {', '.join(bad_ids)}."
+
+            # Extract video visuals and direction for hard checks
+            beats_text = " ".join(b.get("visual", "") for b in target_p.get("beats", []) if isinstance(b, dict))
+            direction_text = target_p.get("direction", "")
+            combined_visuals = f"{beats_text} {direction_text}".lower()
+
+            # Hard check: Raw hex color codes in video prompts
+            hex_pattern = r"#[0-9a-fA-F]{3,8}\b"
+            ost_text = " ".join(str(b.get("on_screen_text", "")) for b in target_p.get("beats", []) if isinstance(b, dict))
+            if re.search(hex_pattern, combined_visuals) or re.search(hex_pattern, ost_text):
+                rev.executability.score = 2
+                rev.executability.reasoning = "Video prompt contains raw hex color codes which render as literal text in video outputs."
+                rev.passed = False
+                rev.rewrite_notes = (rev.rewrite_notes or "") + " Remove all raw hex codes (e.g. #FF5252); use natural descriptive color words instead."
+
+            # Hard check: Inverted or physically distorted device actions in video prompts
+            inverted_patterns = [
+                r"\bflips? (his|her|their|the) laptop( camera)? around\b",
+                r"\bturns? laptop screen\b",
+                r"\bholds? up (two|three|multiple|\d+) (different )?device screens\b",
+                r"\blaptop upside[- ]?down\b",
+                r"\bholds? laptop in (mid-air|the air|hands)\b",
+                r"\bflips? (the|a|his|her) (phone|screen|laptop)\b",
+            ]
+            if any(re.search(p, combined_visuals) for p in inverted_patterns):
+                rev.executability.score = 2
+                rev.executability.reasoning = "Video prompt contains physically inverted or flipped laptop/screen action that distorts video rendering."
+                rev.passed = False
+                rev.rewrite_notes = (rev.rewrite_notes or "") + " Ensure all laptops sit flat on the desk with screens upright right-side up; do not flip, turn backward, or rotate devices in mid-air."
 
             # Recalculate average and pass status
             scores = [

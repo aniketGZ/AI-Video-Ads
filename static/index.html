@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ad Studio</title>
-  <meta name="description" content="Turn a brand link into a researched Meta campaign: finished image ads with Nano Banana Pro and video ads with Omni Flash.">
+  <meta name="description" content="Turn a brand link into a researched Meta campaign: finished image ads with Nano Banana 2.1 and video ads with Omni Flash.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css?v=6.0.1">
+  <link rel="stylesheet" href="css/style.css?v=6.1.2">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -32,7 +32,7 @@
     </nav>
     <div class="sidebar-tools topbar-tools">
       <button type="button" class="btn btn-sm btn-ghost tool-btn key-btn" id="key_btn" aria-label="Gemini API key" title="Gemini API key">
-        <i class="fa-solid fa-key"></i><span class="tool-label">API key</span><span class="key-state" id="key_state"></span><span class="key-dot" id="key_dot"></span>
+        <i class="fa-solid fa-key"></i><span class="tool-label" id="key_label">API key</span><span class="key-state" id="key_state"></span><span class="key-dot" id="key_dot"></span>
       </button>
     </div>
   </header>
@@ -65,8 +65,9 @@
             <label class="label" for="brand_url">Brand or product URL</label>
             <div class="input-with-icon">
               <i class="fa-solid fa-link"></i>
-              <input type="url" id="brand_url" class="input input-lg" placeholder="https://yourbrand.com/product" autocomplete="url">
+              <input type="url" id="brand_url" class="input input-lg" placeholder="https://yourbrand.com/product" autocomplete="url" aria-describedby="brand_url_error">
             </div>
+            <p class="field-error" id="brand_url_error" hidden></p>
           </div>
           <div class="field">
             <span class="label">Reference images <span class="muted">· optional, up to 4 · product photos, packaging or app screens</span></span>
@@ -99,6 +100,7 @@
             <p>Competitors' top 50 live Meta ads, plus your brand, audience and bullseye customer.</p>
           </div>
           <span class="badge" id="research_badge" hidden></span>
+          <button type="button" class="btn btn-sm btn-ghost" id="btn_toggle_research" aria-controls="research_body" aria-expanded="true" hidden>Hide</button>
         </header>
         <div class="step-body" id="research_body" hidden>
           <!-- discovering -->
@@ -154,23 +156,28 @@
           <span class="step-num">3</span>
           <div class="step-title">
             <h2>Ads</h2>
-            <p>25 finished image ads (Nano Banana Pro) and 25 video ads (Omni Flash).</p>
+            <p>25 finished image ads (Nano Banana 2.1) and 25 video ads (Omni Flash).</p>
           </div>
           <span class="badge" id="ads_badge" hidden></span>
         </header>
         <div class="step-body" id="ads_body" hidden>
+          <div class="ads-sticky">
           <div class="toolbar">
             <div class="segmented" role="tablist" aria-label="Ad type">
-              <button type="button" class="active" data-ads-tab="images" role="tab"><i class="fa-regular fa-image"></i> Images <span class="count" id="count_images">0</span></button>
-              <button type="button" data-ads-tab="videos" role="tab"><i class="fa-solid fa-film"></i> Videos <span class="count" id="count_videos">0</span></button>
+              <button type="button" class="active" data-ads-tab="images" role="tab" aria-selected="true"><i class="fa-regular fa-image"></i> Images <span class="count" id="count_images">0</span></button>
+              <button type="button" data-ads-tab="videos" role="tab" aria-selected="false"><i class="fa-solid fa-film"></i> Videos <span class="count" id="count_videos">0</span></button>
             </div>
             <div class="toolbar-group" id="image_tools">
+              <button type="button" class="btn btn-sm btn-ghost preset-toolbar-pill" id="btn_active_preset" title="Active Creative Reference Preset">
+                <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent);"></i>
+                <span id="active_preset_name">Diverse Creative Mix</span>
+              </button>
               <div class="segmented" id="aspect_group" aria-label="Image size">
                 <button type="button" data-ratio="1:1">1:1</button>
                 <button type="button" class="active" data-ratio="4:5">4:5</button>
                 <button type="button" data-ratio="9:16">9:16</button>
               </div>
-              <button type="button" class="btn btn-sm" id="btn_render_all"><i class="fa-solid fa-images"></i> Render all</button>
+              <button type="button" class="btn btn-sm btn-primary" id="btn_render_all"><i class="fa-solid fa-images"></i> Render all</button>
             </div>
             <div class="toolbar-group" id="video_tools" hidden>
               <div class="segmented" id="video_res_group" aria-label="Video resolution">
@@ -182,6 +189,7 @@
             </div>
           </div>
           <div class="inline-status status-line" id="ads_status"></div>
+          </div>
           <div class="ad-grid" id="image_grid"></div>
           <div class="ad-grid" id="video_grid" hidden></div>
         </div>
@@ -196,7 +204,16 @@
     <h1 class="sr-only">Image studio</h1>
     <section class="canvas" aria-label="Image results">
       <div class="stage-current" id="img_result"><div class="media-empty"><i class="fa-regular fa-image"></i><span>Your image appears here</span></div></div>
-      <div class="gallery history" id="img_history" data-empty="Your generated images will appear here"></div>
+      <div class="gallery history" id="img_history" data-loading></div>
+      <div class="gallery-empty">
+        <h2>Describe the ad you want to see</h2>
+        <p>Add a product photo with the + button and it stays true to your product. Start from one of these, or write your own below.</p>
+        <div class="example-chips">
+          <button type="button" class="example-chip" data-example="A bottle of our serum on a sunlit bathroom shelf with soft morning shadows. Headline 'Glow in 7 days', CTA 'Shop now'">Sunlit product shelf</button>
+          <button type="button" class="example-chip" data-example="Our product in the hands of a real customer, candid phone-camera photo at home, natural light. Headline 'Finally, one that works', CTA 'Try it'">Candid UGC photo</button>
+          <button type="button" class="example-chip" data-example="Our product on a clean stone podium against a single bold colour backdrop, hard studio light. Headline 'Less, but better', CTA 'Learn more'">Bold studio podium</button>
+        </div>
+      </div>
     </section>
 
     <form class="composer" id="img_form">
@@ -204,7 +221,7 @@
         <div class="thumbs composer-thumbs" id="img_thumbs"></div>
         <label class="sr-only" for="img_prompt" id="img_prompt_label">Prompt</label>
         <div class="prompt-list" id="img_prompts">
-          <textarea class="textarea composer-input" id="img_prompt" data-prompt rows="2" placeholder="Describe the image ad: a bottle of our serum on a sunlit bathroom shelf, headline 'Glow in 7 days', CTA 'Shop now'"></textarea>
+          <textarea class="textarea composer-input" id="img_prompt" data-prompt rows="2" placeholder="Describe the image ad: product, setting, headline and CTA"></textarea>
         </div>
         <div class="composer-bar">
           <div class="dropzone pill pill-icon" id="img_drop" role="button" tabindex="0" aria-label="Add reference images" title="Add reference images (up to 6)">
@@ -245,18 +262,21 @@
               </div>
             </div>
           </div>
-          <label class="pill pill-select" title="Style preset">
-            <i class="fa-solid fa-palette"></i>
-            <span class="sr-only">Style</span>
-            <select id="img_style">
-              <option value="">No style</option>
-              <option value="minimal_dtc">Minimal DTC studio</option>
-              <option value="luxury_podium">Luxury podium</option>
-              <option value="ugc_lifestyle">UGC lifestyle</option>
-              <option value="nature_botanical">Nature &amp; botanical</option>
-              <option value="dramatic_splash">Dramatic splash</option>
-            </select>
-          </label>
+          <div class="pill-menu">
+            <button type="button" class="pill" aria-haspopup="true" aria-expanded="false" aria-label="Style"><i class="fa-solid fa-palette"></i><span class="pill-value"></span><i class="fa-solid fa-chevron-up pill-caret"></i></button>
+            <div class="pill-pop" hidden>
+              <div class="pill-pop-title">Style</div>
+              <input type="hidden" id="img_style" value="">
+              <div class="segmented seg-list" id="img_style_group" aria-label="Style">
+                <button type="button" data-style="" class="active">No style</button>
+                <button type="button" data-style="minimal_dtc">Minimal DTC studio</button>
+                <button type="button" data-style="luxury_podium">Luxury podium</button>
+                <button type="button" data-style="ugc_lifestyle">UGC lifestyle</button>
+                <button type="button" data-style="nature_botanical">Nature &amp; botanical</button>
+                <button type="button" data-style="dramatic_splash">Dramatic splash</button>
+              </div>
+            </div>
+          </div>
           <button type="button" class="pill prompt-add" id="img_add_prompt" title="Add another prompt (up to 5, one image each)"><i class="fa-solid fa-plus"></i> Prompt</button>
         </div>
       </div>
@@ -271,7 +291,16 @@
     <h1 class="sr-only">Video studio</h1>
     <section class="canvas" aria-label="Video results">
       <div class="stage-current" id="vid_result"><div class="media-empty"><i class="fa-solid fa-film"></i><span>Your video appears here</span></div></div>
-      <div class="gallery history" id="vid_history" data-empty="Videos you make this session will appear here"></div>
+      <div class="gallery history" id="vid_history"></div>
+      <div class="gallery-empty">
+        <h2>Describe the shot you want to see</h2>
+        <p>Videos you make this session collect here. Start from one of these, or write your own below.</p>
+        <div class="example-chips">
+          <button type="button" class="example-chip" data-example="Close-up of the product on a rainy window sill, slow push-in, warm interior light">Slow product push-in</button>
+          <button type="button" class="example-chip" data-example="Handheld phone-style clip: a person unboxes the product at their kitchen table and smiles at the first use, natural daylight">Handheld unboxing</button>
+          <button type="button" class="example-chip" data-example="The product rotates slowly on a seamless coloured backdrop while light sweeps across it, smooth studio camera orbit">Studio orbit</button>
+        </div>
+      </div>
     </section>
 
     <form class="composer" id="vid_form">
@@ -295,7 +324,7 @@
         <div class="thumbs composer-thumbs" id="vid_thumbs"></div>
         <label class="sr-only" for="vid_prompt" id="vid_prompt_label">Prompt</label>
         <div class="prompt-list" id="vid_prompts">
-          <textarea class="textarea composer-input" id="vid_prompt" data-prompt rows="2" placeholder="Describe the shot: close-up of the product on a rainy window sill, slow push-in, warm light"></textarea>
+          <textarea class="textarea composer-input" id="vid_prompt" data-prompt rows="2" placeholder="Describe the shot: subject, camera move and light"></textarea>
         </div>
         <div class="composer-bar">
           <div class="dropzone pill pill-icon" id="vid_drop" data-for-mode="prompt_images" role="button" tabindex="0" aria-label="Add reference images" title="Add reference images (up to 7)">
@@ -344,6 +373,8 @@
                 <button type="button" data-dur="6">6s</button>
                 <button type="button" data-dur="8" class="active">8s</button>
                 <button type="button" data-dur="10">10s</button>
+                <button type="button" data-dur="12">12s</button>
+                <button type="button" data-dur="15">15s</button>
               </div>
             </div>
           </div>
@@ -481,14 +512,60 @@
   <dialog id="key_dialog">
     <form method="dialog" class="dialog-body" id="key_form">
       <h3>Gemini API key</h3>
-      <p>Powers research, prompt writing, Nano Banana Pro and Omni Flash. Saved in this browser only and sent only to this app's server.</p>
+      <p>Powers research, prompt writing, Nano Banana 2.1 and Omni Flash. Saved in this browser only and sent only to this app's server. <a class="dialog-link" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a key from Google AI Studio</a></p>
       <label class="label" for="key_input">Key</label>
-      <input type="password" class="input" id="key_input" placeholder="AIzaSy…" autocomplete="off">
+      <div class="key-field">
+        <input type="password" class="input" id="key_input" placeholder="AIzaSy…" autocomplete="off" spellcheck="false">
+        <button type="button" class="btn-icon key-toggle" id="key_toggle" aria-label="Show key" aria-pressed="false"><i class="fa-regular fa-eye"></i></button>
+      </div>
       <div class="dialog-actions">
         <button type="button" class="btn btn-ghost" id="key_cancel">Cancel</button>
         <button type="submit" class="btn btn-primary">Save</button>
       </div>
     </form>
+  </dialog>
+
+  <!-- ============================================================== -->
+  <!-- Creative Reference Library Modal (Pinterest Design Reference Presets) -->
+  <!-- ============================================================== -->
+  <dialog id="preset_modal" class="preset-dialog">
+    <div class="preset-modal-content">
+      <header class="preset-modal-head">
+        <div class="preset-modal-title">
+          <div class="preset-modal-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> Creative Reference Library</div>
+          <h3>Meta Ad Design Presets</h3>
+          <p>Curated design references sorted by industry from Pinterest. Select a preset to elevate creative quality, layout styling, typography, and lighting.</p>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm preset-modal-close" id="btn_close_presets" aria-label="Close dialog"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+
+      <div class="preset-filter-bar">
+        <div class="input-with-icon preset-search-wrap">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="search" id="preset_search_input" class="input input-sm" placeholder="Search presets by keyword, movement, style..." aria-label="Search presets">
+        </div>
+        <div class="preset-industry-pills" id="preset_industry_pills" role="group" aria-label="Filter by industry">
+          <button type="button" class="preset-pill active" data-industry="all">All Industries</button>
+          <button type="button" class="preset-pill" data-industry="beauty-cosmetics">Beauty &amp; Cosmetics</button>
+          <button type="button" class="preset-pill" data-industry="fintech-finance">FinTech &amp; Finance</button>
+          <button type="button" class="preset-pill" data-industry="tech-saas">Tech &amp; SaaS</button>
+          <button type="button" class="preset-pill" data-industry="food-beverage">Food &amp; Beverage</button>
+          <button type="button" class="preset-pill" data-industry="fashion-apparel">Fashion &amp; Apparel</button>
+          <button type="button" class="preset-pill" data-industry="jewelry-luxury">Jewelry &amp; Luxury</button>
+          <button type="button" class="preset-pill" data-industry="fitness-sports">Fitness &amp; Sports</button>
+          <button type="button" class="preset-pill" data-industry="healthcare-medical">Healthcare &amp; Medical</button>
+          <button type="button" class="preset-pill" data-industry="health-wellness">Health &amp; Wellness</button>
+          <button type="button" class="preset-pill" data-industry="real-estate">Real Estate</button>
+          <button type="button" class="preset-pill" data-industry="construction-trades">Construction &amp; Trades</button>
+          <button type="button" class="preset-pill" data-industry="ecommerce-retail">E-Commerce &amp; Retail</button>
+          <button type="button" class="preset-pill" data-industry="marketing-agency">Marketing &amp; Agency</button>
+        </div>
+      </div>
+
+      <div class="preset-cards-grid" id="preset_cards_grid" role="region" aria-label="Creative Presets">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
   </dialog>
 
   <dialog id="confirm_dialog">
@@ -507,11 +584,12 @@
 
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
-  <script src="js/core.js?v=3.4.0"></script>
+  <script src="js/core.js?v=3.5.0"></script>
   <script src="js/render_loader.js?v=3.1.0"></script>
-  <script src="js/campaign.js?v=3.1.0"></script>
-  <script src="js/studios.js?v=3.3.0"></script>
-  <script src="js/composer.js?v=1.0.0"></script>
+  <script src="js/campaign.js?v=3.2.0"></script>
+  <script src="js/studios.js?v=3.4.0"></script>
+  <script src="js/viewer.js?v=1.0.0"></script>
+  <script src="js/composer.js?v=1.1.0"></script>
   <script src="js/batch.js?v=1.2.0"></script>
   <script src="js/demo_session.js?v=1.1.0"></script>
 </body>

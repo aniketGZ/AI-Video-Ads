@@ -74,7 +74,7 @@ class StaticBrief(BaseModel):
 
 class VideoCopy(BaseModel):
     hook_line: str = Field(description="Opening hook spoken or shown in first 2-3 seconds")
-    voiceover: str = Field(description="Continuous spoken script fitting 10 seconds, roughly 22-25 words, ~2.5 words/s")
+    voiceover: str = Field(description="Continuous spoken script fitting 15 seconds, roughly 32-38 words, ~2.5 words/s")
     on_screen_text: List[str] = Field(default_factory=list, description="Text overlays on screen per beat, each <= 5 words")
     primary_text: str = Field(description="Caption above the ad, 1-3 sentences")
     meta_headline: str = Field(description="Ads Manager headline field, <= 40 characters")
@@ -82,7 +82,7 @@ class VideoCopy(BaseModel):
 
 
 class VideoBeatBrief(BaseModel):
-    time: str = Field(description="Timestamp range, e.g. '0-3s', '3-7s', '7-10s'")
+    time: str = Field(description="Timestamp range, e.g. '0-3s', '3-8s', '8-12s', '12-15s'")
     visual: str = Field(description="What happens visually in this beat")
     on_screen_text: str = Field(default="", description="Text overlay for this beat, <= 5 words")
     audio: str = Field(description="Sound effect, ambient sound, or VO line for this beat")
@@ -98,8 +98,8 @@ class VideoBrief(BaseModel):
     product_indexes: List[int] = Field(default_factory=lambda: [0], description="List of product indices featured")
     proof_ids: List[str] = Field(default_factory=list, description="IDs of claims from proof bank used in VO or on-screen text")
     market: str = Field(default="US/en", description="Target market code")
-    duration_s: int = Field(default=10, description="Video duration in seconds")
-    beats: List[VideoBeatBrief] = Field(description="3-4 structured timeline beats covering 0-10 seconds")
+    duration_s: int = Field(default=15, description="Video duration in seconds")
+    beats: List[VideoBeatBrief] = Field(description="3-4 structured timeline beats covering 0-15 seconds")
     copy: VideoCopy
 
 
@@ -247,6 +247,25 @@ class CreativeStrategist:
                 for r in rejections[-5:]:
                     lines.append(f"  - Avoid: {r.get('reason')} ({r.get('angle', '')})")
 
+        # Creative Library Preset from Pinterest design reference atlas
+        preset_id = brand_profile.get("selected_preset_id") or (brand_profile.get("detected_preset") or {}).get("id")
+        preset = None
+        try:
+            from creative_library_presets import get_preset_by_id, detect_best_preset_for_brand
+            if preset_id:
+                preset = get_preset_by_id(preset_id)
+            if not preset:
+                preset = detect_best_preset_for_brand(category, brand_profile.get("business_type", ""), product_name, brand_name)
+        except Exception:
+            preset = None
+
+        if preset:
+            lines.append(f"\nCREATIVE LIBRARY DESIGN PRESET ({preset['name']}):")
+            lines.append(f"  Movement: {preset['movement']}")
+            lines.append(f"  Design Aesthetic: {preset['summary']}")
+            lines.append(f"  Art Direction Focus: {preset['layout']['composition']}")
+            lines.append(f"  Inspiration: {preset['inspiration_source']}")
+
         return "\n".join(lines)
 
     async def generate_statics_batch(
@@ -277,6 +296,7 @@ class CreativeStrategist:
             "  * meta_headline: <= 40 characters.\n"
             "  * NEVER use words from the avoid_words list.\n"
             "  * Never invent statistics, awards, or medical claims.\n"
+            "- In scene_direction, incorporate the aesthetic direction of the active CREATIVE LIBRARY DESIGN PRESET (e.g. modern SaaS bento grid, rounded UI feature cards, dark iridescent blooms) rather than generic stock photography.\n"
             "- CRITICAL CASTING & PROMPT RULE: In scene_direction, NEVER use proper personal names (e.g. do NOT use 'Ananya', 'Sarah', etc.). Always describe talent anonymously using demographic and situational descriptors (e.g. 'A 24-year-old South Asian woman in smart-casual office wear', 'A young commuter'). NEVER request, imply, or describe celebrity likeness, famous actors, or glamorous influencers. Keep talent looking like relatable everyday real customers with natural skin texture.\n"
             "- PERSONA DIVERSITY: Do not assign the exact same persona name to every single brief. Vary the persona name and customer sub-segment (e.g., college commuter, corporate professional, outdoor traveler, young parent, weekend athlete) across angles and awareness stages to represent real audience segments.\n"
         )
@@ -306,7 +326,7 @@ class CreativeStrategist:
         """Generates a batch of VideoBriefs focused on one stage and format."""
         prompt = (
             "You are the Creative Strategist for a launch-ready Meta Reels / TikTok ad campaign.\n"
-            "Generate 10-SECOND VERTICAL VIDEO BRIEFS.\n"
+            "Generate 15-SECOND VERTICAL VIDEO BRIEFS.\n"
             "YOU OWN ALL COPY: Write final, polished voiceover and on-screen text.\n\n"
             f"{context}\n\n"
             f"REQUIREMENTS FOR THIS BATCH:\n"
@@ -314,15 +334,20 @@ class CreativeStrategist:
             f"- Target awareness stage: '{awareness_stage}'\n"
             f"- Video format: '{video_format}' (ugc, demo, or motion_graphics)\n"
             f"- Market: {market}\n"
-            "- Beats: 3 to 4 timeline beats covering 0-10 seconds (e.g. 0-3s hook, 3-7s demo/benefit, 7-10s CTA).\n"
+            "- Beats: 3 to 4 timeline beats covering 0-15 seconds (e.g. 0-3s hook, 3-8s demo/benefit, 8-12s feature/proof, 12-15s payoff).\n"
+            "- NO END SCREEN: the last beat stays inside the live scene (the product in use or a natural hero moment with the person). "
+            "Never write an end screen, end card, logo slate, title card, CTA card or button, packshot on a plain background, or a fade to a brand-colour screen. "
+            "The cta field is used for the Meta button outside the video, not shown as a screen in it.\n"
             "- Copy constraints:\n"
             "  * hook_line: the first 2-3 seconds hook line.\n"
-            "  * voiceover: ~22-25 words total (fits 10 seconds, roughly 2.5 words/second). Natural spoken tone.\n"
+            "  * voiceover: ~32-38 words total (fits 15 seconds, roughly 2.5 words/second). Natural spoken tone.\n"
             "  * on_screen_text: <= 5 words per beat overlay.\n"
             "  * meta_headline: <= 40 characters.\n"
             "  * cta: <= 3 words.\n"
             "  * Proof IDs: cited from PROOF BANK only.\n"
             "  * NEVER use avoid_words.\n"
+            "  * NO HEX CODES: Never use hex color codes (e.g. #FF5252, #FFFFFF) or color hashes in copy, on-screen text, or beats. Use natural descriptive color words instead.\n"
+            "- STRICT DEVICE & SCREEN ORIENTATION RULES (CRITICAL - NO INVERTED SCREENS): When laptops, computer monitors, tablets, or smartphones appear, they MUST ALWAYS be described in their natural, upright, physically correct orientation. Laptops MUST ALWAYS sit flat on a desk/table with the keyboard at the bottom and screen open upright. NEVER describe talent 'flipping the laptop around', 'turning the laptop backward', 'holding a laptop in the air', or 'rotating a device upside down'. For demonstrating software, apps, or dashboards, describe clean over-the-shoulder views, direct desktop screencasts, or talent looking directly at the upright display on the desk. Smartphones MUST be held vertically upright with front cameras at the top. On-screen UI, dashboards, and charts must always be oriented right-side up, never inverted, upside-down, or mirrored.\n"
             "- CRITICAL CASTING & PROMPT RULE: In beats (the visual field) and copy, NEVER use proper character names (e.g. do NOT write 'Ananya steps off...', 'Sarah in the office...'). Always describe people anonymously (e.g. 'A 25-year-old woman in casual office wear', 'A young commuter'). NEVER request, imply, or describe celebrity likeness, famous actors, or glamorous influencers. Keep talent relatable with natural unretouched skin.\n"
             "- PERSONA DIVERSITY: Vary persona names and sub-segments across briefs to match the angle and awareness stage.\n"
         )

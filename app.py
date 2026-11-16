@@ -18,6 +18,7 @@ from google.genai import types
 
 from media_utils import (
     load_dotenv,
+    sanitize_video_prompt,
     GENERATED_DIR,
     IMAGE_EXTS,
     VIDEO_EXTS,
@@ -46,13 +47,15 @@ from meta_creative_engine import generate_single_meta_creative  # noqa: E402
 from competitor_ad_routes import router as competitor_ad_router  # noqa: E402
 from campaign_flow import router as campaign_flow_router  # noqa: E402
 from batch_prompt_engine import batch_prompt_router  # noqa: E402
+from demo_session_routes import router as demo_session_router  # noqa: E402
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # A processing job that has not reported progress for this long is marked failed.
 STALE_JOB_SECONDS = 3600
-OMNI_MODEL = os.environ.get("OMNI_MODEL", "gemini-omni-1.1-flash")
+OMNI_MODEL = os.environ.get("OMNI_MODEL", "gemini-omni-1.2-flash")
 MAX_VIDEO_REF_IMAGES = 7  # Omni Flash reference images per video
 MAX_PROMPTS_PER_REQUEST = 10  # Prompts started together, each its own render
 _video_tasks: set = set()  # keeps running render tasks referenced until they finish
@@ -190,6 +193,36 @@ def _extract_interaction_video(interaction) -> Optional[str]:
 
 
 # ---------------------------------------------------------------------------
+# Creative Library Presets (Pinterest Reference Design Atlas)
+# ---------------------------------------------------------------------------
+@app.get("/api/campaign/presets")
+async def list_creative_presets(industry: Optional[str] = None, q: Optional[str] = None):
+    """Returns curated creative presets from Pinterest design reference library."""
+    from creative_library_presets import get_all_presets, get_presets_for_industry
+    presets = get_presets_for_industry(industry) if industry else get_all_presets()
+    if q:
+        query = q.lower().strip()
+        presets = [
+            p for p in presets
+            if query in p["name"].lower()
+            or query in p["movement"].lower()
+            or query in p["industry_label"].lower()
+            or query in p["summary"].lower()
+        ]
+    return {"status": "success", "total": len(presets), "presets": presets}
+
+
+@app.get("/api/campaign/presets/{preset_id}")
+async def get_creative_preset(preset_id: str):
+    """Returns detail for a specific creative library preset."""
+    from creative_library_presets import get_preset_by_id
+    preset = get_preset_by_id(preset_id)
+    if not preset:
+        raise HTTPException(status_code=404, detail="Preset not found")
+    return {"status": "success", "preset": preset}
+
+
+# ---------------------------------------------------------------------------
 # Campaign image ads (Nano Banana Pro)
 # ---------------------------------------------------------------------------
 @app.post("/api/campaign/meta-creative-suite/render-one")
@@ -211,10 +244,14 @@ async def render_meta_creative_suite_one(
     brand_kit_json: Optional[str] = Form(None),
     logo_path: Optional[str] = Form(None),
     logo_tone: str = Form("dark"),
+    preset_id: Optional[str] = Form(None),
+    model: str = Form("nano-banana-2.1"),
     x_api_key: Optional[str] = Header(None),
 ):
     try:
         blueprint = json.loads(blueprint_json)
+        if preset_id:
+            blueprint["preset_id"] = preset_id
         try:
             brand_kit = json.loads(brand_kit_json) if brand_kit_json else None
         except ValueError:
@@ -245,6 +282,7 @@ async def render_meta_creative_suite_one(
             brand_kit=brand_kit if isinstance(brand_kit, dict) else None,
             logo_path=logo_path,
             logo_tone=logo_tone if logo_tone in ("dark", "light") else "dark",
+            model=model,
         )
     except HTTPException:
         raise
@@ -462,9 +500,42 @@ async def get_image_studio_history():
     ]}
 
 
+THUMB_DIR = os.path.join(GENERATED_DIR, "thumbs")
+THUMB_WIDTH = 640
+
+
+@app.get("/api/thumb/{filename}")
+def get_generated_thumbnail(filename: str):
+    """A small WebP of a studio render for gallery tiles; the renders themselves run to several MB each."""
+    if os.path.basename(filename) != filename or not (filename.startswith("banana_ad_") and filename.endswith(".png")):
+        raise HTTPException(status_code=404, detail="Not found")
+    source = os.path.join(GENERATED_DIR, filename)
+    if not os.path.isfile(source):
+        raise HTTPException(status_code=404, detail="Not found")
+    thumb = os.path.join(THUMB_DIR, f"{filename[:-4]}_{THUMB_WIDTH}.webp")
+    if not os.path.isfile(thumb):
+        from PIL import Image
+
+        os.makedirs(THUMB_DIR, exist_ok=True)
+        partial = f"{thumb}.{uuid.uuid4().hex}.tmp"
+        with Image.open(source) as image:
+            image.thumbnail((THUMB_WIDTH, THUMB_WIDTH * 4))
+            image.convert("RGB").save(partial, "WEBP", quality=80)
+        os.replace(partial, thumb)
+    return FileResponse(thumb, media_type="image/webp", headers={"Cache-Control": "public, max-age=31536000, immutable"})
+
+
 # ---------------------------------------------------------------------------
 # Video studio + campaign video ads (Gemini Omni Flash)
 # ---------------------------------------------------------------------------
+DEVICE_INTEGRITY_NEGATIVE_PROMPT = (
+    "inverted laptop screens, upside-down laptops, backward laptops, laptops held upside-down or flipped, "
+    "inverted phones, upside-down phone screens, mirrored screens, reverse UI, backwards display, "
+    "floating distorted keyboards, impossible hinge angles, backward screens, warped hands, extra fingers, "
+    "hex codes, color codes, hash codes, hexadecimal text, raw hex values, color hashes, printed hex codes, "
+    "color labels on screen, floating hex values"
+)
+
 async def generate_omni_video_background(
     job_id: str,
     mode: str,
@@ -480,6 +551,7 @@ async def generate_omni_video_background(
     api_key: Optional[str],
 ):
     try:
+        prompt = sanitize_video_prompt(prompt)
         client = get_client(api_key)
         if not client:
             persist_job_update(job_id, {"status": "failed", "error": "A Gemini API key is required for Omni Flash. Add it under API Keys."}, video_jobs)
@@ -494,7 +566,11 @@ async def generate_omni_video_background(
             res_clean = "720p"
 
         orientation = {"16:9": "horizontal landscape (16:9)", "9:16": "vertical portrait (9:16)"}.get(aspect_ratio, "square (1:1)")
-        header = f"Generate an ultra-high quality video in {orientation}, target resolution: {res_clean}, duration: {duration} seconds.\n\n"
+        header = (
+            f"Generate an ultra-high quality video in {orientation}, target resolution: {res_clean}, duration: {duration} seconds.\n"
+            "PHYSICAL DEVICE ORIENTATION: All laptops, computer screens, smartphones, and tablets must appear strictly right-side up in physically authentic orientation. Laptops sit flat with keyboards below screens. Screens and UI text must be horizontal and right-side up, never inverted, mirrored, or upside-down.\n"
+            "NO HEX CODES: Never render hex color codes, color values, hash symbols, or alphanumeric color codes anywhere in the video scene, overlays, props, or labels.\n\n"
+        )
 
         if mode == "first_last_frame":
             if first_frame_path and last_frame_path:
@@ -531,8 +607,11 @@ async def generate_omni_video_background(
                 )
             omni_prompt = f"{ref_line}{_paste_block(prompt)}\n\nThe video is {duration} seconds long."
 
+        combined_negative = DEVICE_INTEGRITY_NEGATIVE_PROMPT
         if negative_prompt and negative_prompt.strip():
-            omni_prompt += f"NEGATIVE PROMPT (strictly avoid): {negative_prompt.strip()}\n"
+            combined_negative = f"{negative_prompt.strip()}, {DEVICE_INTEGRITY_NEGATIVE_PROMPT}"
+        omni_prompt += f"NEGATIVE PROMPT (strictly avoid): {combined_negative}\n"
+        omni_prompt = sanitize_video_prompt(omni_prompt)
 
         def encode(path: str, kind: str) -> dict:
             with open(path, "rb") as f:
@@ -576,8 +655,7 @@ async def generate_omni_video_background(
             logger.warning(f"Interactions API attempt failed: {api_err}. Trying generate_videos fallback...")
             try:
                 config_args = {"aspect_ratio": aspect_ratio, "resolution": res_clean, "duration_seconds": duration}
-                if negative_prompt:
-                    config_args["negative_prompt"] = negative_prompt
+                config_args["negative_prompt"] = combined_negative
 
                 first_path = first_frame_path if mode == "first_last_frame" else (reference_image_paths[0] if reference_image_paths else None)
                 first_img = None
@@ -592,7 +670,7 @@ async def generate_omni_video_background(
                     op = await asyncio.to_thread(
                         client.models.generate_videos,
                         model=OMNI_MODEL,
-                        prompt=prompt,
+                        prompt=sanitize_video_prompt(prompt),
                         image=first_img,
                         config=types.GenerateVideosConfig(**config_args),
                     )
@@ -747,7 +825,7 @@ async def studio_generate_video(
                 negative_prompt=negative_prompt,
                 aspect_ratio=aspect_ratio,
                 resolution=res_clean,
-                duration=max(4, min(10, duration)),
+                duration=max(4, min(15, duration)),
                 reference_image_paths=saved_refs,
                 first_frame_path=first_path,
                 last_frame_path=last_path,
@@ -788,6 +866,8 @@ async def get_video_status(job_id: str):
 app.include_router(competitor_ad_router)
 app.include_router(campaign_flow_router)
 app.include_router(batch_prompt_router)
+app.include_router(demo_session_router)
+
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/css", StaticFiles(directory="static/css"), name="css")

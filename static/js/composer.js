@@ -44,10 +44,20 @@
       menu.querySelector(".pill").focus();
     });
     menu.addEventListener("keydown", (e) => {
-      if (e.key !== "Escape" || !menu.classList.contains("open")) return;
-      e.stopPropagation();
-      setOpen(menu, false);
-      menu.querySelector(".pill").focus();
+      if (!menu.classList.contains("open")) return;
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        setOpen(menu, false);
+        menu.querySelector(".pill").focus();
+        return;
+      }
+      // Up, down, home and end walk the choices, as in any native menu
+      const options = Array.from(menu.querySelectorAll(".pill-pop button"));
+      const at = options.indexOf(document.activeElement);
+      const next = { ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: options.length - 1 }[e.key];
+      if (next === undefined) return;
+      e.preventDefault();
+      options[(next + options.length) % options.length].focus();
     });
   });
 
@@ -89,9 +99,14 @@
 
   // ------------------------------------------------------------ gallery
   document.querySelectorAll(".gallery").forEach((gallery) => {
-    gallery.addEventListener("click", (e) => {
-      if (e.target.closest("[data-url]")) window.scrollTo({ top: 0, behavior: "smooth" });
-    });
+    // Tiles fade in as their picture arrives; if a thumbnail fails, fall back to the full file
+    gallery.addEventListener("load", (e) => e.target.classList?.add("is-loaded"), true);
+    gallery.addEventListener("loadeddata", (e) => e.target.classList?.add("is-loaded"), true);
+    gallery.addEventListener("error", (e) => {
+      const img = e.target;
+      const full = img.closest?.("[data-url]")?.dataset.url;
+      if (img.tagName === "IMG" && full && !img.src.endsWith(full)) img.src = full;
+    }, true);
     // video tiles preview on hover
     gallery.addEventListener("mouseover", (e) => {
       const video = e.target.closest("button")?.querySelector("video");
@@ -102,6 +117,17 @@
       if (!tile || tile.contains(e.relatedTarget)) return;
       const video = tile.querySelector("video");
       if (video) { video.pause(); video.currentTime = 0; }
+    });
+  });
+
+  // ------------------------------------------------------------ starting points on an empty canvas
+  document.querySelectorAll("[data-example]").forEach((chip) => {
+    chip.addEventListener("click", () => {
+      const box = chip.closest(".page-studio").querySelector(".composer textarea[data-prompt]");
+      box.value = chip.dataset.example;
+      box.dispatchEvent(new Event("input", { bubbles: true }));
+      box.focus();
+      box.setSelectionRange(box.value.length, box.value.length);
     });
   });
 })();

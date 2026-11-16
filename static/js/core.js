@@ -33,13 +33,112 @@ function escapeHtml(value) {
     .replace(/'/g, "&#39;");
 }
 
+const MOD_KEY = /Mac|iPhone|iPad/.test(navigator.platform) ? "⌘" : "Ctrl";
+
+// ---------------------------------------------------------------- toasts
+// Timers wait while you are reading (hovering the stack) or away (tab hidden). A repeat of a message on screen
+// restarts its timer instead of stacking a copy. Swipe right to dismiss; a quick flick is enough.
+const TOAST_MS = { error: 9000, warning: 6000 };
+const toastLife = new Map();
+
+function dismissToast(el) {
+  if (!el.isConnected || el.classList.contains("is-leaving")) return;
+  toastLife.delete(el);
+  const below = [];
+  for (let n = el.nextElementSibling; n; n = n.nextElementSibling) below.push(n);
+  const before = below.map((n) => n.getBoundingClientRect().top);
+  el.classList.remove("is-dragging");
+  el.style.transform = "";
+  el.classList.add("is-leaving");
+  setTimeout(() => {
+    el.remove();
+    // the toasts below close the gap instead of jumping into it
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    below.forEach((n, i) => {
+      if (!n.isConnected) return;
+      const delta = before[i] - n.getBoundingClientRect().top;
+      if (delta) n.animate([{ translate: `0 ${delta}px` }, { translate: "0 0" }], { duration: 220, easing: "cubic-bezier(0.23, 1, 0.32, 1)" });
+    });
+  }, 180);
+}
+
+function wireToastSwipe(el) {
+  let start = null;
+  el.addEventListener("pointerdown", (e) => {
+    if (e.target.closest("button") || e.button !== 0) return;
+    start = { x: e.clientX, t: e.timeStamp, id: e.pointerId };
+    el.setPointerCapture(e.pointerId);
+  });
+  el.addEventListener("pointermove", (e) => {
+    if (!start || e.pointerId !== start.id) return;
+    const dx = e.clientX - start.x;
+    if (Math.abs(dx) < 4 && !el.classList.contains("is-dragging")) return;
+    el.classList.add("is-dragging");
+    // free to the right, the way it leaves; resists to the left, where there is nothing to do
+    el.style.transform = `translateX(${dx > 0 ? dx : dx * 0.15}px)`;
+  });
+  const end = (e) => {
+    if (!start || e.pointerId !== start.id) return;
+    const dx = e.clientX - start.x;
+    const velocity = dx / Math.max(e.timeStamp - start.t, 1);
+    start = null;
+    if (dx > 72 || (dx > 8 && velocity > 0.11)) return dismissToast(el);
+    el.classList.remove("is-dragging");
+    el.style.transform = "";
+  };
+  el.addEventListener("pointerup", end);
+  el.addEventListener("pointercancel", end);
+}
+
 function notify(message, type = "info") {
   const stack = document.getElementById("toasts");
+  const twin = Array.from(stack.children).find((t) => t.dataset.message === message && !t.classList.contains("is-leaving"));
+  if (twin) {
+    toastLife.get(twin).left = TOAST_MS[type] || 4500;
+    return;
+  }
   const el = document.createElement("div");
   el.className = `toast ${type}`;
-  el.textContent = message;
+  el.dataset.message = message;
+  el.setAttribute("role", type === "error" ? "alert" : "status");
+  const text = document.createElement("span");
+  text.className = "toast-text";
+  text.textContent = message;
+  const close = document.createElement("button");
+  close.type = "button";
+  close.className = "toast-close";
+  close.setAttribute("aria-label", "Dismiss");
+  close.innerHTML = '<i class="fa-solid fa-xmark"></i>';
+  close.addEventListener("click", () => dismissToast(el));
+  el.append(text, close);
   stack.appendChild(el);
-  setTimeout(() => el.remove(), type === "error" ? 8000 : 4500);
+  toastLife.set(el, { left: TOAST_MS[type] || 4500 });
+  wireToastSwipe(el);
+  // The oldest quiet toast gives way once the stack is full; errors stay until read
+  const live = Array.from(stack.children).filter((t) => !t.classList.contains("is-leaving"));
+  if (live.length > 4) dismissToast(live.find((t) => !t.classList.contains("error")) || live[0]);
+  startToastClock();
+}
+
+let toastClock = null;
+function startToastClock() {
+  if (toastClock) return;
+  let last = performance.now();
+  toastClock = setInterval(() => {
+    const now = performance.now();
+    const elapsed = now - last;
+    last = now;
+    if (!toastLife.size) {
+      clearInterval(toastClock);
+      toastClock = null;
+      return;
+    }
+    if (document.hidden || document.getElementById("toasts").matches(":hover")) return;
+    toastLife.forEach((life, el) => {
+      life.left -= elapsed;
+      if (life.left <= 0) dismissToast(el);
+    });
+  }, 200);
 }
 
 async function readErrorDetail(res, fallback) {
@@ -76,10 +175,17 @@ async function pollJob(jobId, { intervalMs = 5000, maxMs = 30 * 60 * 1000, onPro
 }
 
 // Every network call needs the key; send people to the key dialog instead of letting the request fail.
-function requireKey() {
+// Once the key is saved the interrupted action carries on, so nobody has to press the same button twice.
+let afterKeySaved = null;
+function requireKey(retry) {
   if (getGeminiKey()) return true;
-  notify("Add your Gemini API key first.", "warning");
-  openKeyDialog();
+  const from = document.activeElement;
+  afterKeySaved = retry || (() => {
+    const form = from && from.closest && from.closest("form");
+    if (form && form.classList.contains("composer")) form.requestSubmit();
+    else if (from && from.tagName === "BUTTON" && from.isConnected) from.click();
+  });
+  openKeyDialog("Add your Gemini API key to continue.");
   return false;
 }
 
@@ -120,42 +226,136 @@ function askConfirm(title, text, okLabel = "Continue", { skipKey } = {}) {
 function updateKeyDot() {
   const ok = !!getGeminiKey();
   document.getElementById("key_dot").classList.toggle("ok", ok);
+  document.getElementById("key_btn").classList.toggle("is-missing", !ok);
+  document.getElementById("key_label").textContent = ok ? "API key" : "Add API key";
   const state = document.getElementById("key_state");
-  if (state) state.textContent = ok ? "Saved" : "Not set";
+  if (state) state.textContent = ok ? "Saved" : "";
 }
 
-function openKeyDialog() {
+function setKeyVisible(visible) {
+  const toggle = document.getElementById("key_toggle");
+  document.getElementById("key_input").type = visible ? "text" : "password";
+  toggle.setAttribute("aria-pressed", String(visible));
+  toggle.setAttribute("aria-label", visible ? "Hide key" : "Show key");
+  toggle.querySelector("i").className = visible ? "fa-regular fa-eye-slash" : "fa-regular fa-eye";
+}
+
+const KEY_DIALOG_INTRO = document.querySelector("#key_dialog h3").textContent;
+function openKeyDialog(title) {
   const dialog = document.getElementById("key_dialog");
+  document.querySelector("#key_dialog h3").textContent = typeof title === "string" ? title : KEY_DIALOG_INTRO;
   document.getElementById("key_input").value = getGeminiKey();
+  setKeyVisible(false);
   dialog.showModal();
+  document.getElementById("key_input").focus();
 }
 
-document.getElementById("key_btn").addEventListener("click", openKeyDialog);
+document.getElementById("key_btn").addEventListener("click", () => openKeyDialog());
+document.getElementById("key_toggle").addEventListener("click", () => setKeyVisible(document.getElementById("key_input").type === "password"));
 document.getElementById("key_cancel").addEventListener("click", () => document.getElementById("key_dialog").close());
+let keyJustSaved = false;
 document.getElementById("key_form").addEventListener("submit", () => {
   setGeminiKey(document.getElementById("key_input").value);
-  notify(getGeminiKey() ? "API key saved." : "API key removed.", "success");
+  keyJustSaved = !!getGeminiKey();
+  notify(keyJustSaved ? "API key saved." : "API key removed.", "success");
+});
+document.getElementById("key_dialog").addEventListener("close", () => {
+  const retry = keyJustSaved ? afterKeySaved : null;
+  keyJustSaved = false;
+  afterKeySaved = null;
+  if (retry) retry();
 });
 updateKeyDot();
 
+// ---------------------------------------------------------------- dialogs
+// A click on the backdrop dismisses, as long as the press started there too (not a text selection that ended there).
+let pressedBackdrop = false;
+const onBackdrop = (e) => {
+  const d = e.target;
+  if (!d || d.tagName !== "DIALOG" || !d.open || d.classList.contains("viewer")) return false;
+  const r = d.getBoundingClientRect();
+  return e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom;
+};
+document.addEventListener("pointerdown", (e) => { pressedBackdrop = onBackdrop(e); });
+document.addEventListener("click", (e) => {
+  if (pressedBackdrop && onBackdrop(e)) e.target.close();
+  pressedBackdrop = false;
+});
+
+// A file dropped beside a dropzone would otherwise replace the whole app, and the campaign with it
+["dragover", "drop"].forEach((type) => document.addEventListener(type, (e) => {
+  if (e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files")) e.preventDefault();
+}));
+
+// ---------------------------------------------------------------- sliding selection
+// A shared thumb moves between the options, so the eye follows the change instead of finding it again.
+// It sits on the active button however that button became active, and re-measures when fonts or layout move.
+function slidingThumb(group) {
+  const thumb = document.createElement("span");
+  thumb.className = "seg-thumb";
+  thumb.setAttribute("aria-hidden", "true");
+  group.prepend(thumb);
+  group.classList.add("has-thumb");
+  const place = () => {
+    const active = Array.from(group.children).find((c) => c.tagName === "BUTTON" && c.classList.contains("active"));
+    if (!active || !active.offsetWidth) return;
+    thumb.style.width = `${active.offsetWidth}px`;
+    thumb.style.height = `${active.offsetHeight}px`;
+    thumb.style.transform = `translate(${active.offsetLeft}px, ${active.offsetTop}px)`;
+    if (!thumb.classList.contains("is-live")) requestAnimationFrame(() => requestAnimationFrame(() => thumb.classList.add("is-live")));
+  };
+  new MutationObserver(place).observe(group, { subtree: true, attributes: true, attributeFilter: ["class"] });
+  new ResizeObserver(place).observe(group);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(place);
+  place();
+}
+
+document.querySelectorAll(".nav, .segmented:not(.seg-list)").forEach(slidingThumb);
+
 // ---------------------------------------------------------------- views
-function showView(name) {
+const VIEWS = ["campaign", "image", "video", "batch"];
+
+const viewScroll = {};
+let currentView = null;
+
+function showView(name, { push = false } = {}) {
+  if (currentView) viewScroll[currentView] = window.scrollY; // each view keeps your place in it
+  currentView = name;
   document.querySelectorAll("[data-view-panel]").forEach((p) => { p.hidden = p.dataset.viewPanel !== name; });
-  document.querySelectorAll(".nav-btn").forEach((b) => b.classList.toggle("active", b.dataset.view === name));
+  window.scrollTo(0, viewScroll[name] || 0);
+  document.querySelectorAll(".nav-btn").forEach((b) => {
+    const on = b.dataset.view === name;
+    b.classList.toggle("active", on);
+    if (on) {
+      b.setAttribute("aria-current", "page");
+      b.scrollIntoView({ block: "nearest", inline: "nearest" }); // the tab row scrolls on phones
+    } else {
+      b.removeAttribute("aria-current");
+    }
+  });
   try { localStorage.setItem("ad_studio_view", name); } catch (e) { /* ignore */ }
+  // Each studio has its own address, so Back works and a tab can be reopened where it was
+  if (push && location.hash !== `#${name}`) history.pushState(null, "", `#${name}`);
   window.dispatchEvent(new CustomEvent("viewchange", { detail: name }));
 }
 
-document.querySelectorAll(".nav-btn").forEach((b) => b.addEventListener("click", () => showView(b.dataset.view)));
+document.querySelectorAll(".nav-btn").forEach((b) => b.addEventListener("click", () => showView(b.dataset.view, { push: true })));
+window.addEventListener("popstate", () => {
+  const view = location.hash.slice(1);
+  showView(VIEWS.includes(view) ? view : "campaign");
+});
 
 // ---------------------------------------------------------------- segmented controls
 // Wires a .segmented group; returns a getter for the active button's data value.
 function segmented(id, attr, onChange) {
   const group = document.getElementById(id);
+  const mark = () => group.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.classList.contains("active"))));
+  mark();
   group.addEventListener("click", (e) => {
     const btn = e.target.closest("button");
     if (!btn || !group.contains(btn)) return;
     group.querySelectorAll("button").forEach((b) => b.classList.toggle("active", b === btn));
+    mark();
     if (onChange) onChange(btn.dataset[attr]);
   });
   return () => (group.querySelector("button.active") || {}).dataset?.[attr];
@@ -169,11 +369,13 @@ function imageDropzone({ zone, input, thumbs, max = 4 }) {
   const thumbsEl = document.getElementById(thumbs);
   let files = [];
 
+  let shown = 0;
   function render() {
+    thumbsEl.querySelectorAll("img").forEach((img) => URL.revokeObjectURL(img.src));
     thumbsEl.innerHTML = "";
     files.forEach((file, i) => {
       const wrap = document.createElement("div");
-      wrap.className = "thumb";
+      wrap.className = i >= shown ? "thumb is-new" : "thumb"; // only what was just added arrives
       const img = document.createElement("img");
       img.src = URL.createObjectURL(file);
       img.alt = file.name;
@@ -189,12 +391,16 @@ function imageDropzone({ zone, input, thumbs, max = 4 }) {
       wrap.append(img, rm);
       thumbsEl.appendChild(wrap);
     });
+    shown = files.length;
   }
 
   function add(list) {
-    const images = Array.from(list || []).filter((f) => f.type.startsWith("image/"));
-    files = max === 1 ? images.slice(0, 1) : files.concat(images).slice(0, max);
-    if (images.length && files.length === max && max > 1) notify(`Up to ${max} images are used.`, "info");
+    const dropped = Array.from(list || []);
+    const images = dropped.filter((f) => f.type.startsWith("image/"));
+    if (dropped.length && !images.length) notify("That file isn't an image, so it wasn't added.", "warning");
+    if (max > 1 && files.length + images.length > max) notify(`Only ${max} images can be used here, so the extras were left out.`, "info");
+    if (max === 1 && images.length) shown = 0;
+    files = max === 1 ? images.slice(0, 1).concat(images.length ? [] : files) : files.concat(images).slice(0, max);
     render();
   }
 
@@ -226,7 +432,9 @@ function imageDropzone({ zone, input, thumbs, max = 4 }) {
 
 // Restore the last view after the other scripts have registered their listeners
 window.addEventListener("DOMContentLoaded", () => {
-  let view = "campaign";
-  try { view = localStorage.getItem("ad_studio_view") || "campaign"; } catch (e) { /* ignore */ }
-  showView(["campaign", "image", "video", "batch"].includes(view) ? view : "campaign");
+  let view = location.hash.slice(1);
+  if (!VIEWS.includes(view)) {
+    try { view = localStorage.getItem("ad_studio_view") || "campaign"; } catch (e) { view = "campaign"; }
+  }
+  showView(VIEWS.includes(view) ? view : "campaign");
 });

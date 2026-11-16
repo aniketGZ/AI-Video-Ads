@@ -36,10 +36,10 @@ IMAGE_MODELS = {
     "nano-banana-pro": {"id": "nano-banana-pro-preview", "label": "Nano Banana Pro", "max_refs": 6},
     "nano-banana-2.1": {"id": "gemini-nano-banana-2.1", "label": "Nano Banana 2.1", "max_refs": 14},
 }
-DEFAULT_IMAGE_MODEL = "nano-banana-pro"
+DEFAULT_IMAGE_MODEL = "nano-banana-2.1"
 
 
-def image_model(key: Optional[str]) -> dict:
+def image_model(key: Optional[str] = None) -> dict:
     """Model settings for a key from IMAGE_MODELS; unknown keys fall back to the default. Env vars
     NANO_BANANA_PRO_MODEL / NANO_BANANA_21_MODEL override the API ids."""
     k = (str(key or "").strip().lower().replace(" ", "-")) if key else DEFAULT_IMAGE_MODEL
@@ -342,6 +342,262 @@ def sanitize_visual_prompt(text: str, forbidden_names: Optional[List[str]] = Non
     cleaned = re.sub(r"\ba relatable customer\'s\b", "the customer's", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"\ba relatable customer is\b", "a customer is", cleaned, flags=re.IGNORECASE)
     cleaned = re.sub(r"^a relatable customer\b", "A relatable customer", cleaned)
+    return cleaned
+
+
+def sanitize_device_actions(text: str) -> str:
+    """
+    Cleans up device actions that trigger video generation models to invert laptop screens,
+    flip laptops upside-down, or render mirrored/reversed phone screens.
+    """
+    if not text:
+        return ""
+
+    cleaned = text
+    cleaned = re.sub(
+        r"\bflips (his|her|their|the) laptop( camera)? around to show\b",
+        r"angles the upright laptop on the desk to show",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.sub(
+        r"\bflips (his|her|their|the) (laptop|phone|screen|monitor)( around)?\b",
+        r"points to the upright \2 on the desk",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.sub(
+        r"\bturns laptop screen to show\b",
+        r"points to the upright laptop screen to show",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.sub(
+        r"\bturns (his|her|their|the) laptop( around)? to show\b",
+        r"gestures toward the upright laptop screen showing",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.sub(
+        r"\bholds up (two|three|multiple|\d+) (different )?device screens\b",
+        r"reviews open dashboards on an upright desktop monitor",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.sub(
+        r"\b(holding|holds) (the |a |his |her )?laptop in (mid-air|the air|hands)\b",
+        r"seated with laptop resting flat on desk",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    cleaned = re.sub(
+        r"\bhaving laptop upside[- ]?down\b",
+        r"with laptop resting upright and flat",
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+    return cleaned
+
+
+# ---------------------------------------------------------------------------
+# Color palette mapping & video prompt sanitization (Prevents hex codes in video)
+# ---------------------------------------------------------------------------
+COLOR_PALETTE = {
+    "black": (0, 0, 0),
+    "matte black": (20, 20, 20),
+    "dark charcoal": (35, 37, 40),
+    "charcoal": (54, 57, 63),
+    "dark grey": (75, 75, 75),
+    "slate grey": (112, 128, 144),
+    "cool grey": (140, 150, 160),
+    "light grey": (211, 211, 211),
+    "silver": (192, 192, 192),
+    "soft off-white": (245, 245, 245),
+    "warm off-white": (250, 248, 244),
+    "cream": (255, 253, 208),
+    "white": (255, 255, 255),
+    "dark navy": (21, 43, 54),
+    "midnight blue": (25, 25, 112),
+    "navy blue": (0, 0, 128),
+    "royal blue": (65, 105, 225),
+    "cobalt blue": (0, 71, 171),
+    "sky blue": (135, 206, 235),
+    "light blue": (173, 216, 230),
+    "slate blue": (106, 90, 205),
+    "teal": (0, 128, 128),
+    "dark teal": (0, 80, 80),
+    "cyan": (0, 255, 255),
+    "turquoise": (64, 224, 208),
+    "mint green": (152, 255, 152),
+    "seafoam green": (142, 226, 175),
+    "lime green": (50, 205, 50),
+    "chartreuse": (211, 233, 53),
+    "olive green": (107, 142, 35),
+    "forest green": (34, 139, 34),
+    "emerald green": (46, 139, 87),
+    "coral red": (255, 82, 82),
+    "crimson": (220, 20, 60),
+    "ruby red": (155, 17, 30),
+    "deep red": (178, 34, 34),
+    "bright red": (255, 0, 0),
+    "burgundy": (128, 0, 32),
+    "wine red": (114, 47, 55),
+    "hot pink": (255, 105, 180),
+    "blush pink": (255, 182, 193),
+    "dusty rose": (216, 150, 150),
+    "magenta": (255, 0, 255),
+    "purple": (128, 0, 128),
+    "violet": (138, 43, 226),
+    "lavender": (230, 230, 250),
+    "plum": (142, 69, 133),
+    "dark purple": (48, 25, 52),
+    "orange": (255, 140, 0),
+    "burnt orange": (204, 85, 0),
+    "tangerine": (242, 133, 0),
+    "peach": (232, 165, 137),
+    "terracotta": (204, 78, 56),
+    "amber": (255, 191, 0),
+    "warm gold": (218, 165, 32),
+    "yellow": (255, 235, 59),
+    "mustard yellow": (225, 173, 1),
+    "tan": (210, 180, 140),
+    "beige": (245, 245, 220),
+    "warm beige": (235, 220, 195),
+    "sand": (194, 178, 128),
+    "taupe": (179, 139, 109),
+    "warm brown": (150, 75, 0),
+    "chocolate brown": (92, 51, 23),
+    "espresso brown": (43, 29, 20),
+}
+
+COLOR_WORDS = set()
+for c in COLOR_PALETTE.keys():
+    for word in c.split():
+        COLOR_WORDS.add(word.lower())
+COLOR_WORDS.update({
+    "neon", "matte", "metallic", "glossy", "satin", "pastel", "vibrant", "bright",
+    "dark", "light", "deep", "soft", "warm", "cool", "pale", "tinted", "shimmering"
+})
+
+
+def hex_to_rgb(hex_str: str) -> Tuple[int, int, int]:
+    """Parses a hex color string into an (r, g, b) tuple."""
+    if not hex_str:
+        return (128, 128, 128)
+    h = str(hex_str).lstrip("#").strip()
+    if len(h) == 3:
+        h = "".join([c * 2 for c in h])
+    elif len(h) == 8:
+        h = h[:6]
+    if len(h) != 6:
+        return (128, 128, 128)
+    try:
+        return tuple(int(h[i : i + 2], 16) for i in (0, 2, 4))
+    except ValueError:
+        return (128, 128, 128)
+
+
+def hex_to_color_name(hex_str: str) -> str:
+    """
+    Maps any hex color string to its closest natural language English color descriptor.
+    Prevents video generation models from seeing raw hex strings and rendering them on screen.
+    """
+    if not hex_str:
+        return ""
+    r, g, b = hex_to_rgb(hex_str)
+    best_name = "neutral tone"
+    best_dist = float("inf")
+    for name, (cr, cg, cb) in COLOR_PALETTE.items():
+        dr, dg, db = r - cr, g - cg, b - cb
+        # Weighted Euclidean distance approximating human perceptual color difference
+        dist = 2 * (dr**2) + 4 * (dg**2) + 3 * (db**2)
+        if dist < best_dist:
+            best_dist = dist
+            best_name = name
+    return best_name
+
+
+# Video ads end inside the live scene; the CTA is Meta's button, never a screen rendered in the clip.
+NO_END_SCREEN_LINE = (
+    "ENDING: The video ends inside the live scene on the final beat's action, with no cut away. "
+    "No end screen, end card, logo slate, title card, CTA card or button, packshot on a plain background, "
+    "or fade to a brand-colour screen."
+)
+NO_END_SCREEN_AVOID = (
+    "end screens, end cards, logo slates or logo reveals, title cards, CTA cards or buttons, "
+    "plain-background packshot outros, fades to a solid brand-colour screen"
+)
+
+
+def sanitize_video_prompt(text: str) -> str:
+    """
+    Cleans video generation prompts of all raw hexadecimal color codes (e.g. #FF5252, #FFFFFF).
+    Video diffusion/multimodal models (e.g. Omni Flash, Veo) treat hex codes as literal text tokens
+    and render them visibly on props, wardrobe, surfaces, or overlay titles.
+    This function converts hex codes into descriptive English color names and eliminates redundant tags.
+    """
+    if not text:
+        return ""
+    cleaned = text
+
+    # Step 1: Strip parenthesized or bracketed hex following a color word: e.g. 'chartreuse (#D3E935)' -> 'chartreuse'
+    def strip_redundant_paren_hex(match):
+        preceding = match.group(1)
+        recent_words = [w.lower().strip(",.;:") for w in preceding.split()[-3:]]
+        if any(w in COLOR_WORDS for w in recent_words):
+            return preceding
+        hex_code = match.group(2)
+        return f"{preceding} ({hex_to_color_name(hex_code)})"
+
+    cleaned = re.sub(
+        r"(\b[a-zA-Z\-]+(?:\s+[a-zA-Z\-]+){0,2})\s*[\(\[]\s*(#[0-9a-fA-F]{3,8})\s*[\)\]]",
+        strip_redundant_paren_hex,
+        cleaned,
+    )
+
+    # Step 2: Strip unparenthesized hex immediately following a color word: e.g. 'dark navy #152B36 with' -> 'dark navy with'
+    def strip_redundant_hex(match):
+        preceding = match.group(1)
+        recent_words = [w.lower().strip(",.;:") for w in preceding.split()[-2:]]
+        if any(w in COLOR_WORDS for w in recent_words):
+            return preceding
+        hex_code = match.group(2)
+        return f"{preceding} {hex_to_color_name(hex_code)}"
+
+    cleaned = re.sub(
+        r"(\b[a-zA-Z\-]+(?:\s+[a-zA-Z\-]+)?)\s+(#[0-9a-fA-F]{3,8})(?=\s|[.,;:\)]|$)",
+        strip_redundant_hex,
+        cleaned,
+    )
+
+    # Step 3: Any remaining hex codes (e.g. standalone '#FF5252' or '(#FF5252)') -> replace with descriptive color name
+    def replace_remaining_hex(match):
+        return hex_to_color_name(match.group(0))
+
+    cleaned = re.sub(r"#[0-9a-fA-F]{3,8}\b", replace_remaining_hex, cleaned)
+
+    # Step 4: Clean up repetitive 'color accents in brand palette ...'
+    def clean_palette_line(match):
+        colors_part = match.group(1).strip()
+        parts = [c.strip() for c in re.split(r"[,;]|\band\b", colors_part) if c.strip()]
+        unique_colors = list(dict.fromkeys(parts))
+        if len(unique_colors) > 1:
+            joined = ", ".join(unique_colors[:-1]) + " and " + unique_colors[-1]
+        elif unique_colors:
+            joined = unique_colors[0]
+        else:
+            joined = "brand accent tones"
+        return f"color accents in brand palette {joined} "
+
+    cleaned = re.sub(
+        r"colou?r accents in (?:the )?brand palette ([^(\n]+?)\s*(?=\()",
+        clean_palette_line,
+        cleaned,
+        flags=re.IGNORECASE,
+    )
+
+    # Normalize double spaces
+    cleaned = re.sub(r"[ \t]{2,}", " ", cleaned)
     return cleaned
 
 

@@ -12,8 +12,20 @@
   }
 
   function failed(container, text) {
-    showResult(container, `<div class="media-empty error"><i class="fa-solid fa-triangle-exclamation"></i><span>${esc(text)}</span></div>`);
+    showResult(container, `<div class="media-empty error"><i class="fa-solid fa-triangle-exclamation"></i><span>${esc(text)}</span>
+      <div class="result-bar"><button type="button" class="btn btn-sm" data-retry>Try again</button><button type="button" class="btn btn-sm btn-ghost" data-dismiss-result>Dismiss</button></div></div>`);
   }
+
+  // The Generate button says what the app is doing; the blur hides the swap between the two labels
+  function setBusy(btn, busy, sync) {
+    btn.disabled = busy;
+    if (busy) btn.innerHTML = '<span class="spinner"></span> Generating…';
+    else sync();
+    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      btn.animate([{ filter: "blur(3px)", opacity: 0.6 }, { filter: "blur(0)", opacity: busy ? 0.85 : 1 }], { duration: 200, easing: "ease-out" });
+    }
+  }
+  const submitKey = `<kbd>${MOD_KEY} ↵</kbd>`;
 
   const MAX_PROMPTS = 5;
 
@@ -117,16 +129,17 @@
   });
 
   function showImage(url, meta) {
-    let metaHtml = "";
-    if (meta && (meta.resolution || meta.aspect_ratio || meta.width)) {
-      const dim = meta.width && meta.height ? `${meta.width}×${meta.height}` : "";
-      metaHtml = `<div class="image-meta-bar" style="margin-top: 10px; display: flex; gap: 8px; align-items: center; justify-content: center; font-size: 0.82rem; color: var(--text-2);">
-        ${meta.resolution ? `<span class="badge badge-accent">${esc(meta.resolution)}</span>` : ""}
-        ${meta.aspect_ratio ? `<span class="badge">${esc(meta.aspect_ratio)}</span>` : ""}
-        ${dim ? `<span class="muted small">${esc(dim)}</span>` : ""}
-      </div>`;
-    }
-    showResult("img_result", `<div style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;"><img src="${esc(url)}" alt="Generated image ad">${metaHtml}</div>`);
+    const dim = meta && meta.width && meta.height ? `${meta.width}×${meta.height}` : "";
+    showResult("img_result", `<figure class="result-card">
+      <img src="${esc(url)}" alt="Generated image ad">
+      <figcaption class="result-bar">
+        ${meta && meta.resolution ? `<span class="badge badge-accent">${esc(meta.resolution)}</span>` : ""}
+        ${meta && meta.aspect_ratio ? `<span class="badge">${esc(meta.aspect_ratio)}</span>` : ""}
+        ${dim ? `<span class="muted small num">${esc(dim)}</span>` : ""}
+        <a href="${esc(url)}" download class="btn btn-sm"><i class="fa-solid fa-download"></i> Download</a>
+        <button type="button" class="btn btn-sm btn-ghost" data-dismiss-result><i class="fa-solid fa-xmark"></i> Close</button>
+      </figcaption>
+    </figure>`);
   }
 
   function imgPromptBoxes() {
@@ -138,7 +151,7 @@
     $("img_prompts").querySelectorAll(".prompt-extra .label").forEach((el, i) => { el.textContent = `Prompt ${i + 2}`; });
     $("img_add_prompt").hidden = boxes.length >= MAX_PROMPTS;
     const n = boxes.filter((b) => b.value.trim()).length || 1;
-    $("img_submit").innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Generate ${n > 1 ? `${n} images` : "image"}`;
+    $("img_submit").innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> Generate ${n > 1 ? `${n} images` : "image"} ${submitKey}`;
   }
 
   $("img_add_prompt").addEventListener("click", () => {
@@ -177,15 +190,11 @@
       if (!res.ok) return;
       const { images } = await res.json();
       $("img_history").innerHTML = (images || []).map((i) =>
-        `<button type="button" data-url="${esc(i.url)}" aria-label="Show this image"><img src="${esc(i.url)}" alt="" loading="lazy"></button>`
-      ).join(""); // empty: the gallery shows its own data-empty message
+        `<button type="button" data-url="${esc(i.url)}" aria-label="Open this image"><img src="/api/thumb/${encodeURIComponent(i.filename)}" alt="" loading="lazy" decoding="async"></button>`
+      ).join("");
     } catch (e) { /* history is optional */ }
+    $("img_history").removeAttribute("data-loading");
   }
-
-  $("img_history").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-url]");
-    if (b) showImage(b.dataset.url);
-  });
 
   $("img_form").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -216,7 +225,7 @@
     refFiles.forEach((f) => fd.append("reference_images", f));
     if (refFiles[0]) fd.append("product_image", refFiles[0]);
 
-    $("img_submit").disabled = true;
+    setBusy($("img_submit"), true, syncImgPromptUi);
 
     if (prompts.length === 1) {
       busy("img_result", `${modelLabel} is generating… (${selectedRes})`, imgAspect() || "1:1");
@@ -231,7 +240,7 @@
       } catch (err) {
         failed("img_result", err.message);
       } finally {
-        $("img_submit").disabled = false;
+        setBusy($("img_submit"), false, syncImgPromptUi);
       }
       return;
     }
@@ -258,16 +267,12 @@
         if (item && item.image_url && item.status !== "failed") {
           ok++;
           tileEl.innerHTML = `
-            <img src="${esc(item.image_url)}" alt="${esc(p)}" style="cursor:pointer;" title="Click to view full size">
+            <img src="${esc(item.image_url)}" alt="${esc(p)}">
             <div class="tile-bar">
               <span class="badge badge-accent small">${esc(item.resolution || selectedRes)}</span>
-              <button type="button" class="btn-link small" data-view-img><i class="fa-solid fa-expand"></i> View</button>
               <a href="${esc(item.image_url)}" download="${esc(item.filename || `image_${i+1}.png`)}" class="btn-link small" target="_blank"><i class="fa-solid fa-download"></i> Save</a>
             </div>`;
           revealRendered(tileEl.querySelector("img"));
-          tileEl.querySelector("img").addEventListener("click", () => showImage(item.image_url, item));
-          const viewBtn = tileEl.querySelector("[data-view-img]");
-          if (viewBtn) viewBtn.addEventListener("click", () => showImage(item.image_url, item));
         } else {
           const errText = item?.error || "Generation failed";
           tileEl.innerHTML = `<div class="media-empty error"><i class="fa-solid fa-triangle-exclamation"></i><span>${esc(errText)}</span></div>`;
@@ -278,7 +283,7 @@
     } catch (err) {
       failed("img_result", err.message);
     } finally {
-      $("img_submit").disabled = false;
+      setBusy($("img_submit"), false, syncImgPromptUi);
     }
   });
 
@@ -306,7 +311,7 @@
     $("vid_prompts").querySelectorAll(".prompt-extra .label").forEach((el, i) => { el.textContent = `Prompt ${i + 2}`; });
     $("vid_add_prompt").hidden = boxes.length >= MAX_PROMPTS;
     const n = boxes.filter((b) => b.value.trim()).length || 1;
-    $("vid_submit").innerHTML = `<i class="fa-solid fa-clapperboard"></i> Generate ${n > 1 ? `${n} videos` : "video"}`;
+    $("vid_submit").innerHTML = `<i class="fa-solid fa-clapperboard"></i> Generate ${n > 1 ? `${n} videos` : "video"} ${submitKey}`;
   }
 
   $("vid_add_prompt").addEventListener("click", () => {
@@ -343,7 +348,7 @@
     const res = (job?.resolution || vidResolution() || "1080p").toUpperCase();
     sessionVideos.unshift({ url, resolution: res, width: job?.width, height: job?.height });
     $("vid_history").innerHTML = sessionVideos.map((item) =>
-      `<button type="button" data-url="${esc(item.url)}" aria-label="Show this video">
+      `<button type="button" data-url="${esc(item.url)}" aria-label="Open this video">
         <video src="${esc(item.url)}" muted preload="metadata"></video>
         ${item.resolution ? `<span class="vid-hist-badge">${esc(item.resolution)}</span>` : ""}
       </button>`
@@ -358,23 +363,18 @@
   function showVideo(url, job) {
     const item = sessionVideos.find((v) => v.url === url);
     const res = (job?.resolution || item?.resolution || vidResolution() || "1080p").toUpperCase();
-    const dim = (job?.width && job?.height) ? `${job.width}×${job.height} · ` : (item?.width && item?.height ? `${item.width}×${item.height} · ` : "");
-    const dlFilename = `omni_video_${res.toLowerCase()}.mp4`;
-    const toolbar = `
-      <div class="vid-meta-pill" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+    const w = job?.width || item?.width;
+    const h = job?.height || item?.height;
+    showResult("vid_result", `<figure class="result-card">
+      <video src="${esc(url)}" controls autoplay playsinline></video>
+      <figcaption class="result-bar">
         <span class="badge badge-accent">${esc(res)}</span>
-        ${dim ? `<span class="muted small">${esc(dim)}</span>` : ""}
-        <a href="${esc(url)}" download="${esc(dlFilename)}" class="btn btn-sm btn-ghost" style="padding: 3px 10px; font-size: 0.76rem; border: 1px solid var(--border);" title="Download full resolution video">
-          <i class="fa-solid fa-download"></i> Download ${esc(res)}
-        </a>
-      </div>`;
-    showResult("vid_result", `<div class="vid-preview-box">${toolbar}<video src="${esc(url)}" controls autoplay playsinline></video></div>`);
+        ${w && h ? `<span class="muted small num">${esc(`${w}×${h}`)}</span>` : ""}
+        <a href="${esc(url)}" download="omni_video_${esc(res.toLowerCase())}.mp4" class="btn btn-sm"><i class="fa-solid fa-download"></i> Download</a>
+        <button type="button" class="btn btn-sm btn-ghost" data-dismiss-result><i class="fa-solid fa-xmark"></i> Close</button>
+      </figcaption>
+    </figure>`);
   }
-
-  $("vid_history").addEventListener("click", (e) => {
-    const b = e.target.closest("[data-url]");
-    if (b) showVideo(b.dataset.url);
-  });
 
   $("vid_form").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -404,7 +404,7 @@
     }
     if (mode === "edit_video") fd.append("source_video", $("vid_source").files[0]);
 
-    $("vid_submit").disabled = true;
+    setBusy($("vid_submit"), true, syncPromptUi);
     busy("vid_result", prompts.length > 1 ? `Sending ${prompts.length} prompts to Omni Flash…` : "Sending to Omni Flash…", vidAspect() || "9:16");
     try {
       // One request uploads the shared images once and starts every prompt in parallel
@@ -454,8 +454,26 @@
     } catch (err) {
       failed("vid_result", err.message);
     } finally {
-      $("vid_submit").disabled = false;
+      setBusy($("vid_submit"), false, syncPromptUi);
     }
+  });
+
+  // The style pill keeps its choice in a hidden field, read when the form is sent
+  segmented("img_style_group", "style", (style) => { $("img_style").value = style; });
+
+  syncImgPromptUi();
+  syncPromptUi();
+
+  // Result actions: close it and return to the gallery, or run the same request again after a failure
+  document.querySelectorAll(".stage-current").forEach((stage) => {
+    stage.addEventListener("click", (e) => {
+      if (e.target.closest("[data-dismiss-result]")) {
+        const video = stage.id === "vid_result";
+        showResult(stage.id, `<div class="media-empty"><i class="${video ? "fa-solid fa-film" : "fa-regular fa-image"}"></i><span>Your ${video ? "video" : "image"} appears here</span></div>`);
+      } else if (e.target.closest("[data-retry]")) {
+        $(stage.id === "vid_result" ? "vid_form" : "img_form").requestSubmit();
+      }
+    });
   });
 
   window.addEventListener("viewchange", (e) => { if (e.detail === "image") loadImageHistory(); });
