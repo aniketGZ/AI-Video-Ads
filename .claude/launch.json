@@ -6,6 +6,12 @@
       "runtimeExecutable": "python",
       "runtimeArgs": ["-m", "uvicorn", "app:app", "--host", "127.0.0.1", "--port", "8000"],
       "port": 8000
+    },
+    {
+      "name": "app-starter-plan",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["-c", "import os, uvicorn; os.environ['APP_PLAN'] = 'starter'; uvicorn.run('app:app', host='127.0.0.1', port=8011)"],
+      "port": 8011
     }
   ]
 }

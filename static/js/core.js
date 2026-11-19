@@ -430,11 +430,45 @@ function imageDropzone({ zone, input, thumbs, max = 4 }) {
   };
 }
 
+// ---------------------------------------------------------------- plan
+// Features the plan leaves out are locked here; the server refuses them too (HTTP 403).
+let planFeatures = null; // null = unknown (offline/old server): leave everything open
+
+async function loadPlan() {
+  try {
+    const res = await fetch("/api/plan");
+    if (res.ok) planFeatures = (await res.json()).features || [];
+  } catch (e) { /* keep unknown */ }
+}
+
+function hasFeature(name) {
+  return planFeatures === null || planFeatures.includes(name);
+}
+
+function applyPlanLocks() {
+  const locked = !hasFeature("campaign_manager");
+  const btn = document.querySelector('.nav-btn[data-view="campaign"]');
+  if (btn && locked && !btn.querySelector(".nav-lock")) {
+    btn.insertAdjacentHTML("beforeend", ' <i class="fa-solid fa-lock nav-lock" aria-hidden="true"></i>');
+    btn.title = "Pro and Studio plans";
+  }
+  const panel = document.getElementById("view_campaign");
+  if (!panel) return;
+  document.getElementById("campaign_locked").hidden = !locked;
+  panel.querySelector(".steps").hidden = locked;
+  if (locked) document.getElementById("btn_new_campaign").hidden = true;
+}
+
+document.getElementById("campaign_locked_image")?.addEventListener("click", () => showView("image", { push: true }));
+
 // Restore the last view after the other scripts have registered their listeners
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
+  await loadPlan();
+  applyPlanLocks();
+  const start = hasFeature("campaign_manager") ? "campaign" : "image";
   let view = location.hash.slice(1);
   if (!VIEWS.includes(view)) {
-    try { view = localStorage.getItem("ad_studio_view") || "campaign"; } catch (e) { view = "campaign"; }
+    try { view = localStorage.getItem("ad_studio_view") || start; } catch (e) { view = start; }
   }
-  showView(VIEWS.includes(view) ? view : "campaign");
+  showView(VIEWS.includes(view) ? view : start);
 });

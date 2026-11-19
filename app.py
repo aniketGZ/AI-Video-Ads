@@ -9,7 +9,7 @@ import logging
 from contextlib import asynccontextmanager
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Header, Request
+from fastapi import Depends, FastAPI, HTTPException, UploadFile, File, Form, Header, Request
 from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
@@ -48,6 +48,10 @@ from competitor_ad_routes import router as competitor_ad_router  # noqa: E402
 from campaign_flow import router as campaign_flow_router  # noqa: E402
 from batch_prompt_engine import batch_prompt_router  # noqa: E402
 from demo_session_routes import router as demo_session_router  # noqa: E402
+from access import current_plan, plan_summary, require_feature  # noqa: E402
+
+# Pro and Studio only (see pricing.PLANS)
+CAMPAIGN_ACCESS = [Depends(require_feature("campaign_manager"))]
 
 
 logging.basicConfig(level=logging.INFO)
@@ -195,7 +199,7 @@ def _extract_interaction_video(interaction) -> Optional[str]:
 # ---------------------------------------------------------------------------
 # Creative Library Presets (Pinterest Reference Design Atlas)
 # ---------------------------------------------------------------------------
-@app.get("/api/campaign/presets")
+@app.get("/api/campaign/presets", dependencies=CAMPAIGN_ACCESS)
 async def list_creative_presets(industry: Optional[str] = None, q: Optional[str] = None):
     """Returns curated creative presets from Pinterest design reference library."""
     from creative_library_presets import get_all_presets, get_presets_for_industry
@@ -212,7 +216,7 @@ async def list_creative_presets(industry: Optional[str] = None, q: Optional[str]
     return {"status": "success", "total": len(presets), "presets": presets}
 
 
-@app.get("/api/campaign/presets/{preset_id}")
+@app.get("/api/campaign/presets/{preset_id}", dependencies=CAMPAIGN_ACCESS)
 async def get_creative_preset(preset_id: str):
     """Returns detail for a specific creative library preset."""
     from creative_library_presets import get_preset_by_id
@@ -225,7 +229,7 @@ async def get_creative_preset(preset_id: str):
 # ---------------------------------------------------------------------------
 # Campaign image ads (Nano Banana Pro)
 # ---------------------------------------------------------------------------
-@app.post("/api/campaign/meta-creative-suite/render-one")
+@app.post("/api/campaign/meta-creative-suite/render-one", dependencies=CAMPAIGN_ACCESS)
 async def render_meta_creative_suite_one(
     blueprint_json: str = Form(...),
     brand_name: str = Form(...),
@@ -863,8 +867,8 @@ async def get_video_status(job_id: str):
     return job
 
 
-app.include_router(competitor_ad_router)
-app.include_router(campaign_flow_router)
+app.include_router(competitor_ad_router, dependencies=CAMPAIGN_ACCESS)
+app.include_router(campaign_flow_router, dependencies=CAMPAIGN_ACCESS)
 app.include_router(batch_prompt_router)
 app.include_router(demo_session_router)
 
@@ -887,6 +891,12 @@ async def read_index(request: Request):
 @app.api_route("/health", methods=["GET", "HEAD"])
 async def health_check():
     return {"status": "ok"}
+
+
+@app.get("/api/plan")
+async def get_plan(plan: str = Depends(current_plan)):
+    """The caller's plan and which gated features it includes (the UI locks the rest)."""
+    return plan_summary(plan)
 
 
 @app.get("/favicon.ico")
