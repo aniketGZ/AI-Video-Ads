@@ -2318,3 +2318,4 @@ dialog.viewer::backdrop { display: none; }
   .upgrade-pill span { display: none; }
   .upgrade-pill { padding: 0 11px; }
 }
+.upgrade-more-row { margin: 0; display: flex; justify-content: center; gap: 20px; }

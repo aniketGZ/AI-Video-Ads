@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing · Ad Studio</title>
+  <meta name="description" content="Ad Studio plans: Free, Starter, Pro and Studio. Credits for image and video ads, and the campaign builder on Pro and Studio.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/upgrade/upgrade.css?v=1.0.1">
+  <link rel="stylesheet" href="/static/pricing/pricing.css?v=1.0.3">
+</head>
+<body>
+
+  <header class="bar">
+    <a class="bar-name" href="/">Ad Studio</a>
+    <nav class="bar-links" aria-label="Page">
+      <a href="#plans">Plans</a>
+      <a href="#finder">Which plan?</a>
+      <a href="#compare">Compare</a>
+      <a href="#faq">Questions</a>
+    </nav>
+    <a class="btn btn-accent bar-action" href="/">Open the studio</a>
+  </header>
+
+  <main>
+    <section class="top" aria-labelledby="top_h">
+      <div class="top-head reveal">
+        <h1 id="top_h">Plans and credits</h1>
+        <p>Every plan makes image and video ads. Pro and Studio add the campaign builder: one brand link in, a researched Meta campaign out.</p>
+      </div>
+      <div class="billing" role="radiogroup" aria-label="Billing">
+        <label><input type="radio" name="billing" value="monthly" checked><span>Monthly</span></label>
+        <label><input type="radio" name="billing" value="annual"><span>Yearly, 20% off</span></label>
+      </div>
+    </section>
+
+    <!-- The four plans -->
+    <section class="plans4" id="plans" aria-label="Plans">
+      <article class="p4" data-plan="free">
+        <div class="p4-shots p4-shots-1"><img src="/static/menu/image_create.jpg" width="480" height="360" alt="An image ad made in the Image studio" loading="lazy"></div>
+        <h2 class="p4-name">Free</h2>
+        <p class="p4-who">Try the studios with a few ads.</p>
+        <p class="p4-price"><span class="js-price">$0</span><small class="js-per">forever</small></p>
+        <a class="btn btn-ghostline p4-btn js-cta" href="/">Start free</a>
+        <p class="p4-credits"><b class="js-credits">300</b> credits, once</p>
+        <p class="p4-yield js-yield">About 12 image ads at 2K, or 1 eight-second video at 720p</p>
+        <ul class="p4-list">
+          <li class="yes">Image, Video and Batch studios</li>
+          <li class="yes">Nano Banana 2.1, up to 2K</li>
+          <li class="yes">Video up to 720p</li>
+          <li class="no">Nano Banana Pro</li>
+          <li class="no">Campaign builder</li>
+          <li class="no">Credit top-ups</li>
+        </ul>
+      </article>
+
+      <article class="p4" data-plan="starter">
+        <div class="p4-shots p4-shots-2"><img src="/static/menu/image_product.jpg" width="480" height="360" alt="A product image ad" loading="lazy"><img src="/static/menu/video_prompt.jpg" width="480" height="360" alt="A frame from a video ad" loading="lazy"></div>
+        <h2 class="p4-name">Starter</h2>
+        <p class="p4-who">For making image and video ads yourself.</p>
+        <p class="p4-price"><span class="js-price">$19</span><small class="js-per">a month</small></p>
+        <a class="btn btn-ghostline p4-btn js-cta" href="/upgrade/checkout?plan=starter">Get Starter</a>
+        <p class="p4-credits"><b class="js-credits">2,000</b> credits a month</p>
+        <p class="p4-yield js-yield">About 80 image ads at 2K, or 5 eight-second videos at 1080p</p>
+        <ul class="p4-list">
+          <li class="yes">Image, Video and Batch studios</li>
+          <li class="yes">Nano Banana 2.1 and Pro, up to 4K</li>
+          <li class="yes">Video up to 1080p</li>
+          <li class="yes">Credit top-ups</li>
+          <li class="no">Campaign builder</li>
+          <li class="no">Competitor ad research</li>
+        </ul>
+      </article>
+
+      <article class="p4 p4-pro" data-plan="pro">
+        <div class="p4-shots p4-shots-3"><video src="/static/demo/woodland/video_1.mp4" poster="/static/demo/woodland/video_1_poster.jpg" width="540" height="960" muted loop playsinline autoplay preload="metadata" aria-label="A video ad from a campaign"></video><img src="/static/demo/woodland/ad_s17.jpg" width="928" height="1152" alt="A campaign image ad" loading="lazy"><img src="/static/demo/woodland/ad_s05.jpg" width="928" height="1152" alt="Another ad from the same campaign" loading="lazy"></div>
+        <h2 class="p4-name">Pro <span class="p4-tag">Most popular</span></h2>
+        <p class="p4-who">For one brand running Meta campaigns.</p>
+        <p class="p4-price"><span class="js-price">$49</span><small class="js-per">a month</small></p>
+        <a class="btn btn-ink p4-btn js-cta" href="/upgrade/checkout?plan=pro">Get Pro</a>
+        <p class="p4-credits"><b class="js-credits">6,000</b> credits a month</p>
+        <p class="p4-yield js-yield">About 240 image ads at 2K, or 16 eight-second videos at 1080p</p>
+        <ul class="p4-list">
+          <li class="yes">Everything in Starter</li>
+          <li class="yes">Campaign builder</li>
+          <li class="yes">Competitor ad research</li>
+          <li class="yes">Video up to 4K</li>
+          <li class="yes">Creative presets by industry</li>
+        </ul>
+      </article>
+
+      <article class="p4" data-plan="studio">
+        <div class="p4-shots p4-shots-4"><img src="/static/demo/woodland/ad_s23.jpg" width="928" height="1152" alt="An ad for one brand" loading="lazy"><img src="/static/menu/image_headline.jpg" width="480" height="360" alt="An ad for a second brand" loading="lazy"><img src="/static/demo/woodland/ad_s10.jpg" width="928" height="1152" alt="Another ad for the first brand" loading="lazy"><img src="/static/menu/video_frames.jpg" width="480" height="360" alt="A video frame for the second brand" loading="lazy"></div>
+        <h2 class="p4-name">Studio</h2>
+        <p class="p4-who">For agencies and teams with several brands.</p>
+        <p class="p4-price"><span class="js-price">$149</span><small class="js-per">a month</small></p>
+        <a class="btn btn-accent p4-btn js-cta" href="/upgrade/checkout?plan=studio">Get Studio</a>
+        <p class="p4-credits"><b class="js-credits">20,000</b> credits a month</p>
+        <p class="p4-yield js-yield">About 800 image ads at 2K, or 55 eight-second videos at 1080p</p>
+        <ul class="p4-list">
+          <li class="yes">Everything in Pro</li>
+          <li class="yes">More than three times Pro's credits</li>
+          <li class="yes">The lowest price per credit</li>
+        </ul>
+      </article>
+    </section>
+
+
+    <!-- What credits buy: real outputs with their price -->
+    <section class="buys" aria-labelledby="buys_h">
+      <h2 id="buys_h" class="reveal">What your credits make</h2>
+      <div class="buys-row">
+        <figure class="buy"><img src="/static/menu/image_create.jpg" width="480" height="360" alt="Image ad of three bottles on an arm" loading="lazy"><figcaption><b data-cost="image:nano-banana-2.1:2K">25</b> credits · image ad at 2K</figcaption></figure>
+        <figure class="buy"><video src="/static/demo/woodland/video_1.mp4" poster="/static/demo/woodland/video_1_poster.jpg" width="540" height="960" muted loop playsinline autoplay preload="metadata" aria-label="Video ad of a muddy sneaker"></video><figcaption><b data-cost="video:1080p:8">360</b> credits · 8-second video at 1080p</figcaption></figure>
+        <figure class="buy"><img src="/static/demo/woodland/ad_s17.jpg" width="928" height="1152" alt="Campaign ad: Crafted for heavy duty grip" loading="lazy"><figcaption><b data-cost="image:nano-banana-2.1:4K">50</b> credits · image ad at 4K</figcaption></figure>
+        <figure class="buy"><img src="/static/menu/image_product.jpg" width="480" height="360" alt="Product image ad with three bottles" loading="lazy"><figcaption><b data-cost="image:nano-banana-pro:2K">55</b> credits · Nano Banana Pro at 2K</figcaption></figure>
+        <figure class="buy"><img src="/static/menu/video_frames.jpg" width="480" height="360" alt="Frame from a two-frame video ad in a hallway" loading="lazy"><figcaption><b data-cost="video:720p:8">240</b> credits · 8-second video at 720p</figcaption></figure>
+      </div>
+    </section>
+
+    <!-- Plan finder: the live thing -->
+    <section class="finder" id="finder" aria-labelledby="finder_h">
+      <div class="finder-ask reveal">
+        <h2 id="finder_h">Which plan fits?</h2>
+        <fieldset class="finder-q">
+          <legend>What are you making?</legend>
+          <div class="finder-chips">
+            <label><input type="checkbox" name="make" value="images" checked><span>Image ads</span></label>
+            <label><input type="checkbox" name="make" value="videos"><span>Video ads</span></label>
+            <label><input type="checkbox" name="make" value="campaigns"><span>Full campaigns from a link</span></label>
+          </div>
+        </fieldset>
+        <div class="finder-q">
+          <label for="finder_count" class="finder-legend">How many ads a month? <output id="finder_count_out" for="finder_count">40</output></label>
+          <input type="range" id="finder_count" min="5" max="400" step="5" value="40">
+          <p class="finder-hint">Image ads counted at 2K, videos at eight seconds and 1080p. A campaign adds its research and copy.</p>
+        </div>
+      </div>
+      <div class="finder-answer reveal" aria-live="polite">
+        <p class="finder-plan" id="finder_plan">Starter</p>
+        <p class="finder-plan-line">is the plan for you. You need about <b id="finder_need">1,000</b> credits a month.</p>
+        <div class="meter" aria-hidden="true"><span id="finder_meter" style="width: 50%"></span></div>
+        <p class="finder-use" id="finder_use">That uses about half of Starter's 2,000 credits.</p>
+        <a class="btn btn-accent finder-btn" id="finder_btn" href="/upgrade/checkout?plan=starter">Get Starter</a>
+      </div>
+    </section>
+
+    <!-- Compare -->
+    <section class="compare2" id="compare" aria-labelledby="compare_h">
+      <h2 id="compare_h" class="reveal">Compare plans</h2>
+      <div class="table-wrap reveal">
+        <table class="ctable">
+          <thead>
+            <tr><th scope="col"><span class="visually-hidden">Feature</span></th><th scope="col">Free</th><th scope="col">Starter</th><th scope="col" class="col-pro">Pro</th><th scope="col">Studio</th></tr>
+          </thead>
+          <tbody>
+            <tr><th scope="row">Price</th><td class="js-tprice" data-plan="free">$0</td><td class="js-tprice" data-plan="starter">$19 a month</td><td class="js-tprice col-pro" data-plan="pro">$49 a month</td><td class="js-tprice" data-plan="studio">$149 a month</td></tr>
+            <tr><th scope="row">Credits</th><td>300 once</td><td>2,000 a month</td><td class="col-pro">6,000 a month</td><td>20,000 a month</td></tr>
+            <tr><th scope="row">Image ads at 2K</th><td>about 12</td><td>about 80</td><td class="col-pro">about 240</td><td>about 800</td></tr>
+            <tr><th scope="row">Eight-second videos</th><td>about 1 at 720p</td><td>about 5 at 1080p</td><td class="col-pro">about 16 at 1080p</td><td>about 55 at 1080p</td></tr>
+            <tr><th scope="row">Image, Video and Batch studios</th><td>Yes</td><td>Yes</td><td class="col-pro">Yes</td><td>Yes</td></tr>
+            <tr><th scope="row">Nano Banana Pro</th><td>No</td><td>Yes</td><td class="col-pro">Yes</td><td>Yes</td></tr>
+            <tr><th scope="row">Largest image</th><td>2K</td><td>4K</td><td class="col-pro">4K</td><td>4K</td></tr>
+            <tr><th scope="row">Largest video</th><td>720p</td><td>1080p</td><td class="col-pro">4K</td><td>4K</td></tr>
+            <tr><th scope="row">Campaign builder</th><td>No</td><td>No</td><td class="col-pro">Yes</td><td>Yes</td></tr>
+            <tr><th scope="row">Competitor ad research</th><td>No</td><td>No</td><td class="col-pro">Yes</td><td>Yes</td></tr>
+            <tr><th scope="row">Credit top-ups</th><td>No</td><td>Yes</td><td class="col-pro">Yes</td><td>Yes</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3 class="costs-h" id="costs">What each thing costs</h3>
+      <div class="costs reveal" id="costs_grid">
+        <div class="cost-block">
+          <p class="cost-title">Image ads</p>
+          <table class="ctable ctable-small">
+            <thead><tr><th scope="col">Model</th><th scope="col">1K</th><th scope="col">2K</th><th scope="col">4K</th></tr></thead>
+            <tbody id="cost_images">
+              <tr><th scope="row">Nano Banana 2.1</th><td>15</td><td>25</td><td>50</td></tr>
+              <tr><th scope="row">Nano Banana Pro</th><td>55</td><td>55</td><td>100</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="cost-block">
+          <p class="cost-title">Video ads, per second</p>
+          <table class="ctable ctable-small">
+            <thead><tr><th scope="col">Quality</th><th scope="col">Credits</th><th scope="col">8 seconds</th></tr></thead>
+            <tbody id="cost_video">
+              <tr><th scope="row">720p</th><td>30</td><td>240</td></tr>
+              <tr><th scope="row">1080p</th><td>45</td><td>360</td></tr>
+              <tr><th scope="row">4K</th><td>85</td><td>680</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="cost-block">
+          <p class="cost-title">Campaign steps</p>
+          <table class="ctable ctable-small">
+            <thead><tr><th scope="col">Step</th><th scope="col">Credits</th></tr></thead>
+            <tbody id="cost_text">
+              <tr><th scope="row">Brand research</th><td>60</td></tr>
+              <tr><th scope="row">Campaign strategy</th><td>30</td></tr>
+              <tr><th scope="row">Ad copy and prompt, each</th><td>10</td></tr>
+              <tr><th scope="row">Competitor research</th><td>300</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- Top-ups -->
+    <section class="topups" aria-labelledby="topups_h">
+      <h2 id="topups_h" class="reveal">Need more in a month?</h2>
+      <p>On any paid plan, add credits whenever you run low. Plan credits work out cheaper, so a bigger plan beats regular top-ups.</p>
+      <div class="topup-row reveal" id="topup_row">
+        <p class="topup"><b>1,000</b> credits <span>$12</span></p>
+        <p class="topup"><b>5,000</b> credits <span>$55</span></p>
+      </div>
+    </section>
+
+    <!-- Questions -->
+    <section class="faq" id="faq" aria-labelledby="faq_h">
+      <h2 id="faq_h" class="reveal">Questions</h2>
+      <div class="faq-list reveal">
+        <details>
+          <summary>How do credits work?</summary>
+          <p>Every image, video and campaign step spends credits. What it costs depends on the model, the size and, for video, the length: the table above has every price.</p>
+        </details>
+        <details>
+          <summary>What do I get for free?</summary>
+          <p>300 credits once, with the Image, Video and Batch studios. Images use Nano Banana 2.1 up to 2K and videos go up to 720p. That's about 12 image ads, or a short video and a few images.</p>
+        </details>
+        <details>
+          <summary>What is the campaign builder?</summary>
+          <p>Paste one brand link. It reads the brand, studies its competitors' live Meta ads, writes angles and copy, and renders the image and video ads. It comes with Pro and Studio. <a href="/upgrade/campaign">See a campaign it made</a>.</p>
+        </details>
+        <details>
+          <summary>Can I buy more credits?</summary>
+          <p>Yes, on Starter, Pro and Studio: 1,000 credits for $12 or 5,000 for $55, whenever you need them.</p>
+        </details>
+        <details>
+          <summary>How does yearly billing work?</summary>
+          <p>Pay for the year up front and every plan costs 20% less. Your credits still arrive each month.</p>
+        </details>
+      </div>
+    </section>
+  </main>
+
+  <footer class="foot">
+    <p class="foot-name">Ad Studio</p>
+    <div class="foot-row">
+      <p>Prices in US dollars. Credit prices come from the same table the studio charges by.</p>
+      <a href="/">Back to the studio</a>
+    </div>
+  </footer>
+
+  <script src="/static/pricing/pricing.js?v=1.0.2"></script>
+</body>
+</html>

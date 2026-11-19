@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css?v=6.5.0">
+  <link rel="stylesheet" href="css/style.css?v=6.5.1">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -158,7 +158,7 @@
     </div>
 
     <div class="sidebar-tools topbar-tools">
-      <a class="plan-pill" id="plan_pill" href="/upgrade/campaign#plans" hidden><i class="fa-solid fa-tag"></i><span>Pricing</span></a>
+      <a class="plan-pill" id="plan_pill" href="/pricing" hidden><i class="fa-solid fa-tag"></i><span>Pricing</span></a>
       <button type="button" class="upgrade-pill" id="upgrade_pill" data-upgrade hidden><i class="fa-solid fa-crown"></i><span>Upgrade</span></button>
       <button type="button" class="btn btn-sm btn-ghost tool-btn key-btn" id="key_btn" aria-label="Gemini API key" title="Gemini API key">
         <i class="fa-solid fa-key"></i><span class="tool-label" id="key_label">API key</span><span class="key-state" id="key_state"></span><span class="key-dot" id="key_dot"></span>
@@ -703,7 +703,7 @@
         </label>
       </div>
       <a class="btn btn-accent btn-lg upgrade-cta" id="upgrade_cta" href="/upgrade/checkout?plan=pro">Upgrade to Pro</a>
-      <a class="upgrade-more" href="/upgrade/campaign">See a whole campaign it made</a>
+      <p class="upgrade-more-row"><a class="upgrade-more" href="/upgrade/campaign">See a campaign it made</a><a class="upgrade-more" href="/pricing">Compare plans</a></p>
     </div>
   </dialog>
 
