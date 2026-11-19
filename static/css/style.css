@@ -2153,11 +2153,97 @@ dialog.viewer::backdrop { display: none; }
 @media (prefers-reduced-transparency: reduce) { .topbar { background: rgba(27, 20, 18, 0.96); } }
 @media (prefers-contrast: more) { .topbar { background: #120d0b; } }
 
-/* ---------------------------------------------------------------- plan locks */
-.nav-lock { font-size: 0.8em; margin-left: 4px; opacity: 0.7; }
-.plan-lock { max-width: 560px; margin: 32px auto; text-align: center; display: grid; justify-items: center; gap: 12px; padding: 36px 28px; }
-.plan-lock h2 { margin: 0; font-size: 20px; }
-.plan-lock p { margin: 0; color: var(--text-2); }
-.plan-lock-icon { font-size: 22px; color: var(--accent-text); }
-.plan-lock-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
-.plan-lock-actions a.btn { text-decoration: none; }
+/* ---------------------------------------------------------------- plans: tab tag, example fan, upgrade dialog */
+.nav-plan-tag {
+  margin-left: 6px; padding: 1px 6px; border-radius: 999px;
+  background: var(--accent-soft); color: var(--accent-text);
+  font-size: 10.5px; font-weight: 600; letter-spacing: 0.01em; vertical-align: 1px;
+}
+
+/* A fan of real ads from one campaign, above step 1 until a campaign starts */
+.showcase { margin: 4px 0 28px; }
+.showcase-fan {
+  position: relative; height: 300px; display: flex; justify-content: center; align-items: center;
+}
+.fan-card {
+  position: absolute; margin: 0; width: 176px; aspect-ratio: 4 / 5; border-radius: 14px; overflow: hidden;
+  background: var(--surface-2); box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+  transition: transform 420ms cubic-bezier(0.23, 1, 0.32, 1), z-index 0s;
+}
+.fan-card img, .fan-card video { width: 100%; height: 100%; max-width: none; object-fit: cover; display: block; }
+.fan-card figcaption {
+  position: absolute; left: 8px; bottom: 8px; padding: 3px 8px; border-radius: 999px;
+  background: rgba(0, 0, 0, 0.62); color: #fff; font-size: 11.5px; font-weight: 500;
+}
+.fan-1 { transform: translateX(-310px) rotate(-7deg) scale(0.86); z-index: 1; }
+.fan-2 { transform: translateX(-160px) rotate(-3.5deg) scale(0.94); z-index: 2; aspect-ratio: 9 / 16; width: 150px; }
+.fan-3 { transform: translateX(0) scale(1.12); z-index: 3; }
+.fan-4 { transform: translateX(160px) rotate(3.5deg) scale(0.94); z-index: 2; }
+.fan-5 { transform: translateX(310px) rotate(7deg) scale(0.86); z-index: 1; }
+.fan-card:hover { z-index: 4; }
+.fan-1:hover { transform: translateX(-310px) rotate(-4deg) scale(0.92) translateY(-8px); }
+.fan-2:hover { transform: translateX(-160px) rotate(-2deg) scale(1) translateY(-8px); }
+.fan-3:hover { transform: scale(1.16) translateY(-6px); }
+.fan-4:hover { transform: translateX(160px) rotate(2deg) scale(1) translateY(-8px); }
+.fan-5:hover { transform: translateX(310px) rotate(4deg) scale(0.92) translateY(-8px); }
+.showcase-note { margin: 6px 0 0; text-align: center; color: var(--text-2); font-size: 13.5px; }
+.showcase-note a { color: var(--accent-text); text-underline-offset: 3px; }
+@media (max-width: 720px) {
+  .showcase-fan { height: 230px; }
+  .fan-card { width: 128px; }
+  .fan-2 { width: 110px; }
+  .fan-1, .fan-5 { display: none; }
+  .fan-2 { transform: translateX(-104px) rotate(-4deg) scale(0.92); }
+  .fan-4 { transform: translateX(104px) rotate(4deg) scale(0.92); }
+  .fan-2:hover, .fan-4:hover, .fan-3:hover { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .fan-card { transition: none; } }
+
+/* Upgrade dialog: real work on the left, the plan and one action on the right */
+.upgrade-dialog {
+  width: min(880px, calc(100vw - 32px)); max-height: calc(100svh - 32px); padding: 0; border: 0; border-radius: 20px;
+  background: #0f0b0a; color: var(--text); overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6);
+}
+.upgrade-dialog[open] { display: grid; grid-template-columns: 1fr 1.05fr; animation: upgrade-in 260ms cubic-bezier(0.23, 1, 0.32, 1); }
+.upgrade-dialog::backdrop { background: rgba(0, 0, 0, 0.62); backdrop-filter: blur(4px); }
+@keyframes upgrade-in { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: none; } }
+.upgrade-media { position: relative; min-height: 520px; background: #000; }
+.upgrade-media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.upgrade-media-strip {
+  position: absolute; left: 12px; right: 12px; bottom: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+}
+.upgrade-media-strip img { width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; border-radius: 8px; box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5); }
+.upgrade-body { position: relative; padding: 32px 28px 24px; display: flex; flex-direction: column; gap: 14px; overflow-y: auto; }
+.upgrade-close { position: absolute; top: 12px; right: 12px; }
+.upgrade-body h2 { margin: 0; font-size: 26px; line-height: 1.15; letter-spacing: -0.02em; padding-right: 32px; }
+.upgrade-lede { margin: 0; color: var(--text-2); font-size: 14.5px; }
+.upgrade-gets { list-style: none; margin: 4px 0; padding: 0; display: grid; gap: 8px; font-size: 14px; }
+.upgrade-gets i { color: var(--accent); margin-right: 10px; font-size: 12px; }
+.upgrade-plans { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 4px; }
+.upgrade-plan {
+  position: relative; display: grid; gap: 2px; padding: 14px; border-radius: 12px; cursor: pointer;
+  background: var(--surface); border: 1.5px solid transparent; transition: border-color 160ms ease, background-color 160ms ease;
+}
+.upgrade-plan:hover { background: var(--surface-2); }
+.upgrade-plan:has(input:checked) { border-color: var(--accent); background: var(--accent-soft); }
+.upgrade-plan:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+.upgrade-plan input { position: absolute; opacity: 0; pointer-events: none; }
+.upgrade-plan-name { font-weight: 600; font-size: 15px; }
+.upgrade-plan-name em { font-style: normal; font-size: 11px; font-weight: 600; color: var(--accent-text); margin-left: 4px; }
+.upgrade-plan-price { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; }
+.upgrade-plan-price small { font-size: 13px; font-weight: 500; color: var(--text-2); margin-left: 2px; }
+.upgrade-plan-credits { font-size: 12.5px; color: var(--text-2); }
+.upgrade-cta {
+  display: flex; justify-content: center; align-items: center; min-height: 48px; margin-top: 6px; text-decoration: none;
+  background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600;
+}
+.upgrade-cta:hover:not(:disabled) { background: var(--accent-hover); border-color: var(--accent-hover); }
+.upgrade-more { text-align: center; font-size: 13.5px; color: var(--text-2); text-underline-offset: 3px; }
+.upgrade-more:hover { color: var(--text); }
+@media (max-width: 720px) {
+  .upgrade-dialog[open] { grid-template-columns: 1fr; }
+  .upgrade-media { min-height: 0; height: 180px; }
+  .upgrade-media-strip { display: none; }
+  .upgrade-body { padding: 24px 20px 20px; }
+}

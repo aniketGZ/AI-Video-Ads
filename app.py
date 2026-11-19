@@ -200,7 +200,7 @@ def _extract_interaction_video(interaction) -> Optional[str]:
 # ---------------------------------------------------------------------------
 # Creative Library Presets (Pinterest Reference Design Atlas)
 # ---------------------------------------------------------------------------
-@app.get("/api/campaign/presets", dependencies=CAMPAIGN_ACCESS)
+@app.get("/api/campaign/presets")
 async def list_creative_presets(industry: Optional[str] = None, q: Optional[str] = None):
     """Returns curated creative presets from Pinterest design reference library."""
     from creative_library_presets import get_all_presets, get_presets_for_industry
@@ -217,7 +217,7 @@ async def list_creative_presets(industry: Optional[str] = None, q: Optional[str]
     return {"status": "success", "total": len(presets), "presets": presets}
 
 
-@app.get("/api/campaign/presets/{preset_id}", dependencies=CAMPAIGN_ACCESS)
+@app.get("/api/campaign/presets/{preset_id}")
 async def get_creative_preset(preset_id: str):
     """Returns detail for a specific creative library preset."""
     from creative_library_presets import get_preset_by_id

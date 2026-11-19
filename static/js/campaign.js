@@ -231,6 +231,7 @@
     $("image_grid").innerHTML = "";
     $("video_grid").innerHTML = "";
     $("btn_new_campaign").hidden = true;
+    $("campaign_showcase").hidden = false;
   }
 
   // ------------------------------------------------------------ step 1: brand
@@ -252,8 +253,12 @@
       showUrlError($("brand_url").value.trim() ? "That doesn't look like a web address. Try https://yourbrand.com" : "Paste your brand or product URL to start.");
       return;
     }
+    // Everyone can look around the builder; starting a campaign needs Pro or Studio
+    if (!requireFeature("campaign_manager", { savedUrl: url })) return;
     if (!requireKey(() => $("btn_continue").click())) return;
     flow.url = url;
+    $("campaign_showcase").hidden = true;
+    $("campaign_showcase").querySelector("video")?.pause();
     flow.files = refs.files();
     flow.logoFile = logoDrop.files()[0] || null;
 
@@ -264,7 +269,11 @@
     $("btn_new_campaign").hidden = false;
     discoverCompetitors();
   });
-  $("brand_url").addEventListener("keydown", (e) => { if (e.key === "Enter") $("btn_continue").click(); });
+  $("brand_url").addEventListener("keydown", (e) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault(); // otherwise the same Enter lands on whatever dialog Continue opens
+    $("btn_continue").click();
+  });
 
   // The error sits on the field it is about, and leaves as soon as the field changes
   function showUrlError(message) {

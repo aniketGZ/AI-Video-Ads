@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css?v=6.3.0">
+  <link rel="stylesheet" href="css/style.css?v=6.4.1">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -49,15 +49,16 @@
       <button type="button" class="btn btn-ghost" id="btn_new_campaign" hidden><i class="fa-solid fa-plus"></i> New campaign</button>
     </div>
 
-    <!-- Shown instead of the steps when the plan doesn't include the campaign manager -->
-    <section class="panel plan-lock" id="campaign_locked" hidden>
-      <i class="fa-solid fa-lock plan-lock-icon" aria-hidden="true"></i>
-      <h2>Campaign manager is on Pro and Studio</h2>
-      <p>Brand research, competitor ads and full campaigns are part of the Pro and Studio plans. Your plan still includes the Image, Video and Batch studios.</p>
-      <div class="plan-lock-actions">
-        <a class="btn btn-primary" href="/upgrade/campaign">See a campaign it made</a>
-        <button type="button" class="btn btn-ghost" id="campaign_locked_image">Open Image studio</button>
+    <!-- What a campaign looks like: real ads from one run, shown until a campaign starts -->
+    <section class="showcase" id="campaign_showcase" aria-label="Example campaign">
+      <div class="showcase-fan">
+        <figure class="fan-card fan-1"><img src="/static/demo/woodland/ad_s01.jpg" width="928" height="1152" alt="Example ad: Sneakers fail. Leather boots prevail" loading="lazy"><figcaption>Us vs them</figcaption></figure>
+        <figure class="fan-card fan-2"><video src="/static/demo/woodland/video_1.mp4" poster="/static/demo/woodland/video_1_poster.jpg" width="540" height="960" muted loop playsinline preload="none" aria-label="Example video ad: Soaking trail shoes?"></video><figcaption>Reel · 9:16</figcaption></figure>
+        <figure class="fan-card fan-3"><img src="/static/demo/woodland/ad_s17.jpg" width="928" height="1152" alt="Example ad: Crafted for heavy duty grip"><figcaption>Product shot</figcaption></figure>
+        <figure class="fan-card fan-4"><img src="/static/demo/woodland/ad_s05.jpg" width="928" height="1152" alt="Example ad: Ordinary shoes slip. We conquer" loading="lazy"><figcaption>Problem → fix</figcaption></figure>
+        <figure class="fan-card fan-5"><img src="/static/demo/woodland/ad_s22.jpg" width="928" height="1152" alt="Example ad: Crafted for nature since 1992, with 10% off" loading="lazy"><figcaption>Offer</figcaption></figure>
       </div>
+      <p class="showcase-note">From one link: woodlandworldwide.com came back with 25 image ads and 3 videos. <a href="/upgrade/campaign">See the whole campaign</a></p>
     </section>
 
     <div class="steps">
@@ -539,6 +540,44 @@
   <!-- ============================================================== -->
   <!-- Creative Reference Library Modal (Pinterest Design Reference Presets) -->
   <!-- ============================================================== -->
+  <!-- Upgrade: opens when a plan without the campaign builder presses Continue -->
+  <dialog id="upgrade_dialog" class="upgrade-dialog" aria-labelledby="upgrade_title">
+    <div class="upgrade-media">
+      <video src="/static/demo/woodland/video_2.mp4" poster="/static/demo/woodland/video_2_poster.jpg" muted loop playsinline preload="none" aria-hidden="true"></video>
+      <div class="upgrade-media-strip" aria-hidden="true">
+        <img src="/static/demo/woodland/ad_s10.jpg" width="928" height="1152" alt="" loading="lazy">
+        <img src="/static/demo/woodland/ad_s02.jpg" width="928" height="1152" alt="" loading="lazy">
+        <img src="/static/demo/woodland/ad_s16.jpg" width="928" height="1152" alt="" loading="lazy">
+      </div>
+    </div>
+    <div class="upgrade-body">
+      <button type="button" class="btn btn-ghost btn-sm upgrade-close" id="upgrade_close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      <h2 id="upgrade_title">Build this campaign on Pro</h2>
+      <p class="upgrade-lede" id="upgrade_lede">Your link is saved. Upgrade and the campaign builder picks up right where you left off.</p>
+      <ul class="upgrade-gets">
+        <li><i class="fa-solid fa-check"></i>Brand research from your site: colours, voice, offers</li>
+        <li><i class="fa-solid fa-check"></i>Competitors' live Meta ads, studied for what works</li>
+        <li><i class="fa-solid fa-check"></i>Image ads at 4:5 and videos at 9:16, with copy for each</li>
+      </ul>
+      <div class="upgrade-plans" role="radiogroup" aria-label="Plan">
+        <label class="upgrade-plan">
+          <input type="radio" name="upgrade_plan" value="pro" checked>
+          <span class="upgrade-plan-name">Pro <em>Most popular</em></span>
+          <span class="upgrade-plan-price" data-price="pro">$49<small>/mo</small></span>
+          <span class="upgrade-plan-credits" data-credits="pro">6,000 credits a month</span>
+        </label>
+        <label class="upgrade-plan">
+          <input type="radio" name="upgrade_plan" value="studio">
+          <span class="upgrade-plan-name">Studio</span>
+          <span class="upgrade-plan-price" data-price="studio">$149<small>/mo</small></span>
+          <span class="upgrade-plan-credits" data-credits="studio">20,000 credits a month</span>
+        </label>
+      </div>
+      <a class="btn btn-accent btn-lg upgrade-cta" id="upgrade_cta" href="/upgrade/checkout?plan=pro">Upgrade to Pro</a>
+      <a class="upgrade-more" href="/upgrade/campaign">See a whole campaign it made</a>
+    </div>
+  </dialog>
+
   <dialog id="preset_modal" class="preset-dialog">
     <div class="preset-modal-content">
       <header class="preset-modal-head">
@@ -595,9 +634,9 @@
 
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
-  <script src="js/core.js?v=3.7.0"></script>
+  <script src="js/core.js?v=3.8.1"></script>
   <script src="js/render_loader.js?v=3.1.0"></script>
-  <script src="js/campaign.js?v=3.2.0"></script>
+  <script src="js/campaign.js?v=3.3.1"></script>
   <script src="js/studios.js?v=3.4.0"></script>
   <script src="js/viewer.js?v=1.0.0"></script>
   <script src="js/composer.js?v=1.1.0"></script>

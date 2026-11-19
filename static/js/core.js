@@ -142,6 +142,8 @@ function startToastClock() {
 }
 
 async function readErrorDetail(res, fallback) {
+  // The server refused a feature this plan doesn't include: offer the upgrade, not just an error
+  if (res.status === 403 && res.headers.get("x-upgrade-required")) openUpgradeDialog();
   try {
     const data = await res.json();
     if (typeof data.detail === "string") return data.detail;
@@ -431,7 +433,8 @@ function imageDropzone({ zone, input, thumbs, max = 4 }) {
 }
 
 // ---------------------------------------------------------------- plan
-// Features the plan leaves out are locked here; the server refuses them too (HTTP 403).
+// Every tab opens for every plan. A feature the plan leaves out is asked for at the moment it is
+// used (requireFeature opens the upgrade dialog); the server refuses it too (HTTP 403).
 let planFeatures = null; // null = unknown (offline/old server): leave everything open
 
 async function loadPlan() {
@@ -448,40 +451,98 @@ function hasFeature(name) {
 function applyPlanLocks() {
   const locked = !hasFeature("campaign_manager");
   const btn = document.querySelector('.nav-btn[data-view="campaign"]');
-  if (btn && locked && !btn.querySelector(".nav-lock")) {
-    btn.insertAdjacentHTML("beforeend", ' <i class="fa-solid fa-lock nav-lock" aria-hidden="true"></i>');
-    btn.title = "Pro and Studio plans";
+  if (btn && locked && !btn.querySelector(".nav-plan-tag")) {
+    btn.insertAdjacentHTML("beforeend", '<span class="nav-plan-tag">Pro</span>');
+    btn.title = "Campaign builder: Pro and Studio plans";
   }
-  const panel = document.getElementById("view_campaign");
-  if (!panel) return;
-  document.getElementById("campaign_locked").hidden = !locked;
-  panel.querySelector(".steps").hidden = locked;
-  if (locked) {
-    document.getElementById("btn_new_campaign").hidden = true;
-    return;
-  }
-  // A link pasted on the upgrade page (/upgrade/campaign) waits here until the builder is unlocked
+  // A link kept from the upgrade page or the upgrade dialog goes back into the field
   try {
     const pending = localStorage.getItem("pending_brand_url");
     const field = document.getElementById("brand_url");
     if (pending && field && !field.value) {
       field.value = pending;
       field.dispatchEvent(new Event("input", { bubbles: true }));
-      localStorage.removeItem("pending_brand_url");
     }
+    if (pending && !locked) localStorage.removeItem("pending_brand_url");
   } catch (e) { /* storage blocked: nothing to fill */ }
 }
 
-document.getElementById("campaign_locked_image")?.addEventListener("click", () => showView("image", { push: true }));
+// ---------------------------------------------------------------- upgrade dialog
+let plansCache = null;
+
+async function fillUpgradePlans() {
+  if (!plansCache) {
+    try {
+      const res = await fetch("/api/plans");
+      if (res.ok) plansCache = (await res.json()).plans;
+    } catch (e) { /* keep the prices written in the page */ }
+  }
+  if (!plansCache) return;
+  const nf = new Intl.NumberFormat("en-US");
+  for (const key of ["pro", "studio"]) {
+    const p = plansCache[key];
+    if (!p) continue;
+    const price = document.querySelector(`#upgrade_dialog [data-price="${key}"]`);
+    const credits = document.querySelector(`#upgrade_dialog [data-credits="${key}"]`);
+    if (price) price.innerHTML = `$${nf.format(p.price_usd_month)}<small>/mo</small>`;
+    if (credits) credits.textContent = `${nf.format(p.credits)} credits a month`;
+  }
+}
+
+function openUpgradeDialog({ savedUrl = null } = {}) {
+  const dlg = document.getElementById("upgrade_dialog");
+  if (!dlg) return;
+  if (savedUrl) {
+    try { localStorage.setItem("pending_brand_url", savedUrl); } catch (e) { /* not kept */ }
+  }
+  document.getElementById("upgrade_lede").textContent = savedUrl
+    ? "Your link is saved. Upgrade and the campaign builder picks up right where you left off."
+    : "Research the brand, study its competitors' ads and render a full campaign from one link.";
+  fillUpgradePlans();
+  if (!dlg.open) dlg.showModal();
+  const video = dlg.querySelector("video");
+  if (video && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) video.play().catch(() => {});
+}
+
+// Call before a gated action; returns false (and asks for the upgrade) when the plan lacks it
+function requireFeature(name, { savedUrl = null } = {}) {
+  if (hasFeature(name)) return true;
+  openUpgradeDialog({ savedUrl });
+  return false;
+}
+
+(function wireUpgradeDialog() {
+  const dlg = document.getElementById("upgrade_dialog");
+  if (!dlg) return;
+  const cta = document.getElementById("upgrade_cta");
+  dlg.querySelectorAll('input[name="upgrade_plan"]').forEach((r) => r.addEventListener("change", () => {
+    const plan = r.value;
+    cta.href = `/upgrade/checkout?plan=${plan}`;
+    const label = plan === "studio" ? "Studio" : "Pro";
+    cta.textContent = `Upgrade to ${label}`;
+    document.getElementById("upgrade_title").textContent = `Build this campaign on ${label}`;
+  }));
+  document.getElementById("upgrade_close").addEventListener("click", () => dlg.close());
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); }); // click on the backdrop
+  dlg.addEventListener("close", () => dlg.querySelector("video")?.pause());
+})();
+
+// The example fan plays its reel only while the Campaign tab is showing
+window.addEventListener("viewchange", (e) => {
+  const reel = document.querySelector("#campaign_showcase video");
+  if (!reel) return;
+  if (e.detail === "campaign" && !document.getElementById("campaign_showcase").hidden
+      && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) reel.play().catch(() => {});
+  else reel.pause();
+});
 
 // Restore the last view after the other scripts have registered their listeners
 window.addEventListener("DOMContentLoaded", async () => {
   await loadPlan();
   applyPlanLocks();
-  const start = hasFeature("campaign_manager") ? "campaign" : "image";
   let view = location.hash.slice(1);
   if (!VIEWS.includes(view)) {
-    try { view = localStorage.getItem("ad_studio_view") || start; } catch (e) { view = start; }
+    try { view = localStorage.getItem("ad_studio_view") || "campaign"; } catch (e) { view = "campaign"; }
   }
-  showView(VIEWS.includes(view) ? view : start);
+  showView(VIEWS.includes(view) ? view : "campaign");
 });
