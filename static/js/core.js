@@ -455,6 +455,12 @@ function applyPlanLocks() {
     btn.insertAdjacentHTML("beforeend", '<span class="nav-plan-tag">Pro</span>');
     btn.title = "Campaign builder: Pro and Studio plans";
   }
+  // Top bar: Pricing for everyone, Upgrade only for plans missing something
+  const pricing = document.getElementById("plan_pill");
+  if (pricing) pricing.hidden = false;
+  const upgrade = document.getElementById("upgrade_pill");
+  if (upgrade) upgrade.hidden = !locked;
+  document.querySelectorAll("[data-plan-note]").forEach((n) => { n.hidden = hasFeature(n.dataset.planNote); });
   // A link kept from the upgrade page or the upgrade dialog goes back into the field
   try {
     const pending = localStorage.getItem("pending_brand_url");

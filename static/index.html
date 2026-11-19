@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css?v=6.4.1">
+  <link rel="stylesheet" href="css/style.css?v=6.5.0">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -25,12 +25,141 @@
       <span>Ad Studio</span>
     </div>
     <nav class="nav" aria-label="Main">
-      <button type="button" class="nav-btn active" data-view="campaign">Campaign</button>
-      <button type="button" class="nav-btn" data-view="image">Image</button>
-      <button type="button" class="nav-btn" data-view="video">Video</button>
+      <button type="button" class="nav-btn active" data-view="campaign" data-menu="menu_campaign">Campaign</button>
+      <button type="button" class="nav-btn" data-view="image" data-menu="menu_image">Image</button>
+      <button type="button" class="nav-btn" data-view="video" data-menu="menu_video">Video</button>
       <button type="button" class="nav-btn" data-view="batch">Batch</button>
     </nav>
+
+    <!-- Hover menus: what each studio can do, with real outputs. Each item opens the studio set up for it. -->
+    <div class="mega" id="menu_campaign" role="region" aria-label="Campaign tools" hidden>
+      <div class="mega-cards">
+        <button type="button" class="mega-card" data-go="campaign" data-focus="#brand_url">
+          <span class="mega-thumb"><img src="/static/menu/campaign_new.jpg" width="480" height="360" alt="" loading="lazy"></span>
+          <span class="mega-card-name">New campaign</span>
+          <span class="mega-card-note">One link in, a researched set of ads out</span>
+        </button>
+        <button type="button" class="mega-card" data-go="campaign" data-click="#btn_active_preset">
+          <span class="mega-thumb"><img src="/static/menu/campaign_presets.jpg" width="480" height="360" alt="" loading="lazy"></span>
+          <span class="mega-card-name">Creative presets</span>
+          <span class="mega-card-note">Layouts, type and light by industry</span>
+        </button>
+        <a class="mega-card" href="/upgrade/campaign">
+          <span class="mega-thumb"><img src="/static/menu/campaign_example.jpg" width="480" height="360" alt="" loading="lazy"></span>
+          <span class="mega-card-name">See an example</span>
+          <span class="mega-card-note">Every ad from one real run</span>
+        </a>
+      </div>
+      <div class="mega-cols">
+        <div>
+          <p class="mega-col-head">What it does</p>
+          <ul class="mega-list mega-list-plain">
+            <li><i class="fa-solid fa-magnifying-glass"></i>Reads your brand: colours, voice, offers</li>
+            <li><i class="fa-brands fa-meta"></i>Studies competitors' live Meta ads</li>
+            <li><i class="fa-solid fa-pen-nib"></i>Writes angles, headlines and copy</li>
+            <li><i class="fa-solid fa-photo-film"></i>Renders 4:5 image ads and 9:16 videos</li>
+          </ul>
+        </div>
+        <div>
+          <p class="mega-col-head">Models</p>
+          <ul class="mega-list mega-list-plain">
+            <li><i class="fa-solid fa-brain"></i>Gemini 3.6 Flash<span class="mega-badge">Research</span></li>
+            <li><i class="fa-solid fa-image"></i>Nano Banana 2.1<span class="mega-badge">Images</span></li>
+            <li><i class="fa-solid fa-film"></i>Omni 1.2 Flash<span class="mega-badge">Video</span></li>
+          </ul>
+        </div>
+      </div>
+      <p class="mega-plan-note" data-plan-note="campaign_manager" hidden>Starting a campaign is on Pro and Studio. <button type="button" class="mega-link" data-upgrade>See plans</button></p>
+    </div>
+
+    <div class="mega" id="menu_image" role="region" aria-label="Image tools" hidden>
+      <div class="mega-cards">
+        <button type="button" class="mega-card" data-go="image" data-focus="#img_prompt">
+          <span class="mega-thumb"><img src="/static/menu/image_create.jpg" width="480" height="360" alt="" loading="lazy"></span>
+          <span class="mega-card-name">Create image ad</span>
+          <span class="mega-card-note">From a prompt, up to 4K</span>
+        </button>
+        <button type="button" class="mega-card" data-go="image" data-click="#img_drop">
+          <span class="mega-thumb"><img src="/static/menu/image_product.jpg" width="480" height="360" alt="" loading="lazy"></span>
+          <span class="mega-card-name">With your product</span>
+          <span class="mega-card-note">Start from your product photos</span>
+        </button>
+        <button type="button" class="mega-card" data-go="batch">
+          <span class="mega-thumb"><img src="/static/menu/image_headline.jpg" width="480" height="360" alt="" loading="lazy"></span>
+          <span class="mega-card-name">Batch from Markdown</span>
+          <span class="mega-card-note">Up to 100 prompts in one queue</span>
+        </button>
+      </div>
+      <div class="mega-cols">
+        <div>
+          <p class="mega-col-head">Styles</p>
+          <ul class="mega-list">
+            <li><button type="button" data-go="image" data-pick="#img_style_group [data-style='minimal_dtc']"><i class="fa-regular fa-square"></i>Minimal DTC studio</button></li>
+            <li><button type="button" data-go="image" data-pick="#img_style_group [data-style='luxury_podium']"><i class="fa-solid fa-gem"></i>Luxury podium</button></li>
+            <li><button type="button" data-go="image" data-pick="#img_style_group [data-style='ugc_lifestyle']"><i class="fa-solid fa-mobile-screen"></i>UGC lifestyle</button></li>
+            <li><button type="button" data-go="image" data-pick="#img_style_group [data-style='nature_botanical']"><i class="fa-solid fa-leaf"></i>Nature &amp; botanical</button></li>
+            <li><button type="button" data-go="image" data-pick="#img_style_group [data-style='dramatic_splash']"><i class="fa-solid fa-droplet"></i>Dramatic splash</button></li>
+          </ul>
+        </div>
+        <div>
+          <p class="mega-col-head">Models</p>
+          <ul class="mega-list">
+            <li><button type="button" data-go="image" data-pick="#img_model [data-model='nano-banana-2.1']"><i class="fa-solid fa-image"></i>Nano Banana 2.1<span class="mega-badge mega-badge-hot">Fast</span></button></li>
+            <li><button type="button" data-go="image" data-pick="#img_model [data-model='nano-banana-pro']"><i class="fa-solid fa-wand-magic-sparkles"></i>Nano Banana Pro<span class="mega-badge">Best detail</span></button></li>
+          </ul>
+          <p class="mega-col-head">Sizes</p>
+          <ul class="mega-list">
+            <li><button type="button" data-go="image" data-pick="#img_aspect [data-ratio='4:5']"><i class="fa-solid fa-table-cells-large"></i>4:5 feed ad</button></li>
+            <li><button type="button" data-go="image" data-pick="#img_aspect [data-ratio='9:16']"><i class="fa-solid fa-mobile"></i>9:16 Story</button></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="mega" id="menu_video" role="region" aria-label="Video tools" hidden>
+      <div class="mega-cards">
+        <button type="button" class="mega-card" data-go="video" data-pick="#vid_mode [data-mode='prompt_images']">
+          <span class="mega-thumb"><img src="/static/menu/video_prompt.jpg" width="480" height="360" alt="" loading="lazy"></span>
+          <span class="mega-card-name">Prompt + images</span>
+          <span class="mega-card-note">Describe the shot, add references</span>
+        </button>
+        <button type="button" class="mega-card" data-go="video" data-pick="#vid_mode [data-mode='first_last_frame']">
+          <span class="mega-thumb"><img src="/static/menu/video_frames.jpg" width="480" height="360" alt="" loading="lazy"></span>
+          <span class="mega-card-name">Two frames</span>
+          <span class="mega-card-note">Set the first and last frame</span>
+        </button>
+        <button type="button" class="mega-card" data-go="video" data-pick="#vid_mode [data-mode='edit_video']">
+          <span class="mega-thumb"><img src="/static/menu/video_edit.jpg" width="480" height="360" alt="" loading="lazy"></span>
+          <span class="mega-card-name">Edit a clip</span>
+          <span class="mega-card-note">Change what's in a video you have</span>
+        </button>
+      </div>
+      <div class="mega-cols">
+        <div>
+          <p class="mega-col-head">Formats</p>
+          <ul class="mega-list">
+            <li><button type="button" data-go="video" data-pick="#vid_aspect [data-ratio='9:16']"><i class="fa-solid fa-mobile"></i>9:16 Reels and Stories</button></li>
+            <li><button type="button" data-go="video" data-pick="#vid_aspect [data-ratio='16:9']"><i class="fa-solid fa-tv"></i>16:9 widescreen</button></li>
+            <li><button type="button" data-go="video" data-pick="#vid_aspect [data-ratio='1:1']"><i class="fa-regular fa-square"></i>1:1 square</button></li>
+          </ul>
+        </div>
+        <div>
+          <p class="mega-col-head">Models</p>
+          <ul class="mega-list">
+            <li><button type="button" data-go="video"><i class="fa-solid fa-film"></i>Omni 1.2 Flash<span class="mega-badge mega-badge-hot">4–15s</span></button></li>
+          </ul>
+          <p class="mega-col-head">Quality</p>
+          <ul class="mega-list">
+            <li><button type="button" data-go="video" data-pick="#vid_resolution [data-res='720p']"><i class="fa-solid fa-gauge-high"></i>720p draft</button></li>
+            <li><button type="button" data-go="video" data-pick="#vid_resolution [data-res='4k']"><i class="fa-solid fa-expand"></i>4K final</button></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
     <div class="sidebar-tools topbar-tools">
+      <a class="plan-pill" id="plan_pill" href="/upgrade/campaign#plans" hidden><i class="fa-solid fa-tag"></i><span>Pricing</span></a>
+      <button type="button" class="upgrade-pill" id="upgrade_pill" data-upgrade hidden><i class="fa-solid fa-crown"></i><span>Upgrade</span></button>
       <button type="button" class="btn btn-sm btn-ghost tool-btn key-btn" id="key_btn" aria-label="Gemini API key" title="Gemini API key">
         <i class="fa-solid fa-key"></i><span class="tool-label" id="key_label">API key</span><span class="key-state" id="key_state"></span><span class="key-dot" id="key_dot"></span>
       </button>
@@ -634,7 +763,7 @@
 
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
-  <script src="js/core.js?v=3.8.1"></script>
+  <script src="js/core.js?v=3.9.0"></script>
   <script src="js/render_loader.js?v=3.1.0"></script>
   <script src="js/campaign.js?v=3.3.1"></script>
   <script src="js/studios.js?v=3.4.0"></script>
@@ -642,5 +771,6 @@
   <script src="js/composer.js?v=1.1.0"></script>
   <script src="js/batch.js?v=1.2.0"></script>
   <script src="js/demo_session.js?v=1.1.0"></script>
+  <script src="js/navmenu.js?v=1.0.0"></script>
 </body>
 </html>
