@@ -456,7 +456,20 @@ function applyPlanLocks() {
   if (!panel) return;
   document.getElementById("campaign_locked").hidden = !locked;
   panel.querySelector(".steps").hidden = locked;
-  if (locked) document.getElementById("btn_new_campaign").hidden = true;
+  if (locked) {
+    document.getElementById("btn_new_campaign").hidden = true;
+    return;
+  }
+  // A link pasted on the upgrade page (/upgrade/campaign) waits here until the builder is unlocked
+  try {
+    const pending = localStorage.getItem("pending_brand_url");
+    const field = document.getElementById("brand_url");
+    if (pending && field && !field.value) {
+      field.value = pending;
+      field.dispatchEvent(new Event("input", { bubbles: true }));
+      localStorage.removeItem("pending_brand_url");
+    }
+  } catch (e) { /* storage blocked: nothing to fill */ }
 }
 
 document.getElementById("campaign_locked_image")?.addEventListener("click", () => showView("image", { push: true }));

@@ -2159,3 +2159,5 @@ dialog.viewer::backdrop { display: none; }
 .plan-lock h2 { margin: 0; font-size: 20px; }
 .plan-lock p { margin: 0; color: var(--text-2); }
 .plan-lock-icon { font-size: 22px; color: var(--accent-text); }
+.plan-lock-actions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 4px; }
+.plan-lock-actions a.btn { text-decoration: none; }

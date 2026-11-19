@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css?v=6.2.0">
+  <link rel="stylesheet" href="css/style.css?v=6.3.0">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -54,7 +54,10 @@
       <i class="fa-solid fa-lock plan-lock-icon" aria-hidden="true"></i>
       <h2>Campaign manager is on Pro and Studio</h2>
       <p>Brand research, competitor ads and full campaigns are part of the Pro and Studio plans. Your plan still includes the Image, Video and Batch studios.</p>
-      <button type="button" class="btn" id="campaign_locked_image">Open Image studio</button>
+      <div class="plan-lock-actions">
+        <a class="btn btn-primary" href="/upgrade/campaign">See a campaign it made</a>
+        <button type="button" class="btn btn-ghost" id="campaign_locked_image">Open Image studio</button>
+      </div>
     </section>
 
     <div class="steps">
@@ -592,7 +595,7 @@
 
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
-  <script src="js/core.js?v=3.6.0"></script>
+  <script src="js/core.js?v=3.7.0"></script>
   <script src="js/render_loader.js?v=3.1.0"></script>
   <script src="js/campaign.js?v=3.2.0"></script>
   <script src="js/studios.js?v=3.4.0"></script>
