@@ -234,6 +234,9 @@
     refFiles.forEach((f) => fd.append("reference_images", f));
     if (refFiles[0]) fd.append("product_image", refFiles[0]);
 
+    const imgFolderId = $("img_folder_id") ? $("img_folder_id").value : "";
+    if (imgFolderId) fd.append("folder_id", imgFolderId);
+
     setBusy($("img_submit"), true, syncImgPromptUi);
 
     if (prompts.length === 1) {
@@ -416,6 +419,9 @@
       if (vidLast.files()[0]) fd.append("last_frame", vidLast.files()[0]);
     }
     if (mode === "edit_video") fd.append("source_video", $("vid_source").files[0]);
+
+    const vidFolderId = $("vid_folder_id") ? $("vid_folder_id").value : "";
+    if (vidFolderId) fd.append("folder_id", vidFolderId);
 
     setBusy($("vid_submit"), true, syncPromptUi);
     busy("vid_result", prompts.length > 1 ? `Sending ${prompts.length} prompts to Omni Flash…` : "Sending to Omni Flash…", vidAspect() || "9:16");

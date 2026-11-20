@@ -330,18 +330,25 @@ function slidingThumb(group) {
 document.querySelectorAll(".nav, .segmented:not(.seg-list)").forEach(slidingThumb);
 
 // ---------------------------------------------------------------- views
-const VIEWS = ["campaign", "image", "video", "batch"];
+const VIEWS = ["campaign", "image", "video", "library", "saved"];
 
 const viewScroll = {};
 let currentView = null;
 
 function showView(name, { push = false } = {}) {
+  // Map library and saved interchangeably
+  const canonicalName = (name === "saved" || name === "library") ? "library" : name;
   if (currentView) viewScroll[currentView] = window.scrollY; // each view keeps your place in it
-  currentView = name;
-  document.querySelectorAll("[data-view-panel]").forEach((p) => { p.hidden = p.dataset.viewPanel !== name; });
-  window.scrollTo(0, viewScroll[name] || 0);
+  currentView = canonicalName;
+  document.querySelectorAll("[data-view-panel]").forEach((p) => {
+    const panelName = p.dataset.viewPanel;
+    const isTarget = panelName === canonicalName || (canonicalName === "library" && panelName === "saved");
+    p.hidden = !isTarget;
+  });
+  window.scrollTo(0, viewScroll[canonicalName] || 0);
   document.querySelectorAll(".nav-btn").forEach((b) => {
-    const on = b.dataset.view === name;
+    const bView = b.dataset.view;
+    const on = bView === canonicalName || (canonicalName === "library" && (bView === "library" || bView === "saved"));
     b.classList.toggle("active", on);
     if (on) {
       b.setAttribute("aria-current", "page");
@@ -350,10 +357,10 @@ function showView(name, { push = false } = {}) {
       b.removeAttribute("aria-current");
     }
   });
-  try { localStorage.setItem("ad_studio_view", name); } catch (e) { /* ignore */ }
+  try { localStorage.setItem("ad_studio_view", canonicalName); } catch (e) { /* ignore */ }
   // Each studio has its own address, so Back works and a tab can be reopened where it was
-  if (push && location.hash !== `#${name}`) history.pushState(null, "", `#${name}`);
-  window.dispatchEvent(new CustomEvent("viewchange", { detail: name }));
+  if (push && location.hash !== `#${canonicalName}`) history.pushState(null, "", `#${canonicalName}`);
+  window.dispatchEvent(new CustomEvent("viewchange", { detail: canonicalName }));
 }
 
 document.querySelectorAll(".nav-btn").forEach((b) => b.addEventListener("click", () => showView(b.dataset.view, { push: true })));

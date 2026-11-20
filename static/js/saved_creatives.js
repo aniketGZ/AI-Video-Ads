@@ -1,59 +1,26 @@
-// Saved Creatives & Prompt Library Manager
-// Connects to /api/saved/* with Supabase PostgreSQL and local SQLite persistence.
+// Saved Creatives, Project Folders & Creator Profile Management
+// Connects to /api/projects, /api/saved/*, and /api/user/profile.
 (function () {
   const $ = (id) => document.getElementById(id);
-  const esc = (s) => (s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  const esc = (s) =>
+    (s || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
 
-  let savedItems = [];
-  let currentFilter = "all"; // 'all' | 'video' | 'image' | 'favorites'
+  // State
+  let projects = [];
+  let savedCreatives = [];
+  let currentFolder = ""; // '' (all) | 'favorites' | 'unassigned' | <uuid>
+  let currentMediaType = ""; // '' | 'image' | 'video'
   let searchQuery = "";
+  let selectedColor = "#8d3624";
+  let userProfile = null;
 
-  // ------------------------------------------------------------ Fetch and Render
-  async function loadSavedItems() {
-    const grid = $("saved_grid");
-    const emptyState = $("saved_empty");
-    const countBadge = $("saved_count_badge");
-    if (!grid) return;
-
-    try {
-      let url = "/api/saved/list";
-      const params = new URLSearchParams();
-      if (currentFilter === "video" || currentFilter === "image") {
-        params.set("type", currentFilter);
-      } else if (currentFilter === "favorites") {
-        params.set("favorites", "true");
-      }
-      if (params.toString()) url += `?${params.toString()}`;
-
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Failed to load saved items");
-      const data = await res.json();
-      savedItems = data.creatives || [];
-
-      if (countBadge) {
-        countBadge.textContent = `${savedItems.length} item${savedItems.length === 1 ? "" : "s"}`;
-      }
-
-      renderGrid();
-    } catch (err) {
-      if (grid) {
-        grid.innerHTML = `<div class="media-empty error"><i class="fa-solid fa-triangle-exclamation"></i><span>Could not load saved creatives: ${esc(err.message)}</span></div>`;
-      }
-    }
-  }
-
-  function filterItems() {
-    return savedItems.filter((item) => {
-      if (searchQuery) {
-        const q = searchQuery.toLowerCase();
-        const p = (item.prompt || "").toLowerCase();
-        const t = (item.title || "").toLowerCase();
-        if (!p.includes(q) && !t.includes(q)) return false;
-      }
-      return true;
-    });
-  }
-
+  // -------------------------------------------------------------------------
+  // Helper: Relative Time Format
+  // -------------------------------------------------------------------------
   function formatRelativeTime(iso) {
     if (!iso) return "";
     try {
@@ -68,14 +35,205 @@
     }
   }
 
-  function renderGrid() {
-    const grid = $("saved_grid");
-    const emptyState = $("saved_empty");
+  // -------------------------------------------------------------------------
+  // Project Management API
+  // -------------------------------------------------------------------------
+  async function loadProjects() {
+    try {
+      const res = await fetch("/api/projects");
+      if (!res.ok) throw new Error("Failed to load projects");
+      const data = await res.json();
+      projects = data.projects || [];
+      renderProjectsSidebar();
+      renderStudioProjectMenus();
+      renderProfileProjectList();
+    } catch (err) {
+      console.warn("Could not load projects:", err);
+    }
+  }
+
+  function renderProjectsSidebar() {
+    const list = $("library_folder_list");
+    if (!list) return;
+
+    if (!projects.length) {
+      list.innerHTML = `<div style="padding: 8px 12px; font-size: 12px; color: var(--ink-3);">No folders created yet.</div>`;
+      return;
+    }
+
+    list.innerHTML = projects
+      .map((proj) => {
+        const isActive = currentFolder === proj.id;
+        const color = proj.color || "#8d3624";
+        const count = proj.creative_count || 0;
+        return `
+          <button type="button" class="lib-folder-item ${isActive ? "active" : ""}" data-folder-id="${esc(proj.id)}">
+            <span class="lib-folder-dot" style="background-color: ${esc(color)};"></span>
+            <span class="lib-folder-name" title="${esc(proj.name)}">${esc(proj.name)}</span>
+            <span class="lib-folder-count">${count}</span>
+          </button>
+        `;
+      })
+      .join("");
+  }
+
+  function renderStudioProjectMenus() {
+    const imgList = $("img_project_list");
+    const vidList = $("vid_project_list");
+
+    const buildOptionsHtml = (selectedId) => {
+      let html = `
+        <button type="button" class="project-pop-item ${!selectedId ? "active" : ""}" data-val="">
+          <span class="project-pop-dot" style="background: var(--ink-3);"></span>
+          <span>No Folder (Unassigned)</span>
+        </button>
+      `;
+      projects.forEach((p) => {
+        const isSel = selectedId === p.id;
+        html += `
+          <button type="button" class="project-pop-item ${isSel ? "active" : ""}" data-val="${esc(p.id)}">
+            <span class="project-pop-dot" style="background: ${esc(p.color || "#8d3624")};"></span>
+            <span>${esc(p.name)}</span>
+          </button>
+        `;
+      });
+      return html;
+    };
+
+    if (imgList) {
+      const cur = $("img_folder_id")?.value || "";
+      imgList.innerHTML = buildOptionsHtml(cur);
+    }
+    if (vidList) {
+      const cur = $("vid_folder_id")?.value || "";
+      vidList.innerHTML = buildOptionsHtml(cur);
+    }
+  }
+
+  function renderProfileProjectList() {
+    const list = $("prof_project_list");
+    if (!list) return;
+
+    if (!projects.length) {
+      list.innerHTML = `<div style="padding: 10px; font-size: 13px; color: var(--ink-3); text-align: center;">No project folders created yet. Click "New Folder" above.</div>`;
+      return;
+    }
+
+    list.innerHTML = projects
+      .map((proj) => {
+        const color = proj.color || "#8d3624";
+        const count = proj.creative_count || 0;
+        return `
+          <div class="prof-project-item">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span class="lib-folder-dot" style="background-color: ${esc(color)};"></span>
+              <span style="font-weight: 500;">${esc(proj.name)}</span>
+              <span class="muted small">(${count} items)</span>
+            </div>
+            <button type="button" class="btn btn-xs btn-ghost btn-open-proj-from-prof" data-proj-id="${esc(proj.id)}">
+              View Folder
+            </button>
+          </div>
+        `;
+      })
+      .join("");
+  }
+
+  // -------------------------------------------------------------------------
+  // Saved Creatives API & Filtering
+  // -------------------------------------------------------------------------
+  async function loadSavedCreatives() {
+    const grid = $("library_grid");
+    const emptyState = $("library_empty");
     if (!grid) return;
 
-    const items = filterItems();
+    try {
+      const params = new URLSearchParams();
+      if (currentMediaType) params.set("type", currentMediaType);
+      if (currentFolder === "favorites") {
+        params.set("favorites", "true");
+      } else if (currentFolder === "unassigned") {
+        params.set("folder_id", "unassigned");
+      } else if (currentFolder) {
+        params.set("folder_id", currentFolder);
+      }
+      if (searchQuery) params.set("q", searchQuery);
 
-    if (!items.length) {
+      const url = `/api/saved/list?${params.toString()}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Failed to load creatives");
+
+      const data = await res.json();
+      savedCreatives = data.creatives || [];
+
+      // Update badge counts
+      updateCategoryCounts();
+      updateHeaderAndActionBar();
+      renderGrid();
+    } catch (err) {
+      if (grid) {
+        grid.innerHTML = `<div class="media-empty error" style="grid-column: 1 / -1;"><i class="fa-solid fa-triangle-exclamation"></i><span>Could not load creatives: ${esc(err.message)}</span></div>`;
+      }
+    }
+  }
+
+  function updateCategoryCounts() {
+    // If viewing all, we can compute rough totals or fetch user stats
+    fetch("/api/user/profile")
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.stats) {
+          if ($("lib_count_all")) $("lib_count_all").textContent = d.stats.total_creatives || 0;
+          if ($("lib_count_favorites")) $("lib_count_favorites").textContent = d.stats.favorites_count || 0;
+          if ($("lib_count_unassigned")) $("lib_count_unassigned").textContent = d.stats.unassigned_count || 0;
+          if ($("prof_stat_total")) $("prof_stat_total").textContent = d.stats.total_creatives || 0;
+          if ($("prof_stat_breakdown"))
+            $("prof_stat_breakdown").textContent = `${d.stats.total_images || 0} images · ${d.stats.total_videos || 0} videos`;
+          if ($("prof_stat_projects")) $("prof_stat_projects").textContent = d.stats.total_projects || 0;
+        }
+      })
+      .catch(() => {});
+  }
+
+  function updateHeaderAndActionBar() {
+    const titleEl = $("lib_active_folder_title");
+    const descEl = $("lib_active_folder_desc");
+    const bar = $("project_action_bar");
+
+    if (!currentFolder) {
+      if (titleEl) titleEl.textContent = "All Generations";
+      if (descEl) descEl.textContent = "Every image and video ad you create collects here with its exact prompt and uploaded references.";
+      if (bar) bar.hidden = true;
+    } else if (currentFolder === "favorites") {
+      if (titleEl) titleEl.textContent = "Starred Favorites";
+      if (descEl) descEl.textContent = "Your highest performing and favorite generated ads across all campaigns.";
+      if (bar) bar.hidden = true;
+    } else if (currentFolder === "unassigned") {
+      if (titleEl) titleEl.textContent = "Unassigned Generations";
+      if (descEl) descEl.textContent = "Generations that haven't been assigned to a project folder yet.";
+      if (bar) bar.hidden = true;
+    } else {
+      const proj = projects.find((p) => p.id === currentFolder);
+      if (proj) {
+        if (titleEl) titleEl.textContent = proj.name;
+        if (descEl) descEl.textContent = proj.description || "Organized project folder";
+        if (bar) {
+          bar.hidden = false;
+          if ($("proj_active_color")) $("proj_active_color").style.backgroundColor = proj.color || "#8d3624";
+          if ($("proj_active_name")) $("proj_active_name").textContent = proj.name;
+          if ($("proj_active_count"))
+            $("proj_active_count").textContent = `· ${savedCreatives.length} item${savedCreatives.length === 1 ? "" : "s"}`;
+        }
+      }
+    }
+  }
+
+  function renderGrid() {
+    const grid = $("library_grid");
+    const emptyState = $("library_empty");
+    if (!grid) return;
+
+    if (!savedCreatives.length) {
       grid.innerHTML = "";
       if (emptyState) emptyState.hidden = false;
       return;
@@ -83,16 +241,44 @@
 
     if (emptyState) emptyState.hidden = true;
 
-    grid.innerHTML = items
+    grid.innerHTML = savedCreatives
       .map((item) => {
         const isVid = item.type === "video" || (item.media_url || "").endsWith(".mp4");
         const ratioClass = (item.aspect_ratio || "9:16").replace(":", "-");
         const isFav = Boolean(item.is_favorite);
         const timeStr = formatRelativeTime(item.created_at);
 
+        // Find associated project
+        const projectObj = item.folder_id ? projects.find((p) => p.id === item.folder_id) : null;
+
+        // Parse reference images
+        let refImages = [];
+        if (Array.isArray(item.reference_images)) {
+          refImages = item.reference_images;
+        } else if (typeof item.reference_images === "string") {
+          try {
+            refImages = JSON.parse(item.reference_images);
+          } catch (_) {}
+        }
+
+        const refStripHtml =
+          refImages && refImages.length
+            ? `
+            <div class="lib-ref-strip" title="Uploaded reference photos used in this render">
+              <span class="lib-ref-label"><i class="fa-solid fa-paperclip"></i> Refs (${refImages.length})</span>
+              ${refImages
+                .map(
+                  (url) => `
+                <img src="${esc(url)}" class="lib-ref-thumb" alt="Reference image" title="Click to view reference image" data-ref-url="${esc(url)}" loading="lazy">
+              `
+                )
+                .join("")}
+            </div>`
+            : "";
+
         return `
         <article class="saved-card" data-cid="${esc(item.id)}">
-          <div class="saved-card-media r-${ratioClass}" data-url="${esc(item.media_url)}" data-type="${isVid ? "video" : "image"}" data-prompt="${esc(item.prompt)}" data-aspect="${esc(item.aspect_ratio || "9:16")}" role="button" tabindex="0" title="Click to preview in high-resolution">
+          <div class="saved-card-media r-${ratioClass}" data-url="${esc(item.media_url)}" data-type="${isVid ? "video" : "image"}" data-prompt="${esc(item.prompt)}" data-aspect="${esc(item.aspect_ratio || "9:16")}" role="button" tabindex="0" title="Click to inspect in high-resolution viewer">
             ${
               isVid
                 ? `<video src="${esc(item.media_url)}" muted loop playsinline preload="metadata"></video>
@@ -101,7 +287,7 @@
             }
             <div class="saved-card-overlay-top">
               <span class="saved-badge ${isVid ? "badge-video" : "badge-image"}">${isVid ? "VIDEO" : "IMAGE"} · ${esc(item.aspect_ratio || "9:16")}</span>
-              <button type="button" class="saved-fav-btn ${isFav ? "active" : ""}" data-fav-id="${esc(item.id)}" title="${isFav ? "Remove favorite" : "Favorite this creative"}">
+              <button type="button" class="saved-fav-btn ${isFav ? "active" : ""}" data-fav-id="${esc(item.id)}" title="${isFav ? "Remove favorite" : "Star favorite"}">
                 <i class="${isFav ? "fa-solid" : "fa-regular"} fa-star"></i>
               </button>
             </div>
@@ -110,32 +296,68 @@
           <div class="saved-card-body">
             <div class="saved-card-meta">
               <span class="saved-time">${esc(timeStr)}</span>
+              ${
+                projectObj
+                  ? `<span class="lib-project-tag" title="Project: ${esc(projectObj.name)}">
+                      <span class="lib-folder-dot" style="background-color: ${esc(projectObj.color || "#8d3624")}; width: 6px; height: 6px;"></span>
+                      <span>${esc(projectObj.name)}</span>
+                    </span>`
+                  : `<span class="muted small" style="font-size: 11px;">Unassigned</span>`
+              }
             </div>
+
+            ${refStripHtml}
 
             <p class="saved-prompt-text" title="${esc(item.prompt)}">${esc(item.prompt || "No prompt text recorded.")}</p>
 
             <div class="saved-actions">
-              <button type="button" class="btn-saved-action btn-copy-prompt" data-copy-prompt="${esc(item.prompt)}" title="Copy prompt to clipboard">
-                <i class="fa-regular fa-copy"></i> Copy Prompt
+              <button type="button" class="btn-saved-action btn-copy-prompt" data-copy-prompt="${esc(item.prompt)}" title="Copy exact prompt">
+                <i class="fa-regular fa-copy"></i> Copy
               </button>
-              <button type="button" class="btn-saved-action btn-load-studio" data-load-type="${isVid ? "video" : "image"}" data-load-prompt="${esc(item.prompt)}" title="Open and populate in Studio">
+              <button type="button" class="btn-saved-action btn-load-studio" data-load-type="${isVid ? "video" : "image"}" data-load-prompt="${esc(item.prompt)}" title="Populate into Studio">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i> Use in Studio
               </button>
+              
               <div class="saved-actions-right">
-                <a href="${esc(item.media_url)}" download="${isVid ? "video_ad.mp4" : "image_ad.png"}" class="saved-icon-btn" title="Download asset" target="_blank">
+                <!-- Move to Folder Menu -->
+                <div class="lib-move-dropdown">
+                  <button type="button" class="saved-icon-btn btn-trigger-move" data-cid="${esc(item.id)}" title="Move to Project Folder">
+                    <i class="fa-regular fa-folder-open"></i>
+                  </button>
+                  <div class="lib-move-pop" hidden data-pop-cid="${esc(item.id)}">
+                    <div style="font-size: 11px; font-weight:600; color:var(--ink-3); padding:4px 8px; text-transform:uppercase;">Move to Folder</div>
+                    <button type="button" class="lib-move-item" data-move-folder="">
+                      <span class="lib-folder-dot" style="background: var(--ink-3);"></span>
+                      <span>Unassign</span>
+                    </button>
+                    ${projects
+                      .map(
+                        (p) => `
+                      <button type="button" class="lib-move-item" data-move-folder="${esc(p.id)}">
+                        <span class="lib-folder-dot" style="background: ${esc(p.color || "#8d3624")};"></span>
+                        <span>${esc(p.name)}</span>
+                      </button>
+                    `
+                      )
+                      .join("")}
+                  </div>
+                </div>
+
+                <a href="${esc(item.media_url)}" download="${isVid ? "video_ad.mp4" : "image_ad.png"}" class="saved-icon-btn" title="Download file" target="_blank">
                   <i class="fa-solid fa-download"></i>
                 </a>
-                <button type="button" class="saved-icon-btn danger" data-delete-id="${esc(item.id)}" title="Delete saved creative">
+                <button type="button" class="saved-icon-btn danger" data-delete-id="${esc(item.id)}" title="Delete generation">
                   <i class="fa-regular fa-trash-can"></i>
                 </button>
               </div>
             </div>
           </div>
-        </article>`;
+        </article>
+        `;
       })
       .join("");
 
-    // Wire preview on hover for videos
+    // Wire hover video autoplay & click viewer
     grid.querySelectorAll(".saved-card-media").forEach((slot) => {
       const vid = slot.querySelector("video");
       if (vid) {
@@ -158,9 +380,185 @@
         }
       });
     });
+
+    // Wire reference image click preview
+    grid.querySelectorAll(".lib-ref-thumb").forEach((thumb) => {
+      thumb.addEventListener("click", (e) => {
+        e.stopPropagation();
+        const url = thumb.dataset.refUrl;
+        if (url && typeof window.openViewer === "function") {
+          window.openViewer({
+            items: [{ url, type: "image", prompt: "Uploaded Reference Photo", aspect: "1:1", el: thumb }],
+            index: 0,
+          });
+        }
+      });
+    });
   }
 
-  // ------------------------------------------------------------ Card Action Handlers
+  // -------------------------------------------------------------------------
+  // Project Editor Modal Handling
+  // -------------------------------------------------------------------------
+  function openProjectModal(editProjectId = null) {
+    const dlg = $("project_editor_modal");
+    if (!dlg) return;
+
+    const titleEl = $("proj_modal_title");
+    const idInput = $("proj_input_id");
+    const nameInput = $("proj_input_name");
+    const descInput = $("proj_input_desc");
+
+    if (editProjectId) {
+      const proj = projects.find((p) => p.id === editProjectId);
+      if (proj) {
+        if (titleEl) titleEl.textContent = "Edit Project Folder";
+        if (idInput) idInput.value = proj.id;
+        if (nameInput) nameInput.value = proj.name;
+        if (descInput) descInput.value = proj.description || "";
+        selectedColor = proj.color || "#8d3624";
+      }
+    } else {
+      if (titleEl) titleEl.textContent = "New Project Folder";
+      if (idInput) idInput.value = "";
+      if (nameInput) nameInput.value = "";
+      if (descInput) descInput.value = "";
+      selectedColor = "#8d3624";
+    }
+
+    // Update color dots
+    document.querySelectorAll(".color-dot-pick").forEach((dot) => {
+      dot.classList.toggle("active", dot.dataset.color === selectedColor);
+    });
+
+    if (!dlg.open) dlg.showModal();
+    if (nameInput) nameInput.focus();
+  }
+
+  function closeProjectModal() {
+    const dlg = $("project_editor_modal");
+    if (dlg && dlg.open) dlg.close();
+  }
+
+  async function handleProjectSubmit(e) {
+    e.preventDefault();
+    const id = $("proj_input_id")?.value;
+    const name = $("proj_input_name")?.value.trim();
+    const description = $("proj_input_desc")?.value.trim();
+
+    if (!name) {
+      if (typeof notify === "function") notify("Please enter a project name", "warning");
+      return;
+    }
+
+    const payload = {
+      name,
+      description,
+      color: selectedColor,
+      icon: "folder",
+    };
+
+    try {
+      if (id) {
+        // Update existing project
+        const res = await fetch(`/api/projects/${id}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error("Could not update project");
+        if (typeof notify === "function") notify("Project updated!", "success");
+      } else {
+        // Create new project
+        const res = await fetch("/api/projects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!res.ok) throw new Error("Could not create project");
+        const data = await res.json();
+        if (typeof notify === "function") notify("Project folder created!", "success");
+        if (data.project?.id) currentFolder = data.project.id;
+      }
+
+      closeProjectModal();
+      await loadProjects();
+      await loadSavedCreatives();
+    } catch (err) {
+      if (typeof notify === "function") notify(err.message || "Failed to save project", "error");
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // User Profile Modal Handling
+  // -------------------------------------------------------------------------
+  async function openProfileModal() {
+    const dlg = $("profile_modal");
+    if (!dlg) return;
+
+    try {
+      const res = await fetch("/api/user/profile");
+      if (res.ok) {
+        userProfile = await res.json();
+        populateProfileUI(userProfile);
+      }
+    } catch (_) {}
+
+    if (!dlg.open) dlg.showModal();
+  }
+
+  function populateProfileUI(data) {
+    if (!data) return;
+    const user = data.user || {};
+    const credits = data.credits || { total: 500, used: 0, remaining: 500 };
+    const stats = data.stats || {};
+
+    const email = user.email || "creator@example.com";
+    const name = user.name || email.split("@")[0] || "Creator";
+    const initials = (name.slice(0, 2) || "AC").toUpperCase();
+    const planLabel = (user.plan_label || user.plan || "Free").toUpperCase() + " PLAN";
+
+    // Avatar & Hero
+    if ($("prof_avatar_initials")) $("prof_avatar_initials").textContent = initials;
+    if ($("prof_display_name")) $("prof_display_name").textContent = name;
+    if ($("prof_email")) $("prof_email").textContent = email;
+    if ($("prof_plan_badge")) $("prof_plan_badge").textContent = planLabel;
+
+    // Top Dropdown elements as well
+    if ($("dropdown_user_avatar")) $("dropdown_user_avatar").textContent = initials;
+    if ($("dropdown_user_email")) $("dropdown_user_email").textContent = email;
+    if ($("dropdown_user_plan")) $("dropdown_user_plan").textContent = planLabel;
+
+    // Credits
+    const pct = Math.max(0, Math.min(100, Math.round((credits.remaining / credits.total) * 100)));
+    if ($("prof_credits_pct")) $("prof_credits_pct").textContent = `${pct}% left`;
+    if ($("prof_credits_remaining"))
+      $("prof_credits_remaining").innerHTML = `${credits.remaining} <span class="metric-sub">/ ${credits.total}</span>`;
+    if ($("prof_credits_bar")) $("prof_credits_bar").style.width = `${pct}%`;
+
+    if ($("dropdown_credits_num")) $("dropdown_credits_num").textContent = `${credits.remaining} / ${credits.total}`;
+    if ($("dropdown_credits_bar")) $("dropdown_credits_bar").style.width = `${pct}%`;
+
+    // Metrics
+    if ($("prof_stat_total")) $("prof_stat_total").textContent = stats.total_creatives || 0;
+    if ($("prof_stat_breakdown"))
+      $("prof_stat_breakdown").textContent = `${stats.total_images || 0} images · ${stats.total_videos || 0} videos`;
+    if ($("prof_stat_projects")) $("prof_stat_projects").textContent = stats.total_projects || 0;
+
+    // Settings form inputs
+    if ($("prof_input_name")) $("prof_input_name").value = user.name || "";
+    if ($("prof_input_email")) $("prof_input_email").value = email;
+
+    renderProfileProjectList();
+  }
+
+  function closeProfileModal() {
+    const dlg = $("profile_modal");
+    if (dlg && dlg.open) dlg.close();
+  }
+
+  // -------------------------------------------------------------------------
+  // Event Delegation for All Actions
+  // -------------------------------------------------------------------------
   document.addEventListener("click", async (e) => {
     // 1. Copy Prompt
     const copyBtn = e.target.closest(".btn-copy-prompt");
@@ -188,11 +586,13 @@
       const targetStudio = loadBtn.dataset.loadType; // 'video' | 'image'
       const prompt = loadBtn.dataset.loadPrompt;
 
-      // Switch view
-      const navBtn = document.querySelector(`.nav-btn[data-view="${targetStudio}"]`);
-      if (navBtn) navBtn.click();
+      if (typeof window.showView === "function") {
+        window.showView(targetStudio, { push: true });
+      } else {
+        const navBtn = document.querySelector(`.nav-btn[data-view="${targetStudio}"]`);
+        if (navBtn) navBtn.click();
+      }
 
-      // Populate textarea
       const ta = $(targetStudio === "video" ? "vid_prompt" : "img_prompt");
       if (ta && prompt) {
         ta.value = prompt;
@@ -222,113 +622,324 @@
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ id, is_favorite: nextFav }),
         });
-        const target = savedItems.find((x) => x.id === id);
+        const target = savedCreatives.find((x) => x.id === id);
         if (target) target.is_favorite = nextFav;
+        updateCategoryCounts();
       } catch (_) {}
       return;
     }
 
-    // 4. Delete Item
+    // 4. Delete Creative
     const delBtn = e.target.closest("[data-delete-id]");
     if (delBtn) {
       e.stopPropagation();
       const id = delBtn.dataset.deleteId;
-      if (!confirm("Remove this saved creative from your library?")) return;
+      if (!confirm("Permanently delete this creative from your library?")) return;
 
       try {
         const res = await fetch(`/api/saved/${id}`, { method: "DELETE" });
         if (res.ok) {
-          savedItems = savedItems.filter((x) => x.id !== id);
+          savedCreatives = savedCreatives.filter((x) => x.id !== id);
           renderGrid();
+          updateCategoryCounts();
+          loadProjects(); // update folder count
           if (typeof notify === "function") notify("Creative removed from library", "info");
         }
       } catch (_) {}
       return;
     }
 
-    // 5. Global Save Creative button (.btn-save-creative) on tiles in studios/campaigns
-    const saveCreativeBtn = e.target.closest(".btn-save-creative");
-    if (saveCreativeBtn) {
+    // 5. Trigger Move Popover
+    const triggerMoveBtn = e.target.closest(".btn-trigger-move");
+    if (triggerMoveBtn) {
       e.stopPropagation();
-      const type = saveCreativeBtn.dataset.type || "image";
-      const url = saveCreativeBtn.dataset.url;
-      const prompt = saveCreativeBtn.dataset.prompt || "";
-      const aspect = saveCreativeBtn.dataset.aspect || (type === "video" ? "9:16" : "1:1");
-      const title = saveCreativeBtn.dataset.title || (type === "video" ? "Saved Video Creative" : "Saved Image Ad");
+      const cid = triggerMoveBtn.dataset.cid;
+      const pop = document.querySelector(`.lib-move-pop[data-pop-cid="${cid}"]`);
+      // Hide all other pops
+      document.querySelectorAll(".lib-move-pop").forEach((p) => {
+        if (p !== pop) p.hidden = true;
+      });
+      if (pop) pop.hidden = !pop.hidden;
+      return;
+    }
 
-      if (!url) return;
+    // Close move pops on click outside
+    if (!e.target.closest(".lib-move-dropdown")) {
+      document.querySelectorAll(".lib-move-pop").forEach((p) => (p.hidden = true));
+    }
 
-      saveCreativeBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Saving';
-      saveCreativeBtn.disabled = true;
+    // 6. Move Creative Item to Folder
+    const moveItemBtn = e.target.closest(".lib-move-item");
+    if (moveItemBtn) {
+      e.stopPropagation();
+      const pop = moveItemBtn.closest(".lib-move-pop");
+      const cid = pop?.dataset.popCid;
+      const folderId = moveItemBtn.dataset.moveFolder || null;
+
+      if (cid) {
+        try {
+          const res = await fetch(`/api/saved/${cid}/move`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ folder_id: folderId }),
+          });
+          if (res.ok) {
+            if (pop) pop.hidden = true;
+            if (typeof notify === "function") notify("Moved creative!", "success");
+            await loadProjects();
+            await loadSavedCreatives();
+          }
+        } catch (_) {}
+      }
+      return;
+    }
+
+    // 7. Sidebar Filter Buttons (All, Favorites, Unassigned)
+    const filterBtn = e.target.closest(".lib-filter-btn");
+    if (filterBtn) {
+      document.querySelectorAll(".lib-filter-btn, .lib-folder-item").forEach((b) => b.classList.remove("active"));
+      filterBtn.classList.add("active");
+      currentFolder = filterBtn.dataset.folder || "";
+      loadSavedCreatives();
+      return;
+    }
+
+    // 8. Sidebar Project Folder Item
+    const folderItem = e.target.closest(".lib-folder-item");
+    if (folderItem) {
+      document.querySelectorAll(".lib-filter-btn, .lib-folder-item").forEach((b) => b.classList.remove("active"));
+      folderItem.classList.add("active");
+      currentFolder = folderItem.dataset.folderId;
+      loadSavedCreatives();
+      return;
+    }
+
+    // 9. Profile modal: "View Folder" button
+    const viewFolderFromProf = e.target.closest(".btn-open-proj-from-prof");
+    if (viewFolderFromProf) {
+      const projId = viewFolderFromProf.dataset.projId;
+      closeProfileModal();
+      if (typeof window.showView === "function") {
+        window.showView("library", { push: true });
+      }
+      setTimeout(() => {
+        const item = document.querySelector(`.lib-folder-item[data-folder-id="${projId}"]`);
+        if (item) item.click();
+      }, 50);
+      return;
+    }
+
+    // 10. Color dot picker in Project modal
+    const colorDot = e.target.closest(".color-dot-pick");
+    if (colorDot) {
+      document.querySelectorAll(".color-dot-pick").forEach((d) => d.classList.remove("active"));
+      colorDot.classList.add("active");
+      selectedColor = colorDot.dataset.color || "#8d3624";
+      return;
+    }
+
+    // 11. Project Action Bar Actions
+    if (e.target.closest("#btn_create_image_in_project")) {
+      const proj = projects.find((p) => p.id === currentFolder);
+      if (proj) {
+        if ($("img_folder_id")) $("img_folder_id").value = proj.id;
+        if ($("img_project_label")) $("img_project_label").textContent = proj.name;
+      }
+      if (typeof window.showView === "function") window.showView("image", { push: true });
+      return;
+    }
+
+    if (e.target.closest("#btn_create_video_in_project")) {
+      const proj = projects.find((p) => p.id === currentFolder);
+      if (proj) {
+        if ($("vid_folder_id")) $("vid_folder_id").value = proj.id;
+        if ($("vid_project_label")) $("vid_project_label").textContent = proj.name;
+      }
+      if (typeof window.showView === "function") window.showView("video", { push: true });
+      return;
+    }
+
+    if (e.target.closest("#btn_edit_project")) {
+      if (currentFolder) openProjectModal(currentFolder);
+      return;
+    }
+
+    if (e.target.closest("#btn_delete_project")) {
+      if (!currentFolder) return;
+      const proj = projects.find((p) => p.id === currentFolder);
+      if (!confirm(`Delete project "${proj?.name || "folder"}"? Creatives inside will become unassigned.`)) return;
 
       try {
-        const res = await fetch("/api/saved/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            type,
-            title,
-            prompt,
-            media_url: url,
-            aspect_ratio: aspect,
-          }),
-        });
-        if (!res.ok) throw new Error("Save request failed");
-        saveCreativeBtn.innerHTML = '<i class="fa-solid fa-bookmark" style="color:var(--accent);"></i> Saved';
-        if (typeof notify === "function") notify("Creative and prompt saved to library!", "success");
-        window.dispatchEvent(new CustomEvent("saved-creatives-updated"));
-      } catch (err) {
-        saveCreativeBtn.innerHTML = '<i class="fa-regular fa-bookmark"></i> Save Prompt';
-        saveCreativeBtn.disabled = false;
-        if (typeof notify === "function") notify("Could not save creative", "error");
+        const res = await fetch(`/api/projects/${currentFolder}`, { method: "DELETE" });
+        if (res.ok) {
+          if (typeof notify === "function") notify("Project folder removed", "info");
+          currentFolder = "";
+          const allBtn = document.querySelector('.lib-filter-btn[data-folder=""]');
+          if (allBtn) allBtn.click();
+          await loadProjects();
+        }
+      } catch (_) {}
+      return;
+    }
+
+    // 12. Studio Project Popover item select
+    const projPopItem = e.target.closest(".project-pop-item");
+    if (projPopItem) {
+      const val = projPopItem.dataset.val || "";
+      const isImg = projPopItem.closest("#img_project_pop");
+      const isVid = projPopItem.closest("#vid_project_pop");
+
+      if (isImg) {
+        if ($("img_folder_id")) $("img_folder_id").value = val;
+        const proj = projects.find((p) => p.id === val);
+        if ($("img_project_label")) $("img_project_label").textContent = proj ? proj.name : "Project";
+        if ($("img_project_pop")) $("img_project_pop").hidden = true;
+      } else if (isVid) {
+        if ($("vid_folder_id")) $("vid_folder_id").value = val;
+        const proj = projects.find((p) => p.id === val);
+        if ($("vid_project_label")) $("vid_project_label").textContent = proj ? proj.name : "Project";
+        if ($("vid_project_pop")) $("vid_project_pop").hidden = true;
       }
+      return;
+    }
+
+    // 13. Studio project pill open/close toggle
+    if (e.target.closest("#btn_img_project")) {
+      e.stopPropagation();
+      const pop = $("img_project_pop");
+      if (pop) pop.hidden = !pop.hidden;
+      return;
+    }
+
+    if (e.target.closest("#btn_vid_project")) {
+      e.stopPropagation();
+      const pop = $("vid_project_pop");
+      if (pop) pop.hidden = !pop.hidden;
+      return;
+    }
+
+    // Close studio project popovers on click outside
+    if (!e.target.closest("#img_project_menu") && $("img_project_pop")) {
+      $("img_project_pop").hidden = true;
+    }
+    if (!e.target.closest("#vid_project_menu") && $("vid_project_pop")) {
+      $("vid_project_pop").hidden = true;
     }
   });
 
-  // ------------------------------------------------------------ Filters & Search
-  function wireFilters() {
-    const filterPills = document.querySelectorAll(".saved-filter-pill");
-    filterPills.forEach((pill) => {
-      pill.addEventListener("click", () => {
-        filterPills.forEach((p) => p.classList.remove("active"));
-        pill.classList.add("active");
-        currentFilter = pill.dataset.filter || "all";
-        loadSavedItems();
-      });
-    });
+  // -------------------------------------------------------------------------
+  // Setup Dialogs and Wire Event Handlers
+  // -------------------------------------------------------------------------
+  function setupLibraryEvents() {
+    // Project Editor Modal Triggers
+    if ($("btn_new_project_modal")) $("btn_new_project_modal").addEventListener("click", () => openProjectModal(null));
+    if ($("prof_btn_new_project")) $("prof_btn_new_project").addEventListener("click", () => openProjectModal(null));
+    if ($("btn_close_proj_modal")) $("btn_close_proj_modal").addEventListener("click", closeProjectModal);
+    if ($("btn_cancel_proj_modal")) $("btn_cancel_proj_modal").addEventListener("click", closeProjectModal);
+    if ($("project_form")) $("project_form").addEventListener("submit", handleProjectSubmit);
 
-    const searchInput = $("saved_search_input");
+    // Profile Modal Triggers
+    if ($("btn_open_profile_dropdown"))
+      $("btn_open_profile_dropdown").addEventListener("click", () => {
+        const dd = $("user_dropdown");
+        if (dd) dd.hidden = true;
+        openProfileModal();
+      });
+    if ($("btn_close_profile")) $("btn_close_profile").addEventListener("click", closeProfileModal);
+    if ($("btn_close_profile_foot")) $("btn_close_profile_foot").addEventListener("click", closeProfileModal);
+    if ($("btn_go_to_library"))
+      $("btn_go_to_library").addEventListener("click", () => {
+        closeProfileModal();
+        if (typeof window.showView === "function") window.showView("library", { push: true });
+      });
+
+    // Profile Settings Form Save Name
+    if ($("prof_settings_form")) {
+      $("prof_settings_form").addEventListener("submit", (e) => {
+        e.preventDefault();
+        const newName = $("prof_input_name")?.value.trim();
+        if (newName) {
+          if ($("prof_display_name")) $("prof_display_name").textContent = newName;
+          if ($("dropdown_user_email")) $("dropdown_user_email").textContent = newName;
+          if (typeof notify === "function") notify("Display name updated!", "success");
+        }
+      });
+    }
+
+    // User Dropdown "Projects & Library" item
+    if ($("btn_open_library_dropdown")) {
+      $("btn_open_library_dropdown").addEventListener("click", () => {
+        const dd = $("user_dropdown");
+        if (dd) dd.hidden = true;
+        if (typeof window.showView === "function") window.showView("library", { push: true });
+      });
+    }
+
+    // Media type filter buttons (All, Images, Videos)
+    const typeSeg = $("lib_media_type_filter");
+    if (typeSeg) {
+      typeSeg.querySelectorAll("button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          typeSeg.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          currentMediaType = btn.dataset.type || "";
+          loadSavedCreatives();
+        });
+      });
+    }
+
+    // Refresh Library button
+    if ($("btn_refresh_library")) {
+      $("btn_refresh_library").addEventListener("click", () => {
+        loadProjects();
+        loadSavedCreatives();
+        if (typeof notify === "function") notify("Library refreshed", "info");
+      });
+    }
+
+    // Search Input with debounce
+    const searchInput = $("lib_search_input");
     if (searchInput) {
-      let debounceTimer = null;
+      let timer = null;
       searchInput.addEventListener("input", (e) => {
-        clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
           searchQuery = e.target.value.trim();
-          renderGrid();
-        }, 200);
+          loadSavedCreatives();
+        }, 220);
       });
     }
   }
 
-  // ------------------------------------------------------------ View Change Listener
+  // -------------------------------------------------------------------------
+  // View Change & Global Listeners
+  // -------------------------------------------------------------------------
   window.addEventListener("viewchange", (e) => {
-    if (e.detail?.view === "saved" || document.querySelector('.nav-btn[data-view="saved"]')?.classList.contains("active")) {
-      loadSavedItems();
+    const v = e.detail?.view;
+    if (v === "library" || v === "saved") {
+      loadProjects();
+      loadSavedCreatives();
     }
   });
 
   window.addEventListener("saved-creatives-updated", () => {
-    loadSavedItems();
+    loadProjects();
+    loadSavedCreatives();
   });
 
-  // Initial setup
   document.addEventListener("DOMContentLoaded", () => {
-    wireFilters();
-    if (document.querySelector('.nav-btn[data-view="saved"]')?.classList.contains("active")) {
-      loadSavedItems();
+    setupLibraryEvents();
+    loadProjects();
+    // If initially on library or saved view
+    const activeNav = document.querySelector('.nav-btn[data-view="library"], .nav-btn[data-view="saved"]');
+    if (activeNav?.classList.contains("active")) {
+      loadSavedCreatives();
     }
   });
 
-  // Export for immediate invocation if already loaded
-  window.loadSavedCreatives = loadSavedItems;
+  // Global exports
+  window.openProfileModal = openProfileModal;
+  window.openProjectModal = openProjectModal;
+  window.loadSavedCreatives = loadSavedCreatives;
+  window.loadProjects = loadProjects;
 })();

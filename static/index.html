@@ -26,8 +26,8 @@
       <button type="button" class="nav-btn active" data-view="campaign" data-menu="menu_campaign">Campaign</button>
       <button type="button" class="nav-btn" data-view="image" data-menu="menu_image">Image</button>
       <button type="button" class="nav-btn" data-view="video" data-menu="menu_video">Video</button>
-      <button type="button" class="nav-btn" data-view="batch">Batch</button>
-      <button type="button" class="nav-btn" data-view="saved">Saved</button>
+      <button type="button" class="nav-btn" data-view="batch" hidden style="display:none !important;">Batch</button>
+      <button type="button" class="nav-btn" data-view="library" id="nav_library"><i class="fa-solid fa-folder-open"></i> Projects &amp; Library</button>
     </nav>
 
     <!-- Hover menus: what each studio can do, with real outputs. Each item opens the studio set up for it. -->
@@ -83,10 +83,10 @@
           <span class="mega-card-name">With your product</span>
           <span class="mega-card-note">Start from your product photos</span>
         </button>
-        <button type="button" class="mega-card" data-go="batch">
+        <button type="button" class="mega-card" data-go="library">
           <span class="mega-thumb"><img src="/static/menu/image_headline.jpg" width="480" height="360" alt="" loading="lazy"></span>
-          <span class="mega-card-name">Batch from Markdown</span>
-          <span class="mega-card-note">Up to 100 prompts in one queue</span>
+          <span class="mega-card-name">Projects &amp; Library</span>
+          <span class="mega-card-note">Organize into folders and recall prompts</span>
         </button>
       </div>
       <div class="mega-cols">
@@ -161,19 +161,32 @@
       <button type="button" class="upgrade-pill" id="upgrade_pill" data-upgrade hidden><i class="fa-solid fa-crown"></i><span>Upgrade</span></button>
       <div class="user-menu-wrap" id="user_menu_wrap">
         <button type="button" class="user-pill" id="user_pill" data-authenticated="false" aria-label="User Account">
-          <i class="fa-solid fa-user"></i>
+          <div class="user-pill-avatar" id="user_pill_avatar"><i class="fa-solid fa-user"></i></div>
           <span class="user-pill-email" id="user_pill_label">Sign in</span>
           <span class="user-pill-tag" id="user_pill_tag" hidden>free</span>
         </button>
         <div class="user-dropdown" id="user_dropdown" hidden>
           <div class="user-dropdown-head">
-            <div class="user-dropdown-name" id="dropdown_user_email">–</div>
-            <div class="user-dropdown-meta">
-              <span id="dropdown_user_plan">FREE PLAN</span>
-              <a href="/pricing">Change</a>
+            <div class="user-dropdown-identity">
+              <div class="user-avatar-badge" id="dropdown_user_avatar">AC</div>
+              <div class="user-dropdown-info">
+                <div class="user-dropdown-name" id="dropdown_user_email">creator@example.com</div>
+                <div class="user-dropdown-meta">
+                  <span id="dropdown_user_plan" class="badge small badge-accent">FREE PLAN</span>
+                </div>
+              </div>
+            </div>
+            <div class="user-dropdown-credits-box" id="dropdown_credits_box">
+              <div class="dropdown-credits-label">
+                <span>Credits remaining</span>
+                <span id="dropdown_credits_num">500 / 500</span>
+              </div>
+              <div class="meter"><div id="dropdown_credits_bar" style="width: 100%;"></div></div>
             </div>
           </div>
-          <a class="user-dropdown-item" href="/pricing"><i class="fa-solid fa-tag"></i> Plans & Pricing</a>
+          <button type="button" class="user-dropdown-item" id="btn_open_profile_dropdown"><i class="fa-solid fa-id-card"></i> My Profile &amp; Workspace</button>
+          <button type="button" class="user-dropdown-item" id="btn_open_library_dropdown"><i class="fa-solid fa-folder-open"></i> Projects &amp; Library</button>
+          <a class="user-dropdown-item" href="/pricing"><i class="fa-solid fa-tag"></i> Plans &amp; Pricing</a>
           <button type="button" class="user-dropdown-item danger" id="sign_out_btn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</button>
         </div>
       </div>
@@ -442,6 +455,16 @@
               </div>
             </div>
           </div>
+          <div class="pill-menu" id="img_project_menu">
+            <button type="button" class="pill" id="btn_img_project" aria-haspopup="true" aria-expanded="false" aria-label="Project folder" title="Organize into Project Folder"><i class="fa-regular fa-folder"></i><span class="pill-value" id="img_project_label">Project</span><i class="fa-solid fa-chevron-up pill-caret"></i></button>
+            <div class="pill-pop" id="img_project_pop" hidden style="min-width: 220px; max-height: 280px; overflow-y: auto;">
+              <div class="pill-pop-title">Project Folder</div>
+              <input type="hidden" id="img_folder_id" value="">
+              <div class="template-pop-list" id="img_project_list" style="display: flex; flex-direction: column; gap: 3px; padding: 4px 0;">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
           <button type="button" class="pill prompt-add" id="img_add_prompt" title="Add another prompt (up to 5, one image each)"><i class="fa-solid fa-plus"></i> Prompt</button>
         </div>
       </div>
@@ -546,6 +569,16 @@
               </div>
             </div>
           </div>
+          <div class="pill-menu" id="vid_project_menu">
+            <button type="button" class="pill" id="btn_vid_project" aria-haspopup="true" aria-expanded="false" aria-label="Project folder" title="Organize into Project Folder"><i class="fa-regular fa-folder"></i><span class="pill-value" id="vid_project_label">Project</span><i class="fa-solid fa-chevron-up pill-caret"></i></button>
+            <div class="pill-pop" id="vid_project_pop" hidden style="min-width: 220px; max-height: 280px; overflow-y: auto;">
+              <div class="pill-pop-title">Project Folder</div>
+              <input type="hidden" id="vid_folder_id" value="">
+              <div class="template-pop-list" id="vid_project_list" style="display: flex; flex-direction: column; gap: 3px; padding: 4px 0;">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
           <button type="button" class="pill prompt-add" id="vid_add_prompt" title="Add another prompt (up to 5, one video each)"><i class="fa-solid fa-plus"></i> Prompt</button>
         </div>
       </div>
@@ -554,9 +587,9 @@
   </main>
 
   <!-- ================================================================== -->
-  <!-- Batch Prompt Studio                                                -->
+  <!-- Batch Prompt Studio (Hidden as per user preference)                -->
   <!-- ================================================================== -->
-  <main class="page" id="view_batch" data-view-panel="batch" hidden>
+  <main class="page" id="view_batch" data-view-panel="batch" hidden style="display:none !important;">
     <div class="page-head">
       <div>
         <h1>Batch studio</h1>
@@ -683,43 +716,102 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
   </main>
 
   <!-- ================================================================== -->
-  <!-- Saved Creatives & Prompt Collection                                -->
+  <!-- Projects & Creative Library: Folders, Prompts, References History  -->
   <!-- ================================================================== -->
-  <main class="page" id="view_saved" data-view-panel="saved" hidden>
-    <div class="page-head saved-head">
-      <div>
-        <div class="saved-head-top">
-          <h1>Saved</h1>
-          <span class="badge badge-accent" id="saved_count_badge">0 items</span>
+  <main class="page page-library" id="view_library" data-view-panel="library" hidden>
+    <div class="library-shell">
+      <!-- Left Sidebar: Project Folders & Quick Filters -->
+      <aside class="library-sidebar">
+        <div class="library-sidebar-head">
+          <div class="library-sidebar-title">
+            <i class="fa-solid fa-folder-tree" style="color: var(--accent);"></i>
+            <span>Projects &amp; Folders</span>
+          </div>
+          <button type="button" class="btn btn-xs btn-primary" id="btn_new_project_modal" title="Create new project folder">
+            <i class="fa-solid fa-plus"></i> New
+          </button>
         </div>
-        <p>Ads and prompts you kept, from every studio. Bookmark any result to add it here.</p>
-      </div>
-    </div>
 
-    <div class="saved-toolbar">
-      <div class="input-with-icon saved-search-wrap">
-        <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="search" id="saved_search_input" class="input input-sm" placeholder="Search prompts, angles or titles" aria-label="Search saved creatives">
-      </div>
-      <div class="saved-filters" role="group" aria-label="Filter saved creatives">
-        <button type="button" class="saved-filter-pill active" data-filter="all">All</button>
-        <button type="button" class="saved-filter-pill" data-filter="video"><i class="fa-solid fa-film"></i> Videos</button>
-        <button type="button" class="saved-filter-pill" data-filter="image"><i class="fa-regular fa-image"></i> Images</button>
-        <button type="button" class="saved-filter-pill" data-filter="favorites"><i class="fa-solid fa-star"></i> Favorites</button>
-      </div>
-    </div>
+        <div class="library-nav-filters">
+          <button type="button" class="lib-filter-btn active" data-folder="">
+            <i class="fa-solid fa-layer-group"></i>
+            <span>All Generations</span>
+            <span class="lib-badge" id="lib_count_all">0</span>
+          </button>
+          <button type="button" class="lib-filter-btn" data-folder="favorites">
+            <i class="fa-solid fa-star" style="color: #f59e0b;"></i>
+            <span>Favorites</span>
+            <span class="lib-badge" id="lib_count_favorites">0</span>
+          </button>
+          <button type="button" class="lib-filter-btn" data-folder="unassigned">
+            <i class="fa-regular fa-folder"></i>
+            <span>Unassigned</span>
+            <span class="lib-badge" id="lib_count_unassigned">0</span>
+          </button>
+        </div>
 
-    <div class="saved-grid" id="saved_grid">
-      <!-- Rendered dynamically by saved_creatives.js -->
-    </div>
+        <div class="library-folders-section">
+          <div class="library-section-label">Your Projects</div>
+          <div class="library-folder-list" id="library_folder_list">
+            <!-- Dynamically rendered project folders -->
+          </div>
+        </div>
+      </aside>
 
-    <div class="media-empty saved-empty-state" id="saved_empty" hidden>
-      <h3>Nothing saved yet</h3>
-      <p>Press the bookmark on any ad, in the gallery or the full-screen viewer, and it lands here with its prompt.</p>
-      <div class="saved-empty-actions">
-        <button type="button" class="btn btn-primary btn-sm" onclick="document.querySelector('.nav-btn[data-view=\'campaign\']').click()">Start a campaign</button>
-        <button type="button" class="btn btn-ghost btn-sm" onclick="document.querySelector('.nav-btn[data-view=\'video\']').click()">Make a video</button>
-      </div>
+      <!-- Main Content Area: Project Header + Generations Grid -->
+      <section class="library-main">
+        <div class="library-main-head">
+          <div class="library-title-wrap">
+            <h2 id="lib_active_folder_title">All Generations</h2>
+            <p id="lib_active_folder_desc" class="muted small">Every image and video ad you create collects here with its exact prompt and uploaded references.</p>
+          </div>
+          <div class="library-head-actions">
+            <div class="input-with-icon lib-search-wrap">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input type="search" id="lib_search_input" class="input input-sm" placeholder="Search prompts or titles..." autocomplete="off">
+            </div>
+            <div class="segmented seg-list" id="lib_media_type_filter">
+              <button type="button" data-type="" class="active">All</button>
+              <button type="button" data-type="image"><i class="fa-regular fa-image"></i> Images</button>
+              <button type="button" data-type="video"><i class="fa-solid fa-film"></i> Videos</button>
+            </div>
+            <button type="button" class="btn btn-sm btn-ghost" id="btn_refresh_library" title="Refresh library">
+              <i class="fa-solid fa-rotate-right"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Project Action Bar (shown when a specific project folder is selected) -->
+        <div class="project-action-bar" id="project_action_bar" hidden>
+          <div class="project-action-left">
+            <span class="project-color-badge" id="proj_active_color"></span>
+            <span id="proj_active_name" style="font-weight: 500;"></span>
+            <span class="muted small" id="proj_active_count">· 0 items</span>
+          </div>
+          <div class="project-action-right">
+            <button type="button" class="btn btn-xs btn-outline" id="btn_create_image_in_project"><i class="fa-solid fa-plus"></i> Image in Project</button>
+            <button type="button" class="btn btn-xs btn-outline" id="btn_create_video_in_project"><i class="fa-solid fa-film"></i> Video in Project</button>
+            <button type="button" class="btn btn-xs btn-ghost" id="btn_edit_project"><i class="fa-solid fa-pen"></i> Edit</button>
+            <button type="button" class="btn btn-xs btn-ghost text-danger" id="btn_delete_project" title="Delete folder"><i class="fa-solid fa-trash"></i></button>
+          </div>
+        </div>
+
+        <!-- Empty State -->
+        <div class="media-empty saved-empty-state" id="library_empty" hidden>
+          <i class="fa-solid fa-folder-open" style="font-size: 32px; color: var(--ink-3); margin-bottom: 8px;"></i>
+          <h3>No generations found</h3>
+          <p>Create images or videos in the studios, and they automatically collect here with all reference photos and prompt history.</p>
+          <div class="saved-empty-actions" style="margin-top: 14px;">
+            <button type="button" class="btn btn-primary btn-sm" onclick="showView('image', {push:true})"><i class="fa-regular fa-image"></i> Image Studio</button>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="showView('video', {push:true})"><i class="fa-solid fa-film"></i> Video Studio</button>
+          </div>
+        </div>
+
+        <!-- Generations Grid -->
+        <div class="library-grid" id="library_grid">
+          <!-- Rendered dynamically -->
+        </div>
+      </section>
     </div>
   </main>
 
@@ -971,6 +1063,138 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
         </div>
       </footer>
     </div>
+  </dialog>
+
+  <!-- User Profile & Account Workspace Modal -->
+  <dialog id="profile_modal" class="profile-dialog">
+    <div class="profile-modal-content">
+      <header class="profile-modal-head">
+        <div class="profile-header-title">
+          <h3>User Profile &amp; Workspace</h3>
+          <p class="muted small">Manage your creator identity, membership plan, monthly credits, and project folders.</p>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" id="btn_close_profile" aria-label="Close dialog"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+
+      <div class="profile-modal-body">
+        <!-- Profile Hero Card -->
+        <div class="profile-hero-card">
+          <div class="profile-avatar-wrap">
+            <div class="profile-avatar" id="prof_avatar">AC</div>
+          </div>
+          <div class="profile-hero-info">
+            <div class="profile-hero-name-row">
+              <h4 id="prof_display_name">Guest Creator</h4>
+              <span class="badge badge-accent" id="prof_plan_badge">FREE PLAN</span>
+            </div>
+            <p class="muted small" id="prof_email">creator@example.com</p>
+            <div class="profile-hero-meta" id="prof_member_since">Member since November 2026</div>
+          </div>
+          <div class="profile-hero-actions">
+            <a class="btn btn-sm btn-outline" href="/pricing"><i class="fa-solid fa-tag"></i> Plans &amp; Billing</a>
+            <button type="button" class="btn btn-sm btn-ghost text-danger" id="prof_btn_signout"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</button>
+          </div>
+        </div>
+
+        <!-- Stats & Usage Credits Row -->
+        <div class="profile-metrics-grid">
+          <div class="profile-metric-card">
+            <div class="metric-top"><span class="metric-label">Monthly Credits</span><span class="badge small" id="prof_credits_pct">100% left</span></div>
+            <div class="metric-big-num" id="prof_credits_remaining">500 <span class="metric-sub">/ 500</span></div>
+            <div class="meter" style="margin-top: 8px;"><div id="prof_credits_bar" style="width: 100%;"></div></div>
+          </div>
+
+          <div class="profile-metric-card">
+            <div class="metric-label">Total Generations</div>
+            <div class="metric-big-num" id="prof_stat_total">0</div>
+            <div class="muted small" id="prof_stat_breakdown">0 images · 0 videos</div>
+          </div>
+
+          <div class="profile-metric-card">
+            <div class="metric-label">Active Projects</div>
+            <div class="metric-big-num" id="prof_stat_projects">0</div>
+            <div class="muted small">Organized folders</div>
+          </div>
+        </div>
+
+        <!-- Tabs / Sections: Account Settings & Project Management -->
+        <div class="profile-tabs-content">
+          <div class="profile-settings-section">
+            <h4 style="margin: 0 0 10px; font-size: 15px; font-weight: 500;">Creator Settings</h4>
+            <form id="prof_settings_form" class="profile-form-grid">
+              <div class="template-field">
+                <label for="prof_input_name" class="field-label">Display Name</label>
+                <input type="text" id="prof_input_name" class="input input-sm" placeholder="Your creator or brand name">
+              </div>
+              <div class="template-field">
+                <label for="prof_input_email" class="field-label">Email Address</label>
+                <input type="email" id="prof_input_email" class="input input-sm" readonly disabled>
+              </div>
+              <div style="grid-column: 1 / -1; display:flex; justify-content:flex-end;">
+                <button type="submit" class="btn btn-sm btn-primary" id="btn_save_profile_settings"><i class="fa-solid fa-check"></i> Save Name</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Quick Project Manager inside Profile -->
+          <div class="profile-projects-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+              <h4 style="margin: 0; font-size: 15px; font-weight: 500;">Your Project Folders</h4>
+              <button type="button" class="btn btn-xs btn-outline" id="prof_btn_new_project"><i class="fa-solid fa-plus"></i> New Folder</button>
+            </div>
+            <div class="prof-project-list" id="prof_project_list">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="profile-modal-foot">
+        <button type="button" class="btn btn-ghost" id="btn_close_profile_foot">Close</button>
+        <button type="button" class="btn btn-primary" id="btn_go_to_library"><i class="fa-solid fa-folder-open"></i> Open Projects &amp; Library</button>
+      </footer>
+    </div>
+  </dialog>
+
+  <!-- Create / Edit Project Modal -->
+  <dialog id="project_editor_modal" class="project-dialog">
+    <form class="project-modal-content" id="project_form">
+      <header class="project-modal-head">
+        <h3 id="proj_modal_title">New Project Folder</h3>
+        <button type="button" class="btn btn-ghost btn-sm" id="btn_close_proj_modal" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+
+      <div class="project-modal-body">
+        <input type="hidden" id="proj_input_id" value="">
+        <div class="template-field">
+          <label for="proj_input_name" class="field-label">Project Name</label>
+          <input type="text" id="proj_input_name" class="input input-sm" required placeholder="e.g. Summer Skincare Drop, Shoe Meta Ads...">
+        </div>
+
+        <div class="template-field">
+          <label for="proj_input_desc" class="field-label">Description <span class="muted small">(optional)</span></label>
+          <textarea id="proj_input_desc" class="textarea input-sm" rows="2" placeholder="Campaign goal, audience, or brand notes..."></textarea>
+        </div>
+
+        <div class="template-field">
+          <label class="field-label">Folder Color Tag</label>
+          <div class="color-picker-row" id="proj_color_picker">
+            <button type="button" class="color-dot-pick active" data-color="#8d3624" style="background: #8d3624;"></button>
+            <button type="button" class="color-dot-pick" data-color="#2563eb" style="background: #2563eb;"></button>
+            <button type="button" class="color-dot-pick" data-color="#059669" style="background: #059669;"></button>
+            <button type="button" class="color-dot-pick" data-color="#7c3aed" style="background: #7c3aed;"></button>
+            <button type="button" class="color-dot-pick" data-color="#db2777" style="background: #db2777;"></button>
+            <button type="button" class="color-dot-pick" data-color="#d97706" style="background: #d97706;"></button>
+            <button type="button" class="color-dot-pick" data-color="#0f172a" style="background: #0f172a;"></button>
+          </div>
+        </div>
+      </div>
+
+      <footer class="project-modal-foot">
+        <button type="button" class="btn btn-ghost" id="btn_cancel_proj_modal">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="btn_save_project">Save Project</button>
+      </footer>
+    </form>
   </dialog>
 
   <dialog id="confirm_dialog">

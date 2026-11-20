@@ -241,6 +241,7 @@
     const tabSignup = document.getElementById("auth_tab_signup");
     const form = document.getElementById("auth_form");
     const signOutBtn = document.getElementById("sign_out_btn");
+    const profSignOutBtn = document.getElementById("prof_btn_signout");
 
     if (pill) {
       pill.addEventListener("click", (e) => {
@@ -265,6 +266,13 @@
     if (tabSignup) tabSignup.addEventListener("click", () => setTab("signup"));
     if (form) form.addEventListener("submit", handleSubmit);
     if (signOutBtn) signOutBtn.addEventListener("click", handleSignOut);
+    if (profSignOutBtn) {
+      profSignOutBtn.addEventListener("click", () => {
+        const dlg = document.getElementById("profile_modal");
+        if (dlg && dlg.open) dlg.close();
+        handleSignOut();
+      });
+    }
   });
 
   window.openAuthDialog = openAuthDialog;

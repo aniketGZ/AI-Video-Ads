@@ -394,6 +394,7 @@ async def get_image_studio_models():
 
 @app.post("/api/image-studio/generate")
 async def generate_studio_image(
+    request: Request,
     prompt: Optional[str] = Form(None),
     prompts: Optional[str] = Form(None),
     model: str = Form("nano-banana-pro"),
@@ -401,6 +402,7 @@ async def generate_studio_image(
     resolution: str = Form("1K"),
     style_preset: Optional[str] = Form(None),
     negative_prompt: Optional[str] = Form(None),
+    folder_id: Optional[str] = Form(None),
     product_image: Optional[UploadFile] = File(None),
     reference_images: Optional[List[UploadFile]] = File(None),
     x_api_key: Optional[str] = Header(None),
@@ -442,11 +444,22 @@ async def generate_studio_image(
             upload_files = [product_image]
 
         parts = []
+        saved_ref_urls = []
         for upload in upload_files[:max_refs]:
             if not upload or not upload.filename:
                 continue
-            img_bytes, _, mime_type = await read_upload(upload, IMAGE_EXTS, ".png", MAX_IMAGE_BYTES)
+            img_bytes, ext, mime_type = await read_upload(upload, IMAGE_EXTS, ".png", MAX_IMAGE_BYTES)
             parts.append(types.Part.from_bytes(data=img_bytes, mime_type=mime_type))
+
+            # Persist reference image to disk so user can retrieve it at any time
+            ref_filename = f"ref_{uuid.uuid4().hex}{ext}"
+            ref_path = os.path.join(GENERATED_DIR, ref_filename)
+            try:
+                with open(ref_path, "wb") as rf:
+                    rf.write(img_bytes)
+                saved_ref_urls.append(f"/static/generated/{ref_filename}")
+            except Exception:
+                pass
 
         # Format reference directive
         ref_prefix = ""
@@ -523,6 +536,35 @@ async def generate_studio_image(
         if not successful:
             first_err = next((r.get("error") for r in results if r.get("error")), "Image generation failed.")
             raise HTTPException(status_code=502, detail=first_err)
+
+        # Automatically store any generations from users for them to access anytime with prompts & uploaded references
+        try:
+            from access import current_user
+            import database
+            cur_user = await current_user(request)
+            for s in successful:
+                saved_rec = await database.save_creative(
+                    user=cur_user,
+                    data={
+                        "type": "image",
+                        "title": f"Image Ad ({aspect_ratio})",
+                        "prompt": s["prompt"],
+                        "media_url": s["image_url"],
+                        "aspect_ratio": aspect_ratio,
+                        "model_params": {
+                            "model": model_key,
+                            "resolution": res_clean,
+                            "style": style_preset,
+                            "width": s.get("width"),
+                            "height": s.get("height"),
+                        },
+                        "reference_images": saved_ref_urls,
+                        "folder_id": folder_id or "",
+                    }
+                )
+                s["saved_id"] = saved_rec["id"]
+        except Exception as db_err:
+            logger.warning(f"Auto-saving image creative to library failed: {db_err}")
 
         first_url = successful[0]["image_url"]
         return {
@@ -619,6 +661,9 @@ async def generate_omni_video_background(
     last_frame_path: Optional[str],
     source_video_path: Optional[str],
     api_key: Optional[str],
+    user_id: str = "",
+    user_email: str = "",
+    folder_id: str = "",
 ):
     try:
         prompt = sanitize_video_prompt(prompt)
@@ -795,6 +840,34 @@ async def generate_omni_video_background(
             "prompt": prompt,
             "engine": "Omni Flash",
         }, video_jobs)
+
+        # Automatically persist video generation with prompt & reference frames to library
+        try:
+            import database
+            ref_urls = [f"/static/generated/{os.path.basename(p)}" for p in (reference_image_paths or []) if p]
+            if first_frame_path:
+                ref_urls.insert(0, f"/static/generated/{os.path.basename(first_frame_path)}")
+            await database.save_creative(
+                user={"id": user_id, "email": user_email} if user_id else None,
+                data={
+                    "type": "video",
+                    "title": f"Video Ad ({aspect_ratio})",
+                    "prompt": prompt,
+                    "media_url": video_url,
+                    "aspect_ratio": aspect_ratio,
+                    "model_params": {
+                        "model": "omni-flash",
+                        "resolution": res_clean,
+                        "duration": duration,
+                        "width": final_w,
+                        "height": final_h,
+                    },
+                    "reference_images": ref_urls,
+                    "folder_id": folder_id or "",
+                }
+            )
+        except Exception as db_err:
+            logger.warning(f"Failed to auto-save video creative to library: {db_err}")
     except Exception as e:
         if "content_blocked" in str(e):
             # Keep what was sent so the blocked wording can be found and fixed
@@ -822,6 +895,7 @@ async def _save_upload(upload: Optional[UploadFile], prefix: str, allowed: set, 
 
 @app.post("/api/studio/generate-video")
 async def studio_generate_video(
+    request: Request,
     mode: str = Form("prompt_images"),
     prompt: Optional[str] = Form(None),
     prompts: Optional[str] = Form(None),
@@ -829,6 +903,7 @@ async def studio_generate_video(
     aspect_ratio: str = Form("9:16"),
     resolution: str = Form("1080p"),
     duration: int = Form(8),
+    folder_id: Optional[str] = Form(None),
     reference_images: Optional[List[UploadFile]] = File(None),
     first_frame: Optional[UploadFile] = File(None),
     last_frame: Optional[UploadFile] = File(None),
@@ -878,6 +953,11 @@ async def studio_generate_video(
         else:
             res_clean = "720p"
 
+        from access import current_user
+        cur_user = await current_user(request)
+        u_id = cur_user.get("id") if cur_user else ""
+        u_email = cur_user.get("email") if cur_user else ""
+
         job_ids = []
         for text in prompt_list:
             job_id = f"job_studio_{uuid.uuid4().hex}"
@@ -901,6 +981,9 @@ async def studio_generate_video(
                 last_frame_path=last_path,
                 source_video_path=source_path,
                 api_key=x_api_key,
+                user_id=u_id,
+                user_email=u_email,
+                folder_id=folder_id or "",
             ))
             _video_tasks.add(task)
             task.add_done_callback(_video_tasks.discard)
