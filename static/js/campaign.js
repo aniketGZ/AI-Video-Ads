@@ -966,6 +966,7 @@
       const result = await res.json();
       if (token !== flow.token) return false;
       flow.images[id] = result;
+      window.dispatchEvent(new CustomEvent("saved-creatives-updated"));
       $(`img_${id}`).src = result.image_url;
       const dl = $(`dl_${id}`);
       dl.href = result.image_url;

@@ -9,14 +9,40 @@ import os
 import sqlite3
 import json
 import uuid
+import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 import httpx
+from dotenv import load_dotenv
 
-SUPABASE_URL = (os.environ.get("SUPABASE_URL") or "").rstrip("/")
-SUPABASE_SERVICE_ROLE_KEY = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_ANON_KEY") or ""
+# Ensure environment variables are loaded
+load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 DB_PATH = os.path.join("data", "ad_studio.db")
+
+
+def _get_supabase_url() -> str:
+    return (os.environ.get("SUPABASE_URL") or "").rstrip("/")
+
+
+def _get_supabase_key() -> str:
+    return os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_ANON_KEY") or ""
+
+
+def _is_supabase_ready() -> bool:
+    return bool(_get_supabase_url() and _get_supabase_key())
+
+
+def _clean_uuid(val: Any) -> Optional[str]:
+    """Return a clean UUID string if valid, else None (avoids PostgreSQL 22P02 invalid input syntax error)."""
+    if not val:
+        return None
+    try:
+        return str(uuid.UUID(str(val).strip()))
+    except (ValueError, AttributeError, TypeError):
+        return None
 
 
 def init_db():
@@ -24,7 +50,7 @@ def init_db():
     os.makedirs("data", exist_ok=True)
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
-        
+
         # 1. saved_creatives table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS saved_creatives (
@@ -39,12 +65,13 @@ def init_db():
                 model_params TEXT,
                 tags TEXT,
                 reference_images TEXT,
-                folder_id TEXT,
+                folder_id TEXT DEFAULT '',
                 is_favorite INTEGER DEFAULT 0,
                 created_at TEXT NOT NULL
             )
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_user ON saved_creatives(user_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_user_email ON saved_creatives(user_email)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_created ON saved_creatives(created_at DESC)")
 
         # Ensure new columns exist on older tables
@@ -53,7 +80,7 @@ def init_db():
         if "reference_images" not in cols:
             cursor.execute("ALTER TABLE saved_creatives ADD COLUMN reference_images TEXT")
         if "folder_id" not in cols:
-            cursor.execute("ALTER TABLE saved_creatives ADD COLUMN folder_id TEXT")
+            cursor.execute("ALTER TABLE saved_creatives ADD COLUMN folder_id TEXT DEFAULT ''")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_creative_folder ON saved_creatives(folder_id)")
 
         # 2. projects / folders table
@@ -71,6 +98,7 @@ def init_db():
             )
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id)")
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_projects_email ON projects(user_email)")
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_projects_created ON projects(created_at DESC)")
 
         conn.commit()
@@ -78,10 +106,6 @@ def init_db():
 
 # Initialize database on module load
 init_db()
-
-
-def _is_supabase_ready() -> bool:
-    return bool(SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY)
 
 
 # ===========================================================================
@@ -92,7 +116,8 @@ async def create_project(user: Optional[Dict[str, Any]], data: Dict[str, Any]) -
     """Create a new project folder for organizing creatives."""
     init_db()
     pid = str(uuid.uuid4())
-    user_id = (user.get("id") or "") if user else ""
+    raw_user_id = (user.get("id") or "") if user else ""
+    user_id = _clean_uuid(raw_user_id) or ""
     user_email = (user.get("email") or "Guest Creator") if user else "Guest Creator"
     now_iso = datetime.now(timezone.utc).isoformat()
     name = (data.get("name") or "Untitled Project").strip()
@@ -123,21 +148,22 @@ async def create_project(user: Optional[Dict[str, Any]], data: Dict[str, Any]) -
 
     if _is_supabase_ready():
         try:
-            url = f"{SUPABASE_URL}/rest/v1/projects"
+            url = f"{_get_supabase_url()}/rest/v1/projects"
             headers = {
-                "apikey": SUPABASE_SERVICE_ROLE_KEY,
-                "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+                "apikey": _get_supabase_key(),
+                "Authorization": f"Bearer {_get_supabase_key()}",
                 "Content-Type": "application/json",
                 "Prefer": "return=minimal",
             }
             payload = dict(record)
             payload.pop("item_count", None)
-            if not user_id:
-                payload.pop("user_id", None)
+            payload["user_id"] = _clean_uuid(user_id)
             async with httpx.AsyncClient(timeout=6.0) as client:
-                await client.post(url, headers=headers, json=payload)
-        except Exception:
-            pass
+                res = await client.post(url, headers=headers, json=payload)
+                if res.status_code >= 400:
+                    logger.warning(f"Supabase project create notice (status {res.status_code}): {res.text}")
+        except Exception as e:
+            logger.warning(f"Supabase create_project non-fatal exception: {e}")
 
     return record
 
@@ -145,8 +171,60 @@ async def create_project(user: Optional[Dict[str, Any]], data: Dict[str, Any]) -
 async def list_projects(user: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """List all projects for user with item counts."""
     init_db()
-    user_id = (user.get("id") or "") if user else ""
+    raw_uid = (user.get("id") or "") if user else ""
+    user_id = _clean_uuid(raw_uid) or ""
+    user_email = (user.get("email") or "").strip().lower() if user else ""
 
+    projects_map: Dict[str, Dict[str, Any]] = {}
+
+    # 1. Try fetching from Supabase if available
+    if _is_supabase_ready():
+        try:
+            url = f"{_get_supabase_url()}/rest/v1/projects?select=*&order=updated_at.desc"
+            headers = {
+                "apikey": _get_supabase_key(),
+                "Authorization": f"Bearer {_get_supabase_key()}",
+            }
+            async with httpx.AsyncClient(timeout=6.0) as client:
+                res = await client.get(url, headers=headers)
+                if res.status_code == 200:
+                    supa_projects = res.json()
+                    # Cache fetched projects into SQLite
+                    with sqlite3.connect(DB_PATH) as conn:
+                        cur = conn.cursor()
+                        for p in supa_projects:
+                            pid = str(p.get("id"))
+                            cur.execute("""
+                                INSERT OR REPLACE INTO projects (id, user_id, user_email, name, description, color, icon, created_at, updated_at)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            """, (
+                                pid,
+                                str(p.get("user_id") or ""),
+                                str(p.get("user_email") or "Guest Creator"),
+                                str(p.get("name") or "Untitled Project"),
+                                str(p.get("description") or ""),
+                                str(p.get("color") or "#8d3624"),
+                                str(p.get("icon") or "folder"),
+                                str(p.get("created_at") or datetime.now(timezone.utc).isoformat()),
+                                str(p.get("updated_at") or datetime.now(timezone.utc).isoformat()),
+                            ))
+                            projects_map[pid] = {
+                                "id": pid,
+                                "user_id": p.get("user_id") or "",
+                                "user_email": p.get("user_email") or "",
+                                "name": p.get("name") or "Untitled Project",
+                                "description": p.get("description") or "",
+                                "color": p.get("color") or "#8d3624",
+                                "icon": p.get("icon") or "folder",
+                                "item_count": 0,
+                                "created_at": p.get("created_at") or "",
+                                "updated_at": p.get("updated_at") or "",
+                            }
+                        conn.commit()
+        except Exception as e:
+            logger.warning(f"Supabase list_projects fetch failed, fallback to local: {e}")
+
+    # 2. Query local SQLite with item count join
     query = """
         SELECT p.id, p.user_id, p.user_email, p.name, p.description, p.color, p.icon, p.created_at, p.updated_at,
                COUNT(c.id) as item_count
@@ -154,9 +232,16 @@ async def list_projects(user: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
         LEFT JOIN saved_creatives c ON c.folder_id = p.id
     """
     params = []
-    if user_id:
-        query += " WHERE (p.user_id = ? OR p.user_id = '')"
+    if user_id and user_email:
+        query += " WHERE (p.user_id = ? OR LOWER(p.user_email) = ? OR p.user_id = '' OR p.user_id IS NULL)"
+        params.extend([user_id, user_email])
+    elif user_id:
+        query += " WHERE (p.user_id = ? OR p.user_id = '' OR p.user_id IS NULL)"
         params.append(user_id)
+    elif user_email:
+        query += " WHERE (LOWER(p.user_email) = ? OR p.user_id = '' OR p.user_id IS NULL)"
+        params.append(user_email)
+
     query += " GROUP BY p.id ORDER BY p.updated_at DESC"
 
     with sqlite3.connect(DB_PATH) as conn:
@@ -234,18 +319,18 @@ async def update_project(user: Optional[Dict[str, Any]], project_id: str, data: 
 
     if _is_supabase_ready():
         try:
-            url = f"{SUPABASE_URL}/rest/v1/projects?id=eq.{project_id}"
+            url = f"{_get_supabase_url()}/rest/v1/projects?id=eq.{project_id}"
             headers = {
-                "apikey": SUPABASE_SERVICE_ROLE_KEY,
-                "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+                "apikey": _get_supabase_key(),
+                "Authorization": f"Bearer {_get_supabase_key()}",
                 "Content-Type": "application/json",
             }
             supa_data = {k: data[k] for k in ["name", "description", "color", "icon"] if k in data}
             supa_data["updated_at"] = now_iso
             async with httpx.AsyncClient(timeout=5.0) as client:
                 await client.patch(url, headers=headers, json=supa_data)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Supabase update_project error: {e}")
 
     return await get_project(user, project_id)
 
@@ -261,15 +346,19 @@ async def delete_project(user: Optional[Dict[str, Any]], project_id: str) -> boo
 
     if _is_supabase_ready():
         try:
-            url = f"{SUPABASE_URL}/rest/v1/projects?id=eq.{project_id}"
             headers = {
-                "apikey": SUPABASE_SERVICE_ROLE_KEY,
-                "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+                "apikey": _get_supabase_key(),
+                "Authorization": f"Bearer {_get_supabase_key()}",
             }
             async with httpx.AsyncClient(timeout=5.0) as client:
-                await client.delete(url, headers=headers)
-        except Exception:
-            pass
+                await client.patch(
+                    f"{_get_supabase_url()}/rest/v1/saved_creatives?folder_id=eq.{project_id}",
+                    headers={**headers, "Content-Type": "application/json"},
+                    json={"folder_id": ""},
+                )
+                await client.delete(f"{_get_supabase_url()}/rest/v1/projects?id=eq.{project_id}", headers=headers)
+        except Exception as e:
+            logger.warning(f"Supabase delete_project error: {e}")
 
     return True
 
@@ -285,16 +374,24 @@ async def move_creative_to_project(user: Optional[Dict[str, Any]], creative_id: 
 
     if _is_supabase_ready():
         try:
-            url = f"{SUPABASE_URL}/rest/v1/saved_creatives?id=eq.{creative_id}"
+            url = f"{_get_supabase_url()}/rest/v1/saved_creatives?id=eq.{creative_id}"
             headers = {
-                "apikey": SUPABASE_SERVICE_ROLE_KEY,
-                "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+                "apikey": _get_supabase_key(),
+                "Authorization": f"Bearer {_get_supabase_key()}",
                 "Content-Type": "application/json",
             }
+            patch_data = {"folder_id": p_id}
             async with httpx.AsyncClient(timeout=5.0) as client:
-                await client.patch(url, headers=headers, json={"folder_id": p_id})
-        except Exception:
-            pass
+                res = await client.patch(url, headers=headers, json=patch_data)
+                # If folder_id column doesn't exist yet, patch model_params
+                if res.status_code >= 400:
+                    get_res = await client.get(url, headers=headers)
+                    if get_res.status_code == 200 and get_res.json():
+                        cur_mp = get_res.json()[0].get("model_params") or {}
+                        cur_mp["folder_id"] = p_id
+                        await client.patch(url, headers=headers, json={"model_params": cur_mp})
+        except Exception as e:
+            logger.warning(f"Supabase move_creative_to_project error: {e}")
 
     return True
 
@@ -306,9 +403,21 @@ async def move_creative_to_project(user: Optional[Dict[str, Any]], creative_id: 
 async def get_user_stats(user: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     """Returns generation and storage statistics for user profile."""
     init_db()
-    user_id = (user.get("id") or "") if user else ""
-    params = [user_id] if user_id else []
-    user_clause = " WHERE (user_id = ? OR user_id = '')" if user_id else ""
+    raw_uid = (user.get("id") or "") if user else ""
+    user_id = _clean_uuid(raw_uid) or ""
+    user_email = (user.get("email") or "").strip().lower() if user else ""
+
+    params = []
+    user_clause = ""
+    if user_id and user_email:
+        user_clause = " WHERE (user_id = ? OR LOWER(user_email) = ? OR user_id = '' OR user_id IS NULL)"
+        params.extend([user_id, user_email])
+    elif user_id:
+        user_clause = " WHERE (user_id = ? OR user_id = '' OR user_id IS NULL)"
+        params.append(user_id)
+    elif user_email:
+        user_clause = " WHERE (LOWER(user_email) = ? OR user_id = '' OR user_id IS NULL)"
+        params.append(user_email)
 
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
@@ -349,8 +458,9 @@ async def get_user_stats(user: Optional[Dict[str, Any]]) -> Dict[str, Any]:
 async def save_creative(user: Optional[Dict[str, Any]], data: Dict[str, Any]) -> Dict[str, Any]:
     """Save an image or video generation with prompt, uploaded references, and folder metadata."""
     init_db()
-    cid = data.get("id") or str(uuid.uuid4())
-    user_id = (user.get("id") or "") if user else (data.get("user_id") or "")
+    cid = _clean_uuid(data.get("id")) or str(uuid.uuid4())
+    raw_user_id = (user.get("id") or "") if user else (data.get("user_id") or "")
+    clean_uid = _clean_uuid(raw_user_id)
     user_email = (user.get("email") or "Guest Creator") if user else (data.get("user_email") or "Guest Creator")
     now_iso = datetime.now(timezone.utc).isoformat()
 
@@ -359,12 +469,17 @@ async def save_creative(user: Optional[Dict[str, Any]], data: Dict[str, Any]) ->
     prompt = data.get("prompt", "")
     media_url = data.get("media_url", "")
     aspect_ratio = data.get("aspect_ratio", "9:16" if c_type == "video" else "4:5")
-    model_params = data.get("model_params") or {}
-    tags = data.get("tags") or []
-    reference_images = data.get("reference_images") or []
+    model_params = dict(data.get("model_params") or {})
+    tags = list(data.get("tags") or [])
+    reference_images = list(data.get("reference_images") or [])
     folder_id = (data.get("folder_id") or "").strip()
     is_fav = 1 if data.get("is_favorite") else 0
 
+    # Ensure reference_images and folder_id are also embedded in model_params for seamless compatibility
+    model_params["reference_images"] = reference_images
+    model_params["folder_id"] = folder_id
+
+    # 1. Persist to local SQLite
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute("""
@@ -373,7 +488,7 @@ async def save_creative(user: Optional[Dict[str, Any]], data: Dict[str, Any]) ->
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             cid,
-            user_id,
+            clean_uid or "",
             user_email,
             c_type,
             title,
@@ -391,7 +506,7 @@ async def save_creative(user: Optional[Dict[str, Any]], data: Dict[str, Any]) ->
 
     record = {
         "id": cid,
-        "user_id": user_id,
+        "user_id": clean_uid or "",
         "user_email": user_email,
         "type": c_type,
         "title": title,
@@ -406,22 +521,49 @@ async def save_creative(user: Optional[Dict[str, Any]], data: Dict[str, Any]) ->
         "created_at": now_iso
     }
 
+    # 2. Persist to Supabase PostgreSQL
     if _is_supabase_ready():
         try:
-            url = f"{SUPABASE_URL}/rest/v1/saved_creatives"
+            url = f"{_get_supabase_url()}/rest/v1/saved_creatives"
             headers = {
-                "apikey": SUPABASE_SERVICE_ROLE_KEY,
-                "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+                "apikey": _get_supabase_key(),
+                "Authorization": f"Bearer {_get_supabase_key()}",
                 "Content-Type": "application/json",
                 "Prefer": "resolution=merge-duplicates"
             }
-            supabase_payload = dict(record)
-            if not user_id:
-                supabase_payload.pop("user_id", None)
+            supabase_payload = {
+                "id": cid,
+                "user_id": clean_uid,  # None if not valid UUID
+                "user_email": user_email,
+                "type": c_type,
+                "title": title,
+                "prompt": prompt,
+                "media_url": media_url,
+                "aspect_ratio": aspect_ratio,
+                "model_params": model_params,
+                "tags": tags,
+                "reference_images": reference_images,
+                "folder_id": folder_id,
+                "is_favorite": bool(is_fav),
+                "created_at": now_iso
+            }
+
             async with httpx.AsyncClient(timeout=8.0) as client:
-                await client.post(url, headers=headers, json=supabase_payload)
-        except Exception:
-            pass
+                res = await client.post(url, headers=headers, json=supabase_payload)
+
+                # Fallback if folder_id or reference_images columns do not exist yet in Supabase schema
+                if res.status_code >= 400 and ("folder_id" in res.text or "reference_images" in res.text):
+                    logger.info("Retrying Supabase save with embedded fallback fields...")
+                    fallback_payload = dict(supabase_payload)
+                    fallback_payload.pop("folder_id", None)
+                    fallback_payload.pop("reference_images", None)
+                    res_retry = await client.post(url, headers=headers, json=fallback_payload)
+                    if res_retry.status_code >= 400:
+                        logger.warning(f"Supabase creative save retry notice ({res_retry.status_code}): {res_retry.text}")
+                elif res.status_code >= 400:
+                    logger.warning(f"Supabase creative save notice ({res.status_code}): {res.text}")
+        except Exception as e:
+            logger.warning(f"Supabase save_creative non-fatal exception: {e}")
 
     return record
 
@@ -436,8 +578,105 @@ async def list_saved_creatives(
 ) -> List[Dict[str, Any]]:
     """List saved creatives with filtering by media type, favorite, folder, and search keyword."""
     init_db()
-    user_id = (user.get("id") or "") if user else ""
+    raw_uid = (user.get("id") or "") if user else ""
+    clean_uid = _clean_uuid(raw_uid)
+    user_email = (user.get("email") or "").strip().lower() if user else ""
 
+    # 1. Fetch from Supabase PostgreSQL if configured
+    if _is_supabase_ready():
+        try:
+            query_params = ["select=*", f"limit={int(limit)}", "order=created_at.desc"]
+
+            # Filter by user if authenticated
+            if clean_uid and user_email:
+                query_params.append(f"or=(user_id.eq.{clean_uid},user_email.eq.{user_email})")
+            elif clean_uid:
+                query_params.append(f"user_id=eq.{clean_uid}")
+            elif user_email:
+                query_params.append(f"user_email=eq.{user_email}")
+
+            if media_type:
+                query_params.append(f"type=eq.{media_type}")
+
+            if only_favorites:
+                query_params.append("is_favorite=eq.true")
+
+            if folder_id:
+                if folder_id == "unassigned":
+                    query_params.append("or=(folder_id.is.null,folder_id.eq.)")
+                else:
+                    query_params.append(f"folder_id=eq.{folder_id}")
+
+            if search and search.strip():
+                clean_s = search.strip().replace("*", "")
+                query_params.append(f"or=(prompt.ilike.*{clean_s}*,title.ilike.*{clean_s}*)")
+
+            url = f"{_get_supabase_url()}/rest/v1/saved_creatives?{'&'.join(query_params)}"
+            headers = {
+                "apikey": _get_supabase_key(),
+                "Authorization": f"Bearer {_get_supabase_key()}",
+            }
+
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                res = await client.get(url, headers=headers)
+                if res.status_code == 200:
+                    supa_rows = res.json()
+                    results = []
+                    # Also sync into SQLite
+                    with sqlite3.connect(DB_PATH) as conn:
+                        cur = conn.cursor()
+                        for r in supa_rows:
+                            m_params = r.get("model_params") or {}
+                            t_list = r.get("tags") or []
+                            # Reference images can be in column or inside model_params
+                            ref_list = r.get("reference_images") or m_params.get("reference_images") or []
+                            f_id = r.get("folder_id") or m_params.get("folder_id") or ""
+
+                            cur.execute("""
+                                INSERT OR REPLACE INTO saved_creatives 
+                                (id, user_id, user_email, type, title, prompt, media_url, aspect_ratio, model_params, tags, reference_images, folder_id, is_favorite, created_at)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                            """, (
+                                str(r["id"]),
+                                str(r.get("user_id") or ""),
+                                str(r.get("user_email") or "Guest Creator"),
+                                str(r.get("type") or "image"),
+                                str(r.get("title") or "Ad"),
+                                str(r.get("prompt") or ""),
+                                str(r.get("media_url") or ""),
+                                str(r.get("aspect_ratio") or "9:16"),
+                                json.dumps(m_params),
+                                json.dumps(t_list),
+                                json.dumps(ref_list),
+                                str(f_id),
+                                1 if r.get("is_favorite") else 0,
+                                str(r.get("created_at") or datetime.now(timezone.utc).isoformat())
+                            ))
+
+                            results.append({
+                                "id": str(r["id"]),
+                                "user_id": str(r.get("user_id") or ""),
+                                "user_email": str(r.get("user_email") or ""),
+                                "type": str(r.get("type") or "image"),
+                                "title": str(r.get("title") or "Ad"),
+                                "prompt": str(r.get("prompt") or ""),
+                                "media_url": str(r.get("media_url") or ""),
+                                "aspect_ratio": str(r.get("aspect_ratio") or "9:16"),
+                                "model_params": m_params,
+                                "tags": t_list,
+                                "reference_images": ref_list,
+                                "folder_id": str(f_id),
+                                "is_favorite": bool(r.get("is_favorite")),
+                                "created_at": str(r.get("created_at") or "")
+                            })
+                        conn.commit()
+
+                    if results:
+                        return results
+        except Exception as e:
+            logger.warning(f"Supabase list_saved_creatives query failed, fallback to SQLite: {e}")
+
+    # 2. Local SQLite fallback
     query = """
         SELECT id, user_id, user_email, type, title, prompt, media_url, aspect_ratio, model_params, tags, reference_images, folder_id, is_favorite, created_at 
         FROM saved_creatives 
@@ -445,9 +684,16 @@ async def list_saved_creatives(
     """
     params = []
 
-    if user_id:
-        query += " AND (user_id = ? OR user_id = '')"
-        params.append(user_id)
+    if clean_uid and user_email:
+        query += " AND (user_id = ? OR LOWER(user_email) = ? OR user_id = '' OR user_id IS NULL)"
+        params.extend([clean_uid, user_email])
+    elif clean_uid:
+        query += " AND (user_id = ? OR user_id = '' OR user_id IS NULL)"
+        params.append(clean_uid)
+    elif user_email:
+        query += " AND (LOWER(user_email) = ? OR user_id = '' OR user_id IS NULL)"
+        params.append(user_email)
+
     if media_type:
         query += " AND type = ?"
         params.append(media_type)
@@ -489,6 +735,10 @@ async def list_saved_creatives(
             except Exception:
                 pass
 
+            f_id = r["folder_id"] or m_params.get("folder_id") or ""
+            if not ref_list and m_params.get("reference_images"):
+                ref_list = m_params.get("reference_images")
+
             results.append({
                 "id": r["id"],
                 "user_id": r["user_id"],
@@ -501,7 +751,7 @@ async def list_saved_creatives(
                 "model_params": m_params,
                 "tags": t_list,
                 "reference_images": ref_list,
-                "folder_id": r["folder_id"] or "",
+                "folder_id": f_id,
                 "is_favorite": bool(r["is_favorite"]),
                 "created_at": r["created_at"]
             })
@@ -517,16 +767,16 @@ async def toggle_favorite(cid: str, is_fav: bool) -> bool:
 
     if _is_supabase_ready():
         try:
-            url = f"{SUPABASE_URL}/rest/v1/saved_creatives?id=eq.{cid}"
+            url = f"{_get_supabase_url()}/rest/v1/saved_creatives?id=eq.{cid}"
             headers = {
-                "apikey": SUPABASE_SERVICE_ROLE_KEY,
-                "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}",
+                "apikey": _get_supabase_key(),
+                "Authorization": f"Bearer {_get_supabase_key()}",
                 "Content-Type": "application/json"
             }
             async with httpx.AsyncClient(timeout=5.0) as client:
                 await client.patch(url, headers=headers, json={"is_favorite": is_fav})
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Supabase toggle_favorite error: {e}")
 
     return True
 
@@ -540,14 +790,66 @@ async def delete_creative(cid: str) -> bool:
 
     if _is_supabase_ready():
         try:
-            url = f"{SUPABASE_URL}/rest/v1/saved_creatives?id=eq.{cid}"
+            url = f"{_get_supabase_url()}/rest/v1/saved_creatives?id=eq.{cid}"
             headers = {
-                "apikey": SUPABASE_SERVICE_ROLE_KEY,
-                "Authorization": f"Bearer {SUPABASE_SERVICE_ROLE_KEY}"
+                "apikey": _get_supabase_key(),
+                "Authorization": f"Bearer {_get_supabase_key()}"
             }
             async with httpx.AsyncClient(timeout=5.0) as client:
                 await client.delete(url, headers=headers)
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Supabase delete_creative error: {e}")
 
     return True
+
+
+async def sync_sqlite_to_supabase() -> int:
+    """Sync all unsynced or local SQLite creatives to Supabase PostgreSQL."""
+    if not _is_supabase_ready():
+        return 0
+
+    url = f"{_get_supabase_url()}/rest/v1/saved_creatives"
+    headers = {
+        "apikey": _get_supabase_key(),
+        "Authorization": f"Bearer {_get_supabase_key()}",
+        "Content-Type": "application/json",
+        "Prefer": "resolution=merge-duplicates"
+    }
+
+    count = 0
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        c = conn.cursor()
+        c.execute("SELECT * FROM saved_creatives")
+        rows = [dict(r) for r in c.fetchall()]
+
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        for r in rows:
+            try:
+                mp = json.loads(r['model_params']) if r.get('model_params') else {}
+                ref = json.loads(r['reference_images']) if r.get('reference_images') else []
+                mp['reference_images'] = ref
+                mp['folder_id'] = r.get('folder_id') or ''
+                tags = json.loads(r['tags']) if r.get('tags') else []
+
+                payload = {
+                    'id': _clean_uuid(r['id']) or str(uuid.uuid4()),
+                    'user_id': _clean_uuid(r.get('user_id')),
+                    'user_email': r.get('user_email') or 'Guest Creator',
+                    'type': r.get('type') or 'image',
+                    'title': r.get('title') or 'Ad',
+                    'prompt': r.get('prompt') or '',
+                    'media_url': r.get('media_url') or '',
+                    'aspect_ratio': r.get('aspect_ratio') or '9:16',
+                    'model_params': mp,
+                    'tags': tags,
+                    'is_favorite': bool(r.get('is_favorite')),
+                    'created_at': r.get('created_at') or datetime.now(timezone.utc).isoformat()
+                }
+                res = await client.post(url, headers=headers, json=payload)
+                if res.status_code in (200, 201):
+                    count += 1
+            except Exception:
+                pass
+
+    return count

@@ -248,6 +248,7 @@
         showImage(data.image_url, data);
         revealRendered($("img_result").querySelector("img"));
         loadImageHistory();
+        window.dispatchEvent(new CustomEvent("saved-creatives-updated"));
         notify(`Image ready (${data.resolution || selectedRes}).`, "success");
       } catch (err) {
         failed("img_result", err.message);
@@ -438,6 +439,7 @@
         showVideo(job.video_url, job);
         revealRendered($("vid_result").querySelector("video"));
         rememberVideo(job.video_url, job);
+        window.dispatchEvent(new CustomEvent("saved-creatives-updated"));
         notify("Video ready.", "success");
         return;
       }
@@ -472,6 +474,7 @@
           })
       ));
       const ok = results.filter((r) => r.status === "fulfilled").length;
+      if (ok > 0) window.dispatchEvent(new CustomEvent("saved-creatives-updated"));
       notify(`${ok} of ${jobIds.length} videos ready.`, ok === jobIds.length ? "success" : "warning");
     } catch (err) {
       failed("vid_result", err.message);

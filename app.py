@@ -298,6 +298,7 @@ async def render_preset_template_endpoint(
 # ---------------------------------------------------------------------------
 @app.post("/api/campaign/meta-creative-suite/render-one", dependencies=CAMPAIGN_ACCESS)
 async def render_meta_creative_suite_one(
+    request: Request,
     blueprint_json: str = Form(...),
     brand_name: str = Form(...),
     product_name: str = Form(...),
@@ -333,7 +334,7 @@ async def render_meta_creative_suite_one(
         if product_image and product_image.filename:
             product_bytes, _, mime_type = await read_upload(product_image, IMAGE_EXTS, ".png", MAX_IMAGE_BYTES)
 
-        return await generate_single_meta_creative(
+        result = await generate_single_meta_creative(
             blueprint=blueprint,
             brand_name=brand_name,
             product_name=product_name,
@@ -355,6 +356,45 @@ async def render_meta_creative_suite_one(
             logo_tone=logo_tone if logo_tone in ("dark", "light") else "dark",
             model=model,
         )
+
+        # Auto-save campaign ad generation to user library & project storage
+        if result and result.get("status") == "success":
+            try:
+                from access import current_user
+                import database
+                cur_user = await current_user(request)
+                ref_images = []
+                if product_image_path:
+                    ref_images.append(product_image_path)
+
+                saved_rec = await database.save_creative(
+                    user=cur_user,
+                    data={
+                        "type": "image",
+                        "title": f"{brand_name} · {result.get('headline') or result.get('template_name') or 'Campaign Ad'}",
+                        "prompt": result.get("visual_prompt", ""),
+                        "media_url": result.get("image_url", ""),
+                        "aspect_ratio": aspect_ratio,
+                        "model_params": {
+                            "model": result.get("model_used", "nano-banana-2.1"),
+                            "framework": result.get("framework_name"),
+                            "headline": result.get("headline"),
+                            "primary_text": result.get("primary_text"),
+                            "cta": result.get("cta"),
+                            "template_name": result.get("template_name"),
+                            "preset_name": result.get("preset_name"),
+                            "preset_movement": result.get("preset_movement"),
+                        },
+                        "tags": ["Campaign", "Meta Creative", result.get("framework_key", "ad")],
+                        "reference_images": ref_images,
+                        "folder_id": "",
+                    }
+                )
+                result["saved_id"] = saved_rec.get("id")
+            except Exception as save_err:
+                logger.warning(f"Failed to auto-save campaign creative: {save_err}")
+
+        return result
     except HTTPException:
         raise
     except Exception as e:
