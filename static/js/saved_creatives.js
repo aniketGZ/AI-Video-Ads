@@ -97,9 +97,16 @@
     }
   }
 
-  function renderTemplatesGrid() {
+  let tplRenderLimit = 48;
+  let tplObserver = null;
+
+  function renderTemplatesGrid(resetLimit = true) {
     const grid = $("explore_templates_grid");
     if (!grid) return;
+
+    if (resetLimit) {
+      tplRenderLimit = 48;
+    }
 
     if (!exploreTemplates.length) {
       grid.innerHTML = `
@@ -124,7 +131,10 @@
       return;
     }
 
-    grid.innerHTML = exploreTemplates
+    const visibleTemplates = exploreTemplates.slice(0, tplRenderLimit);
+    const hasMore = tplRenderLimit < exploreTemplates.length;
+
+    const cardsHtml = visibleTemplates
       .map((tpl) => {
         const cat = tpl.category || "Ads";
         const ind = tpl.industry_label || "";
@@ -151,6 +161,40 @@
       `;
       })
       .join("");
+
+    let moreHtml = "";
+    if (hasMore) {
+      moreHtml = `
+        <div class="explore-load-more-wrap" id="explore_load_more_wrap" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 0 40px; gap: 8px;">
+          <span class="muted small">Showing ${visibleTemplates.length} of ${exploreTemplates.length} templates</span>
+          <button type="button" class="btn btn-sm btn-outline" id="btn_load_more_tpls" style="border-radius: var(--r-full); padding: 8px 24px;">
+            <i class="fa-solid fa-arrow-down"></i> Load More (${exploreTemplates.length - visibleTemplates.length} remaining)
+          </button>
+        </div>
+      `;
+    }
+
+    grid.innerHTML = cardsHtml + moreHtml;
+
+    // Infinite scroll observer & button click
+    const btnMore = $("btn_load_more_tpls");
+    if (btnMore) {
+      btnMore.addEventListener("click", () => {
+        tplRenderLimit += 48;
+        renderTemplatesGrid(false);
+      });
+
+      if (window.IntersectionObserver) {
+        if (tplObserver) tplObserver.disconnect();
+        tplObserver = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting) {
+            tplRenderLimit += 48;
+            renderTemplatesGrid(false);
+          }
+        }, { rootMargin: "400px" });
+        tplObserver.observe(btnMore);
+      }
+    }
 
     // Wire template card click
     grid.querySelectorAll(".tpl-card").forEach((card) => {
