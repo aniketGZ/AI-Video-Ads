@@ -65,13 +65,26 @@
       renderThumbs();
     });
 
+    let refDragCount = 0;
+    drop.addEventListener("dragenter", (e) => {
+      e.preventDefault();
+      refDragCount++;
+      drop.classList.add("dragover");
+    });
     drop.addEventListener("dragover", (e) => {
       e.preventDefault();
       drop.classList.add("dragover");
     });
-    drop.addEventListener("dragleave", () => drop.classList.remove("dragover"));
+    drop.addEventListener("dragleave", (e) => {
+      refDragCount--;
+      if (refDragCount <= 0 || !e.relatedTarget || !drop.contains(e.relatedTarget)) {
+        refDragCount = 0;
+        drop.classList.remove("dragover");
+      }
+    });
     drop.addEventListener("drop", (e) => {
       e.preventDefault();
+      refDragCount = 0;
       drop.classList.remove("dragover");
       const files = Array.from(e.dataTransfer?.files || []).filter((f) => f.type.startsWith("image/"));
       const max = getMaxRefs();
@@ -153,13 +166,26 @@
     drop.addEventListener("click", () => input.click());
     input.addEventListener("change", () => handleFiles(input.files));
 
+    let refDragCount = 0;
+    drop.addEventListener("dragenter", (e) => {
+      e.preventDefault();
+      refDragCount++;
+      drop.classList.add("dragover");
+    });
     drop.addEventListener("dragover", (e) => {
       e.preventDefault();
       drop.classList.add("dragover");
     });
-    drop.addEventListener("dragleave", () => drop.classList.remove("dragover"));
+    drop.addEventListener("dragleave", (e) => {
+      refDragCount--;
+      if (refDragCount <= 0 || !e.relatedTarget || !drop.contains(e.relatedTarget)) {
+        refDragCount = 0;
+        drop.classList.remove("dragover");
+      }
+    });
     drop.addEventListener("drop", (e) => {
       e.preventDefault();
+      refDragCount = 0;
       drop.classList.remove("dragover");
       if (e.dataTransfer?.files?.length) {
         handleFiles(e.dataTransfer.files);

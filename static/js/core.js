@@ -304,6 +304,19 @@ document.addEventListener("click", (e) => {
   if (e.dataTransfer && Array.from(e.dataTransfer.types || []).includes("Files")) e.preventDefault();
 }));
 
+// Clean up any stuck drag highlights when drag ends or leaves window
+window.addEventListener("dragend", () => {
+  document.querySelectorAll(".dragover, .drag-active").forEach((el) => el.classList.remove("dragover", "drag-active"));
+});
+document.addEventListener("dragleave", (e) => {
+  if (!e.relatedTarget) {
+    document.querySelectorAll(".dragover, .drag-active").forEach((el) => el.classList.remove("dragover", "drag-active"));
+  }
+});
+document.addEventListener("drop", () => {
+  document.querySelectorAll(".dragover, .drag-active").forEach((el) => el.classList.remove("dragover", "drag-active"));
+});
+
 // ---------------------------------------------------------------- sliding selection
 // A shared thumb moves between the options, so the eye follows the change instead of finding it again.
 // It sits on the active button however that button became active, and re-measures when fonts or layout move.
@@ -433,10 +446,26 @@ function imageDropzone({ zone, input, thumbs, max = 4 }) {
     if (e.key === "Enter" || e.key === " ") { e.preventDefault(); inputEl.click(); }
   });
   inputEl.addEventListener("change", () => { add(inputEl.files); inputEl.value = ""; });
-  zoneEl.addEventListener("dragover", (e) => { e.preventDefault(); zoneEl.classList.add("dragover"); });
-  zoneEl.addEventListener("dragleave", () => zoneEl.classList.remove("dragover"));
+  let zoneDragCount = 0;
+  zoneEl.addEventListener("dragenter", (e) => {
+    e.preventDefault();
+    zoneDragCount++;
+    zoneEl.classList.add("dragover");
+  });
+  zoneEl.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    zoneEl.classList.add("dragover");
+  });
+  zoneEl.addEventListener("dragleave", (e) => {
+    zoneDragCount--;
+    if (zoneDragCount <= 0 || !e.relatedTarget || !zoneEl.contains(e.relatedTarget)) {
+      zoneDragCount = 0;
+      zoneEl.classList.remove("dragover");
+    }
+  });
   zoneEl.addEventListener("drop", (e) => {
     e.preventDefault();
+    zoneDragCount = 0;
     zoneEl.classList.remove("dragover");
     add(e.dataTransfer.files);
   });

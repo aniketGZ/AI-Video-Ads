@@ -283,16 +283,14 @@
     const drop = $("rec_product_drop");
     const fileInput = $("rec_product_file");
     const changeBtn = $("btn_change_product");
+    const removeBtn = $("btn_remove_product");
 
     if (drop && fileInput) {
       drop.addEventListener("click", (e) => {
-        if (e.target !== changeBtn) {
+        if (e.target !== changeBtn && !changeBtn?.contains(e.target) && e.target !== removeBtn && !removeBtn?.contains(e.target)) {
           fileInput.click();
         }
       });
-
-      const changeBtn = $("btn_change_product");
-      const removeBtn = $("btn_remove_product");
 
       if (changeBtn) {
         changeBtn.addEventListener("click", (e) => {
@@ -317,16 +315,27 @@
         }
       });
 
-      // Drag and drop
+      // Drag and drop with counter so border doesn't get stuck
+      let recDropCounter = 0;
+      drop.addEventListener("dragenter", (e) => {
+        e.preventDefault();
+        recDropCounter++;
+        drop.style.borderColor = "var(--accent)";
+      });
       drop.addEventListener("dragover", (e) => {
         e.preventDefault();
         drop.style.borderColor = "var(--accent)";
       });
-      drop.addEventListener("dragleave", () => {
-        drop.style.borderColor = "";
+      drop.addEventListener("dragleave", (e) => {
+        recDropCounter--;
+        if (recDropCounter <= 0 || !e.relatedTarget || !drop.contains(e.relatedTarget)) {
+          recDropCounter = 0;
+          drop.style.borderColor = "";
+        }
       });
       drop.addEventListener("drop", (e) => {
         e.preventDefault();
+        recDropCounter = 0;
         drop.style.borderColor = "";
         if (e.dataTransfer?.files?.[0]) {
           handleProductFile(e.dataTransfer.files[0]);
@@ -1314,36 +1323,28 @@
         if ($("img_folder_id")) $("img_folder_id").value = val;
         const proj = projects.find((p) => p.id === val);
         if ($("img_project_label")) $("img_project_label").textContent = proj ? proj.name : "Project";
-        if ($("img_project_pop")) $("img_project_pop").hidden = true;
+        const menu = $("img_project_menu");
+        if (menu) {
+          menu.classList.remove("open");
+          const pop = menu.querySelector(".pill-pop");
+          if (pop) pop.hidden = true;
+          const pill = menu.querySelector(".pill");
+          if (pill) pill.setAttribute("aria-expanded", "false");
+        }
       } else if (isVid) {
         if ($("vid_folder_id")) $("vid_folder_id").value = val;
         const proj = projects.find((p) => p.id === val);
         if ($("vid_project_label")) $("vid_project_label").textContent = proj ? proj.name : "Project";
-        if ($("vid_project_pop")) $("vid_project_pop").hidden = true;
+        const menu = $("vid_project_menu");
+        if (menu) {
+          menu.classList.remove("open");
+          const pop = menu.querySelector(".pill-pop");
+          if (pop) pop.hidden = true;
+          const pill = menu.querySelector(".pill");
+          if (pill) pill.setAttribute("aria-expanded", "false");
+        }
       }
       return;
-    }
-
-    // 18. Studio project pill open/close toggle
-    if (e.target.closest("#btn_img_project")) {
-      e.stopPropagation();
-      const pop = $("img_project_pop");
-      if (pop) pop.hidden = !pop.hidden;
-      return;
-    }
-
-    if (e.target.closest("#btn_vid_project")) {
-      e.stopPropagation();
-      const pop = $("vid_project_pop");
-      if (pop) pop.hidden = !pop.hidden;
-      return;
-    }
-
-    if (!e.target.closest("#img_project_menu") && $("img_project_pop")) {
-      $("img_project_pop").hidden = true;
-    }
-    if (!e.target.closest("#vid_project_menu") && $("vid_project_pop")) {
-      $("vid_project_pop").hidden = true;
     }
   });
 

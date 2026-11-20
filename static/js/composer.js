@@ -104,6 +104,15 @@
     const fileInputId = isImage ? "img_files" : "vid_files";
     const dropzoneId = isImage ? "img_drop" : "vid_drop";
 
+    let mainDragCounter = 0;
+    main.addEventListener("dragenter", (e) => {
+      if (e.dataTransfer?.types?.includes("Files")) {
+        e.preventDefault();
+        mainDragCounter++;
+        main.classList.add("drag-active");
+      }
+    });
+
     main.addEventListener("dragover", (e) => {
       if (e.dataTransfer?.types?.includes("Files")) {
         e.preventDefault();
@@ -113,15 +122,18 @@
     });
 
     main.addEventListener("dragleave", (e) => {
-      if (!e.relatedTarget || !main.contains(e.relatedTarget)) {
+      mainDragCounter--;
+      if (mainDragCounter <= 0 || !e.relatedTarget || !main.contains(e.relatedTarget)) {
+        mainDragCounter = 0;
         main.classList.remove("drag-active");
       }
     });
 
     main.addEventListener("drop", async (e) => {
+      mainDragCounter = 0;
+      main.classList.remove("drag-active");
       const files = Array.from(e.dataTransfer?.files || []);
       if (!files.length) return;
-      main.classList.remove("drag-active");
 
       const imageFiles = files.filter((f) => f.type.startsWith("image/"));
       const textFiles = files.filter((f) => {

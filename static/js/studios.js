@@ -541,12 +541,25 @@
       `).join("")}
     `;
 
+    function closeTemplatePill() {
+      const menu = $("img_template_menu");
+      if (menu) {
+        menu.classList.remove("open");
+        const pop = menu.querySelector(".pill-pop");
+        if (pop) pop.hidden = true;
+        const pill = menu.querySelector(".pill");
+        if (pill) pill.setAttribute("aria-expanded", "false");
+      }
+    }
+
     $("btn_open_full_template_modal")?.addEventListener("click", () => {
+      closeTemplatePill();
       openIndustryTemplateModal(activeTemplate?.id || "beauty_editorial_rhode");
     });
 
     listEl.querySelectorAll("[data-pick-template]").forEach((btn) => {
       btn.addEventListener("click", () => {
+        closeTemplatePill();
         const tid = btn.dataset.pickTemplate;
         openIndustryTemplateModal(tid);
       });
@@ -718,13 +731,26 @@
       input.click();
     });
 
+    let modalDragCount = 0;
+    zone.addEventListener("dragenter", (e) => {
+      e.preventDefault();
+      modalDragCount++;
+      zone.classList.add("dragover");
+    });
     zone.addEventListener("dragover", (e) => {
       e.preventDefault();
       zone.classList.add("dragover");
     });
-    zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+    zone.addEventListener("dragleave", (e) => {
+      modalDragCount--;
+      if (modalDragCount <= 0 || !e.relatedTarget || !zone.contains(e.relatedTarget)) {
+        modalDragCount = 0;
+        zone.classList.remove("dragover");
+      }
+    });
     zone.addEventListener("drop", (e) => {
       e.preventDefault();
+      modalDragCount = 0;
       zone.classList.remove("dragover");
       const f = Array.from(e.dataTransfer?.files || []).find((x) => x.type.startsWith("image/"));
       if (f) handleFile(f);

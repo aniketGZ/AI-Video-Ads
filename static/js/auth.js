@@ -6,6 +6,7 @@
   let supabaseClient = null;
   let currentSession = null;
   let activeTab = "signin"; // 'signin' | 'signup'
+  let initAuthPromise = null;
 
   // Expose current JWT token for API requests
   window.getAuthToken = function () {
@@ -33,8 +34,20 @@
       if (!res.ok) return;
       const config = await res.json();
 
-      if (!config.enabled || !window.supabase) {
-        console.info("Supabase Auth is not active or library not loaded.");
+      if (!config.enabled) {
+        console.info("Supabase Auth is not enabled in backend config.");
+        return;
+      }
+
+      // Wait briefly for window.supabase if the CDN script is still evaluating
+      if (!window.supabase) {
+        for (let i = 0; i < 30 && !window.supabase; i++) {
+          await new Promise((r) => setTimeout(r, 100));
+        }
+      }
+
+      if (!window.supabase) {
+        console.warn("Supabase library not loaded.");
         return;
       }
 
@@ -99,6 +112,7 @@
       if (userLabel) userLabel.textContent = "Sign in";
       if (userTag) userTag.hidden = true;
       if (dropdownEmail) dropdownEmail.textContent = "Not signed in";
+      if (dropdownPlan) dropdownPlan.textContent = "Free Plan";
       pill.title = "Sign in to Ad Studio";
       pill.dataset.authenticated = "false";
     }
@@ -160,6 +174,11 @@
   // Handle Sign In / Sign Up
   async function handleSubmit(e) {
     e.preventDefault();
+
+    if (!supabaseClient && initAuthPromise) {
+      await initAuthPromise;
+    }
+
     if (!supabaseClient) {
       showMsg("Supabase is not configured yet. Please check environment keys.");
       return;
@@ -198,6 +217,12 @@
         if (error) throw error;
         closeAuthDialog();
         if (window.toast) window.toast("Signed in successfully", "success");
+
+        // If on landing/external page, redirect to /app
+        const p = window.location.pathname;
+        if (p === "/" || p === "/landing" || (p.endsWith("index.html") && !p.includes("/app"))) {
+          window.location.href = "/app";
+        }
       } else {
         const { data, error } = await supabaseClient.auth.signUp({
           email,
@@ -211,6 +236,10 @@
         if (data.session) {
           closeAuthDialog();
           if (window.toast) window.toast("Account created and signed in!", "success");
+          const p = window.location.pathname;
+          if (p === "/" || p === "/landing" || (p.endsWith("index.html") && !p.includes("/app"))) {
+            window.location.href = "/app";
+          }
         } else {
           showMsg("Account created! Please check your email to confirm your account.", "success");
           if (emailInput) emailInput.value = "";
@@ -229,19 +258,32 @@
 
   async function handleSignOut() {
     if (supabaseClient) {
-      await supabaseClient.auth.signOut();
-      const dd = document.getElementById("user_dropdown");
-      if (dd) dd.hidden = true;
-      if (window.toast) window.toast("Signed out", "info");
+      try {
+        await supabaseClient.auth.signOut();
+      } catch (_) {}
     }
+    currentSession = null;
+    updateUIForSession(null);
+    const dd = document.getElementById("user_dropdown");
+    if (dd) dd.hidden = true;
+    if (typeof window.loadPlan === "function") {
+      try {
+        await window.loadPlan();
+        if (typeof window.applyPlanLocks === "function") {
+          window.applyPlanLocks();
+        }
+      } catch (_) {}
+    }
+    if (window.toast) window.toast("Signed out", "info");
   }
 
   // Setup DOM Event Listeners
-  document.addEventListener("DOMContentLoaded", () => {
-    initAuth();
+  function initDOM() {
+    initAuthPromise = initAuth();
 
     const pill = document.getElementById("user_pill");
     const dropdown = document.getElementById("user_dropdown");
+    const dlg = document.getElementById("auth_dialog");
     const closeBtn = document.getElementById("auth_close");
     const tabSignin = document.getElementById("auth_tab_signin");
     const tabSignup = document.getElementById("auth_tab_signup");
@@ -249,6 +291,16 @@
     const signOutBtn = document.getElementById("sign_out_btn");
     const profSignOutBtn = document.getElementById("prof_btn_signout");
 
+    // Wire up all [data-auth-modal] triggers (navbar, footer, pricing cards, hero)
+    document.querySelectorAll("[data-auth-modal]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const tab = btn.dataset.authModal || "signin";
+        openAuthDialog(tab);
+      });
+    });
+
+    // Wire up user pill on app header
     if (pill) {
       pill.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -260,12 +312,34 @@
       });
     }
 
-    // Close dropdown on click outside
+    // Close user dropdown on click outside or escape key
     document.addEventListener("click", (e) => {
       if (dropdown && !dropdown.hidden && !e.target.closest("#user_menu_wrap")) {
         dropdown.hidden = true;
       }
     });
+
+    // Close user dropdown when any action item inside it is clicked
+    if (dropdown) {
+      dropdown.querySelectorAll(".user-dropdown-item, a").forEach((item) => {
+        item.addEventListener("click", () => {
+          dropdown.hidden = true;
+        });
+      });
+    }
+
+    // Dialog backdrop click & escape handling
+    if (dlg) {
+      dlg.addEventListener("click", (e) => {
+        // Clicking directly on the dialog backdrop (outside dialog-body) closes it
+        if (e.target === dlg) {
+          closeAuthDialog();
+        }
+      });
+      dlg.addEventListener("cancel", () => {
+        closeAuthDialog();
+      });
+    }
 
     if (closeBtn) closeBtn.addEventListener("click", closeAuthDialog);
     if (tabSignin) tabSignin.addEventListener("click", () => setTab("signin"));
@@ -274,12 +348,28 @@
     if (signOutBtn) signOutBtn.addEventListener("click", handleSignOut);
     if (profSignOutBtn) {
       profSignOutBtn.addEventListener("click", () => {
-        const dlg = document.getElementById("profile_modal");
-        if (dlg && dlg.open) dlg.close();
+        const profileDlg = document.getElementById("profile_modal");
+        if (profileDlg && profileDlg.open) profileDlg.close();
         handleSignOut();
       });
     }
-  });
+
+    // Global escape key to close dropdowns and auth dialog
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        if (dropdown && !dropdown.hidden) {
+          dropdown.hidden = true;
+        }
+      }
+    });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initDOM);
+  } else {
+    initDOM();
+  }
 
   window.openAuthDialog = openAuthDialog;
+  window.closeAuthDialog = closeAuthDialog;
 })();
