@@ -148,9 +148,8 @@ def require_client(api_key: Optional[str] = None) -> genai.Client:
 async def check_env():
     key = os.environ.get("GEMINI_API_KEY", "")
     return {
-        "gemini_key_set": bool(key and key.strip()),
-        "gemini_key_prefix": f"{key[:6]}..." if key else None,
-        "supabase_set": bool(os.environ.get("SUPABASE_URL")),
+        "gemini_ready": bool(key and key.strip()),
+        "supabase_ready": bool(os.environ.get("SUPABASE_URL")),
     }
 
 
