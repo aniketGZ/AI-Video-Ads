@@ -96,7 +96,7 @@
 
   function renderCosts() {
     const img = data.costs.image;
-    const names = { "nano-banana-2.1": "Nano Banana 2.1", "nano-banana-pro": "Nano Banana Pro" };
+    const names = { "nano-banana-2.1": "Creative Engine", "nano-banana-pro": "Studio Precision" };
     document.getElementById("cost_images").innerHTML = Object.keys(img).map((k) =>
       `<tr><th scope="row">${names[k] || k}</th><td>${img[k]["1K"]}</td><td>${img[k]["2K"]}</td><td>${img[k]["4K"]}</td></tr>`).join("");
     const vid = data.costs.video_per_second;
