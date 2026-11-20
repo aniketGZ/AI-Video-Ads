@@ -144,6 +144,16 @@ def require_client(api_key: Optional[str] = None) -> genai.Client:
     return client
 
 
+@app.get("/api/env-check")
+async def check_env():
+    key = os.environ.get("GEMINI_API_KEY", "")
+    return {
+        "gemini_key_set": bool(key and key.strip()),
+        "gemini_key_prefix": f"{key[:6]}..." if key else None,
+        "supabase_set": bool(os.environ.get("SUPABASE_URL")),
+    }
+
+
 def safe_b64decode(data) -> bytes:
     if isinstance(data, bytes):
         if b"ftyp" in data[:20]:
