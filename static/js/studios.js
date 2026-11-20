@@ -144,7 +144,8 @@
         ${meta && meta.resolution ? `<span class="badge badge-accent">${esc(meta.resolution)}</span>` : ""}
         ${meta && meta.aspect_ratio ? `<span class="badge">${esc(meta.aspect_ratio)}</span>` : ""}
         ${dim ? `<span class="muted small num">${esc(dim)}</span>` : ""}
-        <button type="button" class="btn btn-sm btn-primary btn-edit-creative" data-edit-creative="${esc(url)}"><i class="fa-solid fa-paintbrush"></i> Edit</button>
+        <button type="button" class="btn btn-sm btn-primary btn-studio-inpaint" data-edit-creative="${esc(url)}" data-tab="inpaint" title="Inpaint marked area with prompt"><i class="fa-solid fa-paintbrush"></i> Inpaint</button>
+        <button type="button" class="btn btn-sm btn-outline btn-studio-removebg" data-edit-creative="${esc(url)}" data-tab="remove_bg" title="1-Click Subject Background Removal"><i class="fa-solid fa-person-circle-minus"></i> Remove BG</button>
         <a href="${esc(url)}" download class="btn btn-sm"><i class="fa-solid fa-download"></i> Download</a>
         <button type="button" class="btn btn-sm btn-ghost" data-dismiss-result><i class="fa-solid fa-xmark"></i> Close</button>
       </figcaption>
@@ -205,6 +206,73 @@
     } catch (e) { /* history is optional */ }
     $("img_history").removeAttribute("data-loading");
   }
+
+  // ------------------------------------------------------------ studio AI edit tools
+  function triggerStudioTool(tab = "inpaint") {
+    const currentImg = $("img_result")?.querySelector("img");
+    if (currentImg && currentImg.src && !currentImg.src.includes("data:image/svg+xml")) {
+      if (typeof window.openCreativeEditor === "function") {
+        window.openCreativeEditor({ url: currentImg.src, tab });
+      }
+      return;
+    }
+
+    const historyBtn = $("img_history")?.querySelector("button[data-url]");
+    if (historyBtn && historyBtn.dataset.url) {
+      if (typeof window.openCreativeEditor === "function") {
+        window.openCreativeEditor({ url: historyBtn.dataset.url, tab });
+      }
+      return;
+    }
+
+    const fileInp = $("studio_tool_upload_input");
+    if (fileInp) {
+      fileInp.dataset.targetTab = tab;
+      fileInp.click();
+    } else {
+      notify("Please generate or select an image in Studio first.", "info");
+    }
+  }
+
+  const studioToolInp = $("studio_tool_upload_input");
+  if (studioToolInp) {
+    studioToolInp.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const tab = e.target.dataset.targetTab || "inpaint";
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        if (typeof window.openCreativeEditor === "function") {
+          window.openCreativeEditor({ url: ev.target.result, tab, filename: file.name });
+        }
+      };
+      reader.readAsDataURL(file);
+      e.target.value = "";
+    });
+  }
+
+  $("btn_studio_tool_inpaint")?.addEventListener("click", () => {
+    const pop = $("img_tools_pop");
+    if (pop) pop.hidden = true;
+    triggerStudioTool("inpaint");
+  });
+
+  $("btn_studio_tool_removebg")?.addEventListener("click", () => {
+    const pop = $("img_tools_pop");
+    if (pop) pop.hidden = true;
+    triggerStudioTool("remove_bg");
+  });
+
+  $("img_history")?.addEventListener("click", (e) => {
+    const btn = e.target.closest("button[data-url]");
+    if (btn && btn.dataset.url) {
+      showImage(btn.dataset.url, {});
+    }
+  });
+
+  window.addEventListener("studio-image-updated", () => {
+    loadImageHistory();
+  });
 
   $("img_form").addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -286,7 +354,8 @@
               <span class="badge badge-accent small">${esc(item.resolution || selectedRes)}</span>
               <div style="display:inline-flex; gap:10px; align-items:center;">
                 <button type="button" class="btn-link small btn-save-creative" data-type="image" data-url="${esc(item.image_url)}" data-prompt="${esc(p)}" data-aspect="${esc(imgAspect() || "1:1")}" title="Save prompt and image to library"><i class="fa-regular fa-bookmark"></i> Save Prompt</button>
-                <button type="button" class="btn-link small btn-edit-creative" data-edit-creative="${esc(item.image_url)}" title="Edit with Inpaint & Remove BG"><i class="fa-solid fa-paintbrush"></i> Edit</button>
+                <button type="button" class="btn-link small btn-studio-inpaint" data-edit-creative="${esc(item.image_url)}" data-tab="inpaint" title="Inpaint with freehand draw"><i class="fa-solid fa-paintbrush"></i> Inpaint</button>
+                <button type="button" class="btn-link small btn-studio-removebg" data-edit-creative="${esc(item.image_url)}" data-tab="remove_bg" title="Remove Background"><i class="fa-solid fa-person-circle-minus"></i> Remove BG</button>
                 <a href="${esc(item.image_url)}" download="${esc(item.filename || `image_${i+1}.png`)}" class="btn-link small" target="_blank"><i class="fa-solid fa-download"></i> Save</a>
               </div>
             </div>`;

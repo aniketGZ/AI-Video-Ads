@@ -88,7 +88,6 @@
       <button type="button" class="viewer-btn" data-go="1" aria-label="Next" title="Next (→)"><i class="fa-solid fa-arrow-right"></i></button>
       <span class="viewer-sep" aria-hidden="true"></span>
       <button type="button" class="viewer-btn viewer-save-btn" data-save aria-label="Save to library" title="Save prompt & asset"><i class="fa-regular fa-bookmark"></i><span>Save</span></button>
-      <button type="button" class="viewer-btn viewer-edit-btn" data-edit aria-label="Edit Creative" title="Edit with Inpaint & Remove BG"><i class="fa-solid fa-paintbrush"></i><span>Edit</span></button>
       <a class="viewer-btn" data-download download aria-label="Download" title="Download"><i class="fa-solid fa-download"></i><span>Download</span></a>
       <button type="button" class="viewer-btn" data-close aria-label="Close" title="Close (Esc)"><i class="fa-solid fa-xmark"></i></button>
     </div>`;
@@ -269,24 +268,6 @@
     const goBtn = e.target.closest("[data-go]");
     if (goBtn) go(Number(goBtn.dataset.go));
     if (e.target.closest("[data-close]")) close();
-
-    const editBtn = e.target.closest("[data-edit]");
-    if (editBtn) {
-      const item = items[index];
-      if (item && item.url) {
-        const isVid = item.type === "video" || item.url?.endsWith(".mp4");
-        if (isVid) {
-          if (typeof notify === "function") notify("The Creative Editor currently supports image creatives.", "info");
-          return;
-        }
-        const promptText = item.prompt || item.el?.dataset?.prompt || item.alt || "";
-        close();
-        if (typeof window.openCreativeEditor === "function") {
-          window.openCreativeEditor({ url: item.url, prompt: promptText });
-        }
-      }
-      return;
-    }
 
     const saveBtn = e.target.closest("[data-save]");
     if (saveBtn) {

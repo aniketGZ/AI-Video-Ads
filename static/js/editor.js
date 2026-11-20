@@ -368,6 +368,10 @@
 
           notify("Inpainting applied successfully!", "success");
           if (btnCompare) btnCompare.hidden = false;
+
+          const studioStageImg = document.querySelector("#img_result img");
+          if (studioStageImg) studioStageImg.src = currentUrl;
+          window.dispatchEvent(new CustomEvent("studio-image-updated", { detail: { url: currentUrl } }));
         } else {
           throw new Error("No image was returned by the editing engine.");
         }
@@ -419,6 +423,10 @@
 
           notify("Subject isolated and background updated!", "success");
           if (btnCompare) btnCompare.hidden = false;
+
+          const studioStageImg = document.querySelector("#img_result img");
+          if (studioStageImg) studioStageImg.src = currentUrl;
+          window.dispatchEvent(new CustomEvent("studio-image-updated", { detail: { url: currentUrl } }));
         } else {
           throw new Error("No image was returned by the editing engine.");
         }
@@ -541,7 +549,8 @@
       stageImg.src = url;
     }
 
-    switchTab("inpaint");
+    const targetTab = options.tab === "remove_bg" ? "remove_bg" : "inpaint";
+    switchTab(targetTab);
 
     if (modal && !modal.open) {
       modal.showModal();
@@ -550,13 +559,14 @@
 
   // Wire delegated clicks across the page for [data-edit-creative]
   document.addEventListener("click", (e) => {
-    const editBtn = e.target.closest("[data-edit-creative], .btn-edit-creative");
+    const editBtn = e.target.closest("[data-edit-creative], .btn-edit-creative, .btn-studio-inpaint, .btn-studio-removebg");
     if (editBtn) {
       e.preventDefault();
       e.stopPropagation();
       const url = editBtn.dataset.editCreative || editBtn.dataset.url;
+      const tab = editBtn.dataset.tab || (editBtn.classList.contains("btn-studio-removebg") ? "remove_bg" : "inpaint");
       if (url) {
-        window.openCreativeEditor({ url });
+        window.openCreativeEditor({ url, tab });
       }
     }
   });

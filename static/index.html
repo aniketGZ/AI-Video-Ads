@@ -83,10 +83,15 @@
           <span class="mega-card-name">With your product</span>
           <span class="mega-card-note">Start from your product photos</span>
         </button>
-        <button type="button" class="mega-card" data-go="library">
+        <button type="button" class="mega-card" data-go="image" data-click="#btn_studio_tool_inpaint">
           <span class="mega-thumb"><img src="/static/menu/image_headline.jpg" width="480" height="360" alt="" loading="lazy"></span>
-          <span class="mega-card-name">Projects &amp; Library</span>
-          <span class="mega-card-note">Organize into folders and recall prompts</span>
+          <span class="mega-card-name">Inpaint &amp; Modify</span>
+          <span class="mega-card-note">Freehand draw mask &amp; edit with prompt</span>
+        </button>
+        <button type="button" class="mega-card" data-go="image" data-click="#btn_studio_tool_removebg">
+          <span class="mega-thumb"><img src="/static/menu/image_product.jpg" width="480" height="360" alt="" loading="lazy"></span>
+          <span class="mega-card-name">Remove Background</span>
+          <span class="mega-card-note">1-Click subject isolation &amp; cutouts</span>
         </button>
       </div>
       <div class="mega-cols">
@@ -407,6 +412,23 @@
               </div>
             </div>
           </div>
+          <!-- Studio AI Tools Menu -->
+          <div class="pill-menu" id="img_tools_menu">
+            <button type="button" class="pill" id="btn_img_tools" aria-haspopup="true" aria-expanded="false" aria-label="Studio AI Tools" title="Inpaint & Remove Background"><i class="fa-solid fa-paintbrush"></i><span class="pill-value">Studio Tools</span><i class="fa-solid fa-chevron-up pill-caret"></i></button>
+            <div class="pill-pop" id="img_tools_pop" hidden style="min-width: 220px;">
+              <div class="pill-pop-title">Studio AI Tools</div>
+              <div class="template-pop-list" style="display: flex; flex-direction: column; gap: 4px; padding: 4px 0;">
+                <button type="button" class="btn btn-ghost btn-sm" id="btn_studio_tool_inpaint" style="justify-content: flex-start; width: 100%; text-align: left; gap: 8px;">
+                  <i class="fa-solid fa-paintbrush" style="color: #f87171;"></i>
+                  <span>Inpaint &amp; Modify</span>
+                </button>
+                <button type="button" class="btn btn-ghost btn-sm" id="btn_studio_tool_removebg" style="justify-content: flex-start; width: 100%; text-align: left; gap: 8px;">
+                  <i class="fa-solid fa-person-circle-minus" style="color: #60a5fa;"></i>
+                  <span>Remove Background</span>
+                </button>
+              </div>
+            </div>
+          </div>
           <div class="pill-menu">
             <button type="button" class="pill" aria-haspopup="true" aria-expanded="false" aria-label="Model"><i class="fa-solid fa-cube"></i><span class="pill-value"></span><i class="fa-solid fa-chevron-up pill-caret"></i></button>
             <div class="pill-pop" hidden>
@@ -468,6 +490,7 @@
           <button type="button" class="pill prompt-add" id="img_add_prompt" title="Add another prompt (up to 5, one image each)"><i class="fa-solid fa-plus"></i> Prompt</button>
         </div>
       </div>
+      <input type="file" id="studio_tool_upload_input" accept="image/*" hidden>
       <button type="submit" class="btn-generate" id="img_submit"><i class="fa-solid fa-wand-magic-sparkles"></i> Generate image</button>
     </form>
   </main>
@@ -1378,8 +1401,7 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
                 <img id="rec_result_img" src="" alt="Generated Ad Creative">
               </div>
               <div class="rec-result-actions">
-                <button type="button" class="btn btn-sm btn-primary" id="rec_btn_edit"><i class="fa-solid fa-paintbrush"></i> Edit Creative</button>
-                <a id="rec_download_btn" href="#" download="ad_creative.png" class="btn btn-sm btn-outline" target="_blank"><i class="fa-solid fa-download"></i> Download</a>
+                <a id="rec_download_btn" href="#" download="ad_creative.png" class="btn btn-sm btn-primary" target="_blank"><i class="fa-solid fa-download"></i> Download</a>
                 <button type="button" class="btn btn-sm btn-outline" id="rec_btn_studio"><i class="fa-solid fa-arrow-up-right-from-square"></i> Studio</button>
                 <button type="button" class="btn btn-sm btn-ghost" id="rec_btn_again"><i class="fa-solid fa-rotate-right"></i> Try Again</button>
               </div>
