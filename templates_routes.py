@@ -16,7 +16,7 @@ from google.genai import types
 
 from access import current_user
 import database
-from media_utils import GENERATED_DIR
+from media_utils import GENERATED_DIR, save_generated_media
 
 logger = logging.getLogger(__name__)
 
@@ -312,11 +312,7 @@ async def recreate_template_visual(
     )
 
     out_filename = f"ad_recreate_{uuid.uuid4().hex}.png"
-    out_path = os.path.join(GENERATED_DIR, out_filename)
-    with open(out_path, "wb") as out_f:
-        out_f.write(image_bytes)
-
-    out_url = f"/static/generated/{out_filename}"
+    out_url = save_generated_media(out_filename, image_bytes, "image/png")
 
     # 7. STEP 3: Auto-save into user's creative library & project folder
     clean_title = f"{brand_name.strip() if brand_name else 'Commercial'} {product_name.strip() if product_name else 'Ad'} · {template.get('title', 'Template')}"

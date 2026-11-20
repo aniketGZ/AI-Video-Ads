@@ -594,6 +594,43 @@ window.addEventListener("viewchange", (e) => {
   else reel.pause();
 });
 
+// ---------------------------------------------------------------- universal file download
+window.downloadMediaFile = async function (url, filename) {
+  if (!url) return;
+  const cleanName = filename || url.split("/").pop().split("?")[0] || "ad_creative.png";
+
+  try {
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const blob = await res.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = blobUrl;
+    a.download = cleanName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+  } catch (err) {
+    // If client fetch fails, fallback to backend attachment streaming endpoint
+    const dlUrl = `/api/download?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(cleanName)}`;
+    window.location.href = dlUrl;
+  }
+};
+
+// Global click interceptor for download links & buttons across the entire app
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest("a[download], [data-download]");
+  if (!btn) return;
+
+  const url = btn.getAttribute("href") || btn.dataset.url;
+  if (!url || url === "#") return;
+
+  e.preventDefault();
+  const filename = btn.getAttribute("download") || btn.dataset.filename || url.split("/").pop().split("?")[0];
+  window.downloadMediaFile(url, filename);
+});
+
 // Restore the last view after the other scripts have registered their listeners
 window.addEventListener("DOMContentLoaded", async () => {
   await loadPlan();

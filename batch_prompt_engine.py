@@ -24,6 +24,7 @@ from google.genai import types
 
 from media_utils import (
     GENERATED_DIR,
+    save_generated_media,
     IMAGE_EXTS,
     MAX_IMAGE_BYTES,
     GEMINI_IMAGE_ASPECTS,
@@ -459,12 +460,10 @@ async def run_batch_worker(batch_id: str, api_key: Optional[str]) -> None:
 
                     item_id_num = int(item.get("id") or (idx + 1))
                     filename = f"batch_{batch_id}_{item_id_num:03d}_{uuid.uuid4().hex[:6]}.png"
-                    filepath = os.path.join(GENERATED_DIR, filename)
-                    with open(filepath, "wb") as f:
-                        f.write(image_bytes)
+                    item_url = save_generated_media(filename, image_bytes, "image/png")
 
                     item["status"] = "success"
-                    item["image_url"] = f"/static/generated/{filename}"
+                    item["image_url"] = item_url
                     item["filename"] = filename
                     item["error"] = None
                     job["completed_count"] += 1

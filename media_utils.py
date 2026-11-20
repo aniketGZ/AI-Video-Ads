@@ -87,6 +87,46 @@ def load_dotenv(env_path: str = ".env") -> None:
         logger.warning(f"Could not load {env_path}: {e}")
 
 
+def save_generated_media(filename: str, data: bytes, mime_type: Optional[str] = None) -> str:
+    """
+    Saves generated media locally to GENERATED_DIR and uploads to Supabase Storage
+    so that downloads and views remain permanently accessible across serverless instances.
+    Returns the relative URL (/static/generated/{filename}).
+    """
+    if not mime_type:
+        ext = os.path.splitext(filename)[1].lower()
+        mime_type = _EXT_MIME.get(ext, "application/octet-stream")
+
+    # 1. Save locally
+    local_path = os.path.join(GENERATED_DIR, filename)
+    try:
+        os.makedirs(os.path.dirname(local_path), exist_ok=True)
+        with open(local_path, "wb") as f:
+            f.write(data)
+    except Exception as e:
+        logger.warning(f"Could not save local file {local_path}: {e}")
+
+    # 2. Upload to Supabase Storage
+    sb_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    sb_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY") or os.environ.get("SUPABASE_ANON_KEY")
+    if sb_url and sb_key:
+        try:
+            upload_url = f"{sb_url}/storage/v1/object/generated/{filename}"
+            headers = {
+                "apikey": sb_key,
+                "Authorization": f"Bearer {sb_key}",
+                "Content-Type": mime_type,
+                "x-upsert": "true",
+            }
+            resp = requests.post(upload_url, data=data, headers=headers, timeout=15)
+            if not resp.ok:
+                logger.warning(f"Supabase storage upload failed for {filename}: {resp.status_code}")
+        except Exception as e:
+            logger.warning(f"Failed to upload {filename} to Supabase storage: {e}")
+
+    return f"/static/generated/{filename}"
+
+
 def get_client(api_key: Optional[str] = None):
     """Initializes and returns a Google GenAI client if an API key is provided or present in the environment."""
     from google import genai

@@ -15,6 +15,7 @@ from ad_templates import (
 from competitor_ad_engine import resolve_reference_media
 from media_utils import (
     GENERATED_DIR,
+    save_generated_media,
     resolve_generated_path,
     mime_for_path,
     generate_gemini_image,
@@ -269,9 +270,7 @@ async def generate_single_meta_creative(
         raise RuntimeError(f"{model_meta['label']} did not return an image.")
 
     filename = f"meta_suite_{cid}_{uuid.uuid4().hex}.png"
-    with open(os.path.join(GENERATED_DIR, filename), "wb") as f:
-        f.write(image_bytes)
-    image_url = f"/static/generated/{filename}"
+    image_url = save_generated_media(filename, image_bytes, "image/png")
 
     return {
         "status": "success",

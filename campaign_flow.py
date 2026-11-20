@@ -25,7 +25,7 @@ from pydantic import BaseModel
 from google import genai
 from google.genai import types
 
-from media_utils import GENERATED_DIR, IMAGE_EXTS, MAX_IMAGE_BYTES, read_upload, is_public_http_url
+from media_utils import GENERATED_DIR, save_generated_media, IMAGE_EXTS, MAX_IMAGE_BYTES, read_upload, is_public_http_url
 from ad_templates import (
     TEMPLATES,
     MAX_CTA_WORDS,
@@ -845,9 +845,8 @@ async def analyze_brand(
             continue
         content, ext, mime = await read_upload(img, IMAGE_EXTS, ".jpg", MAX_IMAGE_BYTES)
         filename = f"product_{uuid.uuid4().hex}{ext}"
-        with open(os.path.join(GENERATED_DIR, filename), "wb") as f:
-            f.write(content)
-        image_paths.append(f"/static/generated/{filename}")
+        image_url = save_generated_media(filename, content, mime)
+        image_paths.append(image_url)
         image_parts.append(types.Part.from_bytes(data=content, mime_type=mime))
 
     comp = load_competitor_run_summary(competitor_run_id) if competitor_run_id else None

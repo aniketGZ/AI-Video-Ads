@@ -10,16 +10,18 @@ from contextlib import asynccontextmanager
 from typing import List, Optional
 
 from fastapi import Depends, FastAPI, HTTPException, UploadFile, File, Form, Header, Request
-from fastapi.responses import FileResponse, Response
+from fastapi.responses import FileResponse, Response, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware
 from google import genai
 from google.genai import types
+import requests
 
 from media_utils import (
     load_dotenv,
     sanitize_video_prompt,
     GENERATED_DIR,
+    save_generated_media,
     IMAGE_EXTS,
     VIDEO_EXTS,
     MAX_IMAGE_BYTES,
@@ -181,9 +183,7 @@ video_jobs = {}
 
 def _save_video_bytes(prefix: str, video_bytes: bytes) -> str:
     filename = f"{prefix}_{uuid.uuid4().hex}.mp4"
-    with open(os.path.join(GENERATED_DIR, filename), "wb") as f:
-        f.write(video_bytes)
-    return f"/static/generated/{filename}"
+    return save_generated_media(filename, video_bytes, "video/mp4")
 
 
 def _paste_block(prompt: str) -> str:
@@ -560,15 +560,14 @@ async def generate_studio_image(
                     pass
 
                 filename = f"banana_ad_{uuid.uuid4().hex}.png"
-                with open(os.path.join(GENERATED_DIR, filename), "wb") as f:
-                    f.write(image_bytes)
+                image_rel_url = save_generated_media(filename, image_bytes, "image/png")
 
                 return {
                     "index": idx,
                     "prompt": text,
                     "status": "success",
                     "filename": filename,
-                    "image_url": f"/static/generated/{filename}",
+                    "image_url": image_rel_url,
                     "aspect_ratio": aspect_ratio,
                     "resolution": res_clean,
                     "width": actual_width,
@@ -1077,6 +1076,62 @@ app.include_router(demo_session_router)
 app.include_router(auth_router)
 app.include_router(saved_router)
 app.include_router(templates_router)
+
+
+@app.get("/static/generated/{filename}")
+async def serve_static_generated(filename: str):
+    """Serve generated file from local /tmp or redirect to Supabase Storage if on another serverless instance."""
+    local_path = os.path.join(GENERATED_DIR, filename)
+    if os.path.exists(local_path):
+        return FileResponse(local_path)
+    
+    sb_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    if sb_url:
+        return RedirectResponse(f"{sb_url}/storage/v1/object/public/generated/{filename}", status_code=307)
+    raise HTTPException(status_code=404, detail="File not found")
+
+
+@app.get("/api/download")
+async def download_media(url: str, filename: Optional[str] = None):
+    """Universal direct file download endpoint that forces a browser download dialog."""
+    if not url:
+        raise HTTPException(status_code=400, detail="Missing url parameter")
+    clean_name = filename or os.path.basename(url.split("?")[0]) or "ad_creative.png"
+
+    # 1. Local path check
+    if url.startswith("/static/generated/"):
+        fname = os.path.basename(url)
+        local_path = os.path.join(GENERATED_DIR, fname)
+        if os.path.exists(local_path):
+            return FileResponse(
+                local_path,
+                filename=clean_name,
+                headers={"Content-Disposition": f'attachment; filename="{clean_name}"'}
+            )
+
+    # 2. Remote / Supabase Storage fetch
+    sb_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    fetch_url = url
+    if url.startswith("/static/generated/") and sb_url:
+        fetch_url = f"{sb_url}/storage/v1/object/public/generated/{os.path.basename(url)}"
+    elif not url.startswith("http://") and not url.startswith("https://") and sb_url:
+        fetch_url = f"{sb_url}/storage/v1/object/public/generated/{os.path.basename(url)}"
+
+    try:
+        r = requests.get(fetch_url, stream=True, timeout=30)
+        if not r.ok:
+            raise HTTPException(status_code=r.status_code, detail="Could not download file")
+        content_type = r.headers.get("Content-Type", "application/octet-stream")
+        return Response(
+            content=r.content,
+            media_type=content_type,
+            headers={
+                "Content-Disposition": f'attachment; filename="{clean_name}"',
+                "Cache-Control": "public, max-age=31536000",
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Download failed: {e}")
 
 
 # Mount generated directory first (handles /tmp/generated on Vercel seamlessly)
