@@ -13,10 +13,11 @@ import logging
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 import httpx
-from dotenv import load_dotenv
-
-# Ensure environment variables are loaded
-load_dotenv()
+try:
+    from media_utils import load_dotenv
+    load_dotenv()
+except Exception:
+    pass
 
 logger = logging.getLogger(__name__)
 
