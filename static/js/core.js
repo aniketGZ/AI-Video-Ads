@@ -3,7 +3,9 @@ const GEMINI_KEY_STORAGE = "gemini_api_key";
 
 function getGeminiKey() {
   try {
-    return (localStorage.getItem(GEMINI_KEY_STORAGE) || "").trim();
+    const k = (localStorage.getItem(GEMINI_KEY_STORAGE) || "").trim();
+    if (!k || k === "undefined" || k === "null" || k === "none") return "";
+    return k;
   } catch (e) {
     return "";
   }

@@ -144,6 +144,7 @@
         ${meta && meta.resolution ? `<span class="badge badge-accent">${esc(meta.resolution)}</span>` : ""}
         ${meta && meta.aspect_ratio ? `<span class="badge">${esc(meta.aspect_ratio)}</span>` : ""}
         ${dim ? `<span class="muted small num">${esc(dim)}</span>` : ""}
+        <button type="button" class="btn btn-sm btn-primary btn-edit-creative" data-edit-creative="${esc(url)}"><i class="fa-solid fa-paintbrush"></i> Edit</button>
         <a href="${esc(url)}" download class="btn btn-sm"><i class="fa-solid fa-download"></i> Download</a>
         <button type="button" class="btn btn-sm btn-ghost" data-dismiss-result><i class="fa-solid fa-xmark"></i> Close</button>
       </figcaption>
@@ -285,6 +286,7 @@
               <span class="badge badge-accent small">${esc(item.resolution || selectedRes)}</span>
               <div style="display:inline-flex; gap:10px; align-items:center;">
                 <button type="button" class="btn-link small btn-save-creative" data-type="image" data-url="${esc(item.image_url)}" data-prompt="${esc(p)}" data-aspect="${esc(imgAspect() || "1:1")}" title="Save prompt and image to library"><i class="fa-regular fa-bookmark"></i> Save Prompt</button>
+                <button type="button" class="btn-link small btn-edit-creative" data-edit-creative="${esc(item.image_url)}" title="Edit with Inpaint & Remove BG"><i class="fa-solid fa-paintbrush"></i> Edit</button>
                 <a href="${esc(item.image_url)}" download="${esc(item.filename || `image_${i+1}.png`)}" class="btn-link small" target="_blank"><i class="fa-solid fa-download"></i> Save</a>
               </div>
             </div>`;

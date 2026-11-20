@@ -69,8 +69,10 @@ _EXT_MIME = {
 }
 
 
-def load_dotenv(env_path: str = ".env") -> None:
+def load_dotenv(env_path: Optional[str] = None) -> None:
     """Load KEY=value lines from .env into os.environ without overwriting variables that are already set."""
+    if not env_path:
+        env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
     if not os.path.exists(env_path):
         return
     try:
@@ -81,10 +83,14 @@ def load_dotenv(env_path: str = ".env") -> None:
                     continue
                 key, val = line.split("=", 1)
                 key = key.strip()
-                if key and key not in os.environ:
+                if key and (key not in os.environ or not os.environ[key].strip()):
                     os.environ[key] = val.strip().strip("'\"")
     except Exception as e:
         logger.warning(f"Could not load {env_path}: {e}")
+
+
+# Automatically ensure .env is loaded on import
+load_dotenv()
 
 
 def save_generated_media(filename: str, data: bytes, mime_type: Optional[str] = None) -> str:
@@ -131,6 +137,8 @@ def get_client(api_key: Optional[str] = None):
     """Initializes and returns a Google GenAI client if an API key is provided or present in the environment."""
     from google import genai
 
+    if not isinstance(api_key, str) or str(api_key).strip().lower() in ("undefined", "null", "none"):
+        api_key = None
     key = api_key or os.environ.get("GEMINI_API_KEY")
     if not key or not str(key).strip():
         return None
@@ -139,6 +147,15 @@ def get_client(api_key: Optional[str] = None):
     except Exception as e:
         logger.warning(f"Could not initialize GenAI client: {e}")
         return None
+
+
+def require_gemini_client(api_key: Optional[str] = None):
+    """Returns an initialized GenAI client or raises HTTP 400 if missing."""
+    from fastapi import HTTPException
+    client = get_client(api_key)
+    if not client:
+        raise HTTPException(status_code=400, detail="A Gemini API key is required. Add it under API Keys.")
+    return client
 
 
 def mime_for_path(path: str, default: str = "image/jpeg") -> str:

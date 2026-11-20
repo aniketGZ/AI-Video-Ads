@@ -39,6 +39,8 @@ logger = logging.getLogger(__name__)
 
 def _get_genai_client(api_key: Optional[str] = None) -> Optional[genai.Client]:
     """Initializes and returns a Google GenAI client if an API key is provided or present in environment."""
+    if api_key and str(api_key).strip().lower() in ("undefined", "null", "none"):
+        api_key = None
     key = (api_key or os.environ.get("GEMINI_API_KEY") or "").strip()
     if not key:
         return None

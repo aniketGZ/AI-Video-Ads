@@ -386,6 +386,22 @@
         if (typeof window.showView === "function") window.showView("image", { push: true });
       });
     }
+
+    // Edit button in result
+    const editBtn = $("rec_btn_edit");
+    if (editBtn) {
+      editBtn.addEventListener("click", () => {
+        const resImg = $("rec_result_img");
+        if (resImg && resImg.src) {
+          const promptEl = $("rec_result_prompt");
+          const promptText = promptEl ? promptEl.textContent : "";
+          closeRecreateModal();
+          if (typeof window.openCreativeEditor === "function") {
+            window.openCreativeEditor({ url: resImg.src, prompt: promptText });
+          }
+        }
+      });
+    }
   }
 
   function handleProductFile(file) {
@@ -794,6 +810,13 @@
               <button type="button" class="btn-saved-action btn-load-studio" data-load-type="${isVid ? "video" : "image"}" data-load-prompt="${esc(item.prompt)}" title="Populate into Studio">
                 <i class="fa-solid fa-arrow-up-right-from-square"></i> Use in Studio
               </button>
+              ${
+                !isVid
+                  ? `<button type="button" class="btn-saved-action btn-edit-creative" data-edit-creative="${esc(item.media_url)}" title="Edit with Inpaint & Remove BG">
+                      <i class="fa-solid fa-paintbrush"></i> Edit
+                    </button>`
+                  : ""
+              }
               
               <div class="saved-actions-right">
                 <!-- Move to Folder Menu -->

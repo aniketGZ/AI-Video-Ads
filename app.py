@@ -55,6 +55,7 @@ from upgrade_routes import router as upgrade_router  # noqa: E402
 from auth import router as auth_router  # noqa: E402
 from saved_routes import router as saved_router  # noqa: E402
 from templates_routes import router as templates_router  # noqa: E402
+from edit_routes import router as edit_router  # noqa: E402
 
 # Pro and Studio only (see pricing.PLANS)
 CAMPAIGN_ACCESS = [Depends(require_feature("campaign_manager"))]
@@ -129,6 +130,8 @@ if _cors_origins:
 
 
 def get_client(api_key: Optional[str] = None) -> Optional[genai.Client]:
+    if not isinstance(api_key, str) or str(api_key).strip().lower() in ("undefined", "null", "none"):
+        api_key = None
     key = api_key or os.environ.get("GEMINI_API_KEY")
     if not key or not str(key).strip():
         return None
@@ -1076,6 +1079,7 @@ app.include_router(demo_session_router)
 app.include_router(auth_router)
 app.include_router(saved_router)
 app.include_router(templates_router)
+app.include_router(edit_router)
 
 
 @app.get("/static/generated/{filename}")

@@ -1378,7 +1378,8 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
                 <img id="rec_result_img" src="" alt="Generated Ad Creative">
               </div>
               <div class="rec-result-actions">
-                <a id="rec_download_btn" href="#" download="ad_creative.png" class="btn btn-sm btn-primary" target="_blank"><i class="fa-solid fa-download"></i> Download</a>
+                <button type="button" class="btn btn-sm btn-primary" id="rec_btn_edit"><i class="fa-solid fa-paintbrush"></i> Edit Creative</button>
+                <a id="rec_download_btn" href="#" download="ad_creative.png" class="btn btn-sm btn-outline" target="_blank"><i class="fa-solid fa-download"></i> Download</a>
                 <button type="button" class="btn btn-sm btn-outline" id="rec_btn_studio"><i class="fa-solid fa-arrow-up-right-from-square"></i> Studio</button>
                 <button type="button" class="btn btn-sm btn-ghost" id="rec_btn_again"><i class="fa-solid fa-rotate-right"></i> Try Again</button>
               </div>
@@ -1397,6 +1398,205 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
               <span class="rec-btn-chip">Nano Banana 2.1</span>
             </button>
           </form>
+        </div>
+      </div>
+    </div>
+  </dialog>
+
+  <!-- ============================================================== -->
+  <!-- Creative Editor Modal (Freehand Draw Inpainting & Remove BG)   -->
+  <!-- ============================================================== -->
+  <dialog id="creative_editor_modal" class="editor-dialog" aria-labelledby="editor_modal_title">
+    <div class="editor-modal-container">
+      <!-- Editor Header -->
+      <header class="editor-header">
+        <div class="editor-header-left">
+          <span class="editor-brand-chip"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Studio Editor</span>
+          <h3 id="editor_modal_title" class="editor-title">Edit Creative</h3>
+          <span class="badge badge-accent" id="editor_dim_badge">Ready</span>
+        </div>
+        <div class="editor-header-actions">
+          <button type="button" class="btn btn-ghost btn-sm" id="btn_editor_compare" title="Press and hold to view original">
+            <i class="fa-solid fa-code-compare"></i> <span>Hold to Compare</span>
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn_close_editor" aria-label="Close editor">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+      </header>
+
+      <!-- Editor Main Layout: Stage on left, Tools panel on right -->
+      <div class="editor-body-grid">
+        <!-- Center/Left: Interactive Drawing Stage -->
+        <div class="editor-stage-pane">
+          <div class="editor-stage-viewport" id="editor_stage_viewport">
+            <div class="editor-canvas-wrap" id="editor_canvas_wrap">
+              <img id="editor_stage_img" src="" alt="Creative Preview" draggable="false">
+              <canvas id="editor_mask_canvas"></canvas>
+              <!-- Cursor Follower Ring -->
+              <div id="editor_brush_cursor" class="editor-brush-cursor" hidden></div>
+              <!-- Loading Overlay -->
+              <div id="editor_loader" class="editor-loader" hidden>
+                <div class="spinner"></div>
+                <div class="editor-loader-text" id="editor_loader_text">Gemini AI is processing your creative...</div>
+                <div class="editor-loader-sub">Nano Banana engine is synthesizing photorealistic modifications</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Bottom Stage Floating HUD Toolbar -->
+          <div class="editor-stage-hud">
+            <div class="hud-group" id="hud_brush_controls">
+              <span class="hud-label"><i class="fa-solid fa-paintbrush"></i> Brush</span>
+              <input type="range" id="editor_brush_slider" min="8" max="90" value="28" class="hud-slider" title="Brush Size">
+              <span class="hud-val num" id="editor_brush_size_val">28px</span>
+              <span class="hud-sep"></span>
+              <button type="button" class="btn btn-ghost btn-xs" id="btn_editor_undo" title="Undo stroke">
+                <i class="fa-solid fa-rotate-left"></i> Undo
+              </button>
+              <button type="button" class="btn btn-ghost btn-xs" id="btn_editor_clear_mask" title="Clear drawn mask">
+                <i class="fa-solid fa-trash-can"></i> Clear Mask
+              </button>
+            </div>
+            <div class="hud-group">
+              <span class="badge" id="editor_mode_indicator">Inpaint Mode</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Tool Controls & Side Panel -->
+        <div class="editor-tools-pane">
+          <!-- Tool Mode Switcher Tabs -->
+          <div class="editor-mode-tabs" role="tablist">
+            <button type="button" class="editor-tab active" id="tab_tool_inpaint" role="tab" aria-selected="true">
+              <i class="fa-solid fa-paintbrush"></i>
+              <span>Inpaint &amp; Modify</span>
+            </button>
+            <button type="button" class="editor-tab" id="tab_tool_remove_bg" role="tab" aria-selected="false">
+              <i class="fa-solid fa-person-circle-minus"></i>
+              <span>Remove BG</span>
+            </button>
+          </div>
+
+          <!-- Tab Content: Inpaint -->
+          <div class="editor-tab-panel active" id="panel_tool_inpaint">
+            <div class="editor-section-card">
+              <div class="editor-sec-head">
+                <label for="editor_inpaint_prompt" class="label">1. Describe What to Modify</label>
+                <span class="muted small">Applies to the highlighted region</span>
+              </div>
+              <textarea id="editor_inpaint_prompt" class="textarea editor-prompt-area" rows="3" placeholder="E.g. Add high-speed water splashes, replace sneaker sole with neon gold, add dramatic sun rays, add marble podium..."></textarea>
+              
+              <!-- Quick Suggestions -->
+              <div class="editor-chips-wrap">
+                <span class="chips-label">Quick Ideas:</span>
+                <div class="editor-chips">
+                  <button type="button" class="chip-btn" data-inpaint-suggest="Add dynamic splash droplets and water ripples around the product">Splash Effect</button>
+                  <button type="button" class="chip-btn" data-inpaint-suggest="Add warm golden hour sun flare and soft rim lighting">Golden Hour</button>
+                  <button type="button" class="chip-btn" data-inpaint-suggest="Place on an elegant white Carrara marble pedestal with subtle studio reflection">Marble Pedestal</button>
+                  <button type="button" class="chip-btn" data-inpaint-suggest="Add vibrant neon cybernetic glowing light trails">Neon Aura</button>
+                  <button type="button" class="chip-btn" data-inpaint-suggest="Add organic green tropical monstera leaves and moss elements">Botanical Leaves</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="editor-section-card">
+              <div class="editor-sec-head">
+                <span class="label">2. Engine Settings</span>
+              </div>
+              <div class="field">
+                <label for="editor_inpaint_model" class="muted small">Gemini Model</label>
+                <select id="editor_inpaint_model" class="select select-sm">
+                  <option value="nano-banana-pro" selected>Gemini Nano Banana Pro (Highest Quality)</option>
+                  <option value="nano-banana-2.1">Gemini Nano Banana 2.1 (Fast Commercial)</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-primary editor-apply-btn" id="btn_apply_inpaint">
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>Apply Inpainting</span>
+            </button>
+          </div>
+
+          <!-- Tab Content: Remove Background -->
+          <div class="editor-tab-panel" id="panel_tool_remove_bg" hidden>
+            <div class="editor-section-card">
+              <div class="editor-sec-head">
+                <span class="label">1-Click Subject Isolation</span>
+                <span class="muted small">Automatically detects foreground product or person</span>
+              </div>
+              <p class="muted small" style="margin-bottom: 12px;">
+                Gemini AI isolates the main subject with crisp precision and replaces or removes the background.
+              </p>
+
+              <div class="bg-style-grid">
+                <label class="bg-style-card selected">
+                  <input type="radio" name="bg_style_choice" value="transparent" checked>
+                  <div class="bg-style-preview checker-bg">
+                    <i class="fa-solid fa-border-none"></i>
+                  </div>
+                  <span class="bg-style-title">Transparent (PNG)</span>
+                  <span class="bg-style-desc">Clean cutout for compositing</span>
+                </label>
+
+                <label class="bg-style-card">
+                  <input type="radio" name="bg_style_choice" value="studio_white">
+                  <div class="bg-style-preview white-bg">
+                    <i class="fa-solid fa-sun"></i>
+                  </div>
+                  <span class="bg-style-title">Studio White</span>
+                  <span class="bg-style-desc">Pure seamless commercial</span>
+                </label>
+
+                <label class="bg-style-card">
+                  <input type="radio" name="bg_style_choice" value="studio_neutral">
+                  <div class="bg-style-preview gray-bg">
+                    <i class="fa-solid fa-cube"></i>
+                  </div>
+                  <span class="bg-style-title">Studio Neutral</span>
+                  <span class="bg-style-desc">Soft warm gray gradient</span>
+                </label>
+
+                <label class="bg-style-card">
+                  <input type="radio" name="bg_style_choice" value="solid_black">
+                  <div class="bg-style-preview black-bg">
+                    <i class="fa-solid fa-moon"></i>
+                  </div>
+                  <span class="bg-style-title">Luxury Black</span>
+                  <span class="bg-style-desc">Dramatic dark rim lighting</span>
+                </label>
+              </div>
+            </div>
+
+            <div class="editor-section-card">
+              <div class="field">
+                <label for="editor_removebg_model" class="muted small">Gemini Model</label>
+                <select id="editor_removebg_model" class="select select-sm">
+                  <option value="nano-banana-pro" selected>Gemini Nano Banana Pro (Precision Edges)</option>
+                  <option value="nano-banana-2.1">Gemini Nano Banana 2.1</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="button" class="btn btn-primary editor-apply-btn" id="btn_apply_remove_bg">
+              <i class="fa-solid fa-scissors"></i>
+              <span>Isolate Subject</span>
+            </button>
+          </div>
+
+          <!-- Editor Footer Actions -->
+          <footer class="editor-footer-actions">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn_editor_use_as_base" title="Use edited result as base for further chained edits">
+              <i class="fa-solid fa-layer-group"></i> <span>Chain Edits</span>
+            </button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn_editor_save_lib" title="Save this creative to Library">
+              <i class="fa-solid fa-bookmark"></i> <span>Save</span>
+            </button>
+            <button type="button" class="btn btn-primary btn-sm" id="btn_editor_download" title="Download high-resolution image">
+              <i class="fa-solid fa-download"></i> <span>Download</span>
+            </button>
+          </footer>
         </div>
       </div>
     </div>
@@ -1426,6 +1626,7 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
   <script src="/static/js/studios.js?v=3.6.0"></script>
   <script src="/static/js/viewer.js?v=1.0.0"></script>
   <script src="/static/js/saved_creatives.js?v=1.1.0"></script>
+  <script src="/static/js/editor.js?v=1.0.0"></script>
   <script src="/static/js/composer.js?v=1.2.0"></script>
   <script src="/static/js/batch.js?v=1.3.0"></script>
   <script src="/static/js/navmenu.js?v=1.0.0"></script>

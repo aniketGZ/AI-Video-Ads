@@ -281,6 +281,8 @@ class StrategyRequest(BaseModel):
 # Helpers
 # ---------------------------------------------------------------------------
 def _require_client(api_key: Optional[str]) -> genai.Client:
+    if not isinstance(api_key, str) or str(api_key).strip().lower() in ("undefined", "null", "none"):
+        api_key = None
     key = (api_key or os.environ.get("GEMINI_API_KEY") or "").strip()
     if not key:
         raise HTTPException(status_code=400, detail="A Gemini API key is required. Add it under API Keys.")
