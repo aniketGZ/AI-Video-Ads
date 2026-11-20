@@ -1,13 +1,13 @@
 """
-Plan checks for API routes.
+Plan checks and user authentication dependencies for API routes.
 
-Until user accounts exist, every request gets the plan named by the APP_PLAN environment
-variable (default "studio", so nothing changes for current use). Set APP_PLAN=starter to see
-what a Starter user sees. When accounts land, current_plan() reads the signed-in user's plan
-instead and nothing else here changes.
+Reads the signed-in user's plan from Supabase Auth. Unauthenticated callers receive the
+plan set by APP_PLAN (default "free" when Supabase is configured, or "studio" when in local
+development mode with no auth).
 """
 
 import os
+from typing import Any, Dict, Optional
 
 from fastapi import Depends, HTTPException, Request
 
@@ -16,9 +16,29 @@ from pricing import FEATURES, PLANS, plan_has, plans_with
 DEFAULT_PLAN = "studio"
 
 
-def current_plan(request: Request) -> str:
-    plan = (os.environ.get("APP_PLAN") or DEFAULT_PLAN).strip().lower()
-    return plan if plan in PLANS else DEFAULT_PLAN
+async def current_user(request: Request) -> Optional[Dict[str, Any]]:
+    """FastAPI dependency to get the current authenticated Supabase user, or None."""
+    from auth import get_current_user
+    return await get_current_user(request)
+
+
+async def current_plan(request: Request) -> str:
+    """Resolve the active plan: authenticated user plan -> APP_PLAN -> fallback."""
+    from auth import get_current_user, is_auth_configured
+
+    user = await get_current_user(request)
+    if user and user.get("plan"):
+        plan = user["plan"].strip().lower()
+        if plan in PLANS:
+            return plan
+
+    env_plan = (os.environ.get("APP_PLAN") or "").strip().lower()
+    if env_plan in PLANS:
+        return env_plan
+
+    # If Supabase Auth is enabled, default guest requests to 'free' plan;
+    # otherwise default to 'studio' for seamless local dev.
+    return "free" if is_auth_configured() else DEFAULT_PLAN
 
 
 def require_feature(feature: str):
@@ -27,7 +47,7 @@ def require_feature(feature: str):
     allowed = plans_with(feature)
     names = " and ".join(PLANS[p]["label"] for p in allowed)
 
-    def check(plan: str = Depends(current_plan)) -> str:
+    async def check(plan: str = Depends(current_plan)) -> str:
         if not plan_has(plan, feature):
             raise HTTPException(
                 status_code=403,
@@ -41,4 +61,9 @@ def require_feature(feature: str):
 
 def plan_summary(plan: str) -> dict:
     p = PLANS[plan]
-    return {"plan": plan, "label": p["label"], "features": list(p.get("features", []))}
+    return {
+        "plan": plan,
+        "label": p["label"],
+        "credits": p.get("credits", 0),
+        "features": list(p.get("features", [])),
+    }

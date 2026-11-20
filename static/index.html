@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <link rel="stylesheet" href="css/style.css?v=6.5.1">
+  <link rel="stylesheet" href="css/auth.css?v=1.0.0">
 </head>
 <body>
   <div class="ambient" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
@@ -160,6 +161,24 @@
     <div class="sidebar-tools topbar-tools">
       <a class="plan-pill" id="plan_pill" href="/pricing" hidden><i class="fa-solid fa-tag"></i><span>Pricing</span></a>
       <button type="button" class="upgrade-pill" id="upgrade_pill" data-upgrade hidden><i class="fa-solid fa-crown"></i><span>Upgrade</span></button>
+      <div class="user-menu-wrap" id="user_menu_wrap">
+        <button type="button" class="user-pill" id="user_pill" data-authenticated="false" aria-label="User Account">
+          <i class="fa-solid fa-user"></i>
+          <span class="user-pill-email" id="user_pill_label">Sign in</span>
+          <span class="user-pill-tag" id="user_pill_tag" hidden>free</span>
+        </button>
+        <div class="user-dropdown" id="user_dropdown" hidden>
+          <div class="user-dropdown-head">
+            <div class="user-dropdown-name" id="dropdown_user_email">user@example.com</div>
+            <div class="user-dropdown-meta">
+              <span id="dropdown_user_plan">FREE PLAN</span>
+              <a href="/pricing" style="color: var(--accent); text-decoration: none;">Change</a>
+            </div>
+          </div>
+          <a class="user-dropdown-item" href="/pricing"><i class="fa-solid fa-tag"></i> Plans & Pricing</a>
+          <button type="button" class="user-dropdown-item danger" id="sign_out_btn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</button>
+        </div>
+      </div>
       <button type="button" class="btn btn-sm btn-ghost tool-btn key-btn" id="key_btn" aria-label="Gemini API key" title="Gemini API key">
         <i class="fa-solid fa-key"></i><span class="tool-label" id="key_label">API key</span><span class="key-state" id="key_state"></span><span class="key-dot" id="key_dot"></span>
       </button>
@@ -707,6 +726,36 @@
     </div>
   </dialog>
 
+  <!-- Supabase Authentication Dialog -->
+  <dialog id="auth_dialog" class="auth-dialog" aria-labelledby="auth_title">
+    <div class="auth-dialog-body">
+      <button type="button" class="auth-close-btn" id="auth_close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
+      <div class="auth-header">
+        <h3 id="auth_title">Welcome back</h3>
+        <p id="auth_lede">Sign in to access your campaigns and generations.</p>
+      </div>
+
+      <div class="auth-tabs" role="tablist">
+        <button type="button" class="auth-tab-btn active" id="auth_tab_signin">Sign in</button>
+        <button type="button" class="auth-tab-btn" id="auth_tab_signup">Create account</button>
+      </div>
+
+      <div id="auth_msg" class="auth-msg error" hidden></div>
+
+      <form id="auth_form" class="auth-form">
+        <div class="auth-field">
+          <label for="auth_email">Email address</label>
+          <input type="email" id="auth_email" required placeholder="name@company.com" autocomplete="email">
+        </div>
+        <div class="auth-field">
+          <label for="auth_password">Password</label>
+          <input type="password" id="auth_password" required placeholder="At least 6 characters" autocomplete="current-password">
+        </div>
+        <button type="submit" class="auth-submit-btn" id="auth_submit_btn">Sign in</button>
+      </form>
+    </div>
+  </dialog>
+
   <dialog id="preset_modal" class="preset-dialog">
     <div class="preset-modal-content">
       <header class="preset-modal-head">
@@ -763,6 +812,8 @@
 
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/auth.js?v=1.0.0"></script>
   <script src="js/core.js?v=3.9.0"></script>
   <script src="js/render_loader.js?v=3.1.0"></script>
   <script src="js/campaign.js?v=3.3.1"></script>
