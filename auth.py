@@ -62,16 +62,30 @@ async def verify_supabase_token(token: str) -> Optional[Dict[str, Any]]:
             if res.status_code == 200:
                 data = res.json()
                 metadata = data.get("user_metadata") or {}
+                app_metadata = data.get("app_metadata") or {}
+                email = (data.get("email") or "").strip().lower()
+                is_admin = bool(
+                    metadata.get("is_admin")
+                    or app_metadata.get("is_admin")
+                    or metadata.get("role") == "admin"
+                    or email == "aniket@growthz.ai"
+                )
+                plan = (metadata.get("plan") or app_metadata.get("plan") or "free").strip().lower()
+                if is_admin and (plan == "free" or plan not in PLANS):
+                    plan = "enterprise"
+                if plan not in PLANS:
+                    plan = "free"
+
                 user_info = {
                     "id": data.get("id"),
                     "email": data.get("email"),
-                    "role": data.get("role", "authenticated"),
-                    "plan": (metadata.get("plan") or "free").strip().lower(),
+                    "role": "admin" if is_admin else data.get("role", "authenticated"),
+                    "is_admin": is_admin,
+                    "plan": plan,
                     "user_metadata": metadata,
+                    "app_metadata": app_metadata,
                     "created_at": data.get("created_at"),
                 }
-                if user_info["plan"] not in PLANS:
-                    user_info["plan"] = "free"
                 _USER_CACHE[token] = (now + CACHE_TTL_SECONDS, user_info)
                 return user_info
     except Exception:

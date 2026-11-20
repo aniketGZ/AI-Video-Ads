@@ -78,16 +78,22 @@
 
     if (session && session.user) {
       const email = session.user.email || "Account";
-      const plan = (session.user.user_metadata && session.user.user_metadata.plan) || "free";
+      const meta = session.user.user_metadata || {};
+      const isTopUser = email.toLowerCase() === "aniket@growthz.ai" || meta.is_admin;
+      const plan = isTopUser ? "enterprise" : ((meta.plan || "free").toLowerCase());
 
-      if (userLabel) userLabel.textContent = email.split("@")[0];
+      if (userLabel) userLabel.textContent = meta.name || email.split("@")[0];
       if (userTag) {
-        userTag.textContent = plan;
+        userTag.textContent = isTopUser ? "MAX ACCESS" : plan.toUpperCase();
         userTag.hidden = false;
+        if (isTopUser) {
+          userTag.style.background = "var(--accent)";
+          userTag.style.color = "#fff";
+        }
       }
       if (dropdownEmail) dropdownEmail.textContent = email;
-      if (dropdownPlan) dropdownPlan.textContent = `${plan.toUpperCase()} Plan`;
-      pill.title = `Signed in as ${email}`;
+      if (dropdownPlan) dropdownPlan.textContent = isTopUser ? "ENTERPRISE (MAX ACCESS)" : `${plan.toUpperCase()} Plan`;
+      pill.title = `Signed in as ${email} (${isTopUser ? "Enterprise Max" : plan.toUpperCase()})`;
       pill.dataset.authenticated = "true";
     } else {
       if (userLabel) userLabel.textContent = "Sign in";

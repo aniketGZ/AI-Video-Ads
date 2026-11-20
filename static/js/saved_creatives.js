@@ -515,7 +515,7 @@
     const email = user.email || "creator@example.com";
     const name = user.name || email.split("@")[0] || "Creator";
     const initials = (name.slice(0, 2) || "AC").toUpperCase();
-    const planLabel = (user.plan_label || user.plan || "Free").toUpperCase() + " PLAN";
+    const planLabel = user.plan_label ? user.plan_label.toUpperCase() : `${(user.plan || "Free").toUpperCase()} PLAN`;
 
     // Avatar & Hero
     if ($("prof_avatar_initials")) $("prof_avatar_initials").textContent = initials;

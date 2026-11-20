@@ -93,6 +93,14 @@ PLANS = {
         "features": ["campaign_manager"],
         "limits": {},
     },
+    "enterprise": {
+        "label": "Enterprise",
+        "price_usd_month": 499,
+        "credits": 100000,
+        "renews": True,
+        "features": ["campaign_manager"],
+        "limits": {},
+    },
 }
 
 # Features some plans leave out. Image, Video and Batch studios are open to every plan.
