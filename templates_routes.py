@@ -16,14 +16,13 @@ from google.genai import types
 
 from access import current_user
 import database
+from media_utils import GENERATED_DIR
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/templates", tags=["Pinterest Templates"])
 
 TEMPLATES_JSON_PATH = os.path.join(os.path.dirname(__file__), "data", "explore_templates.json")
-GENERATED_DIR = os.path.join(os.path.dirname(__file__), "static", "generated")
-os.makedirs(GENERATED_DIR, exist_ok=True)
 
 _TEMPLATES_CACHE: Optional[List[Dict[str, Any]]] = None
 

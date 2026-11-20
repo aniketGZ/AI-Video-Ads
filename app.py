@@ -68,7 +68,10 @@ MAX_VIDEO_REF_IMAGES = 7  # Omni Flash reference images per video
 MAX_PROMPTS_PER_REQUEST = 10  # Prompts started together, each its own render
 _video_tasks: set = set()  # keeps running render tasks referenced until they finish
 
-os.makedirs(GENERATED_DIR, exist_ok=True)
+try:
+    os.makedirs(GENERATED_DIR, exist_ok=True)
+except Exception:
+    pass
 
 
 def cleanup_generated_files() -> None:
@@ -1066,6 +1069,10 @@ app.include_router(auth_router)
 app.include_router(saved_router)
 app.include_router(templates_router)
 
+
+# Mount generated directory first (handles /tmp/generated on Vercel seamlessly)
+if os.path.exists(GENERATED_DIR):
+    app.mount("/static/generated", StaticFiles(directory=GENERATED_DIR), name="static_generated")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.mount("/css", StaticFiles(directory="static/css"), name="css")

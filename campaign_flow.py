@@ -702,7 +702,7 @@ def _prompt_batch_instructions(
 # ---------------------------------------------------------------------------
 # Step 2 helpers: voice rules, proof bank, customer language, market
 # ---------------------------------------------------------------------------
-BRAND_PROFILE_DIR = os.path.join("data", "brands")
+BRAND_PROFILE_DIR = "/tmp/data/brands" if os.environ.get("VERCEL") else os.path.join("data", "brands")
 
 
 def _grounding_sources(response: Any) -> List[str]:

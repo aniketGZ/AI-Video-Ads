@@ -49,7 +49,7 @@ def _get_genai_client(api_key: Optional[str] = None) -> Optional[genai.Client]:
 
 batch_prompt_router = APIRouter(prefix="/api/batch-prompts", tags=["batch-prompts"])
 
-BATCH_JOBS_FILE = os.path.join("data", "batch_jobs.json")
+BATCH_JOBS_FILE = "/tmp/batch_jobs.json" if os.environ.get("VERCEL") else os.path.join("data", "batch_jobs.json")
 _jobs_lock = threading.Lock()
 _batch_jobs: Dict[str, Dict[str, Any]] = {}
 _job_controls: Dict[str, Dict[str, bool]] = {}  # {batch_id: {"paused": bool, "cancelled": bool}}

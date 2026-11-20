@@ -11,7 +11,16 @@ from bs4 import BeautifulSoup
 
 logger = logging.getLogger(__name__)
 
-GENERATED_DIR = "static/generated"
+if os.environ.get("VERCEL"):
+    GENERATED_DIR = "/tmp/generated"
+else:
+    GENERATED_DIR = "static/generated"
+
+try:
+    os.makedirs(GENERATED_DIR, exist_ok=True)
+except Exception:
+    pass
+
 GENERATED_URL_PREFIX = "/static/generated/"
 
 IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".gif"}

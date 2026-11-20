@@ -8,7 +8,7 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 # Kept outside /static so job prompts and scripts are not publicly downloadable.
-JOBS_CACHE_FILE = os.path.join("data", "jobs_cache.json")
+JOBS_CACHE_FILE = "/tmp/jobs_cache.json" if os.environ.get("VERCEL") else os.path.join("data", "jobs_cache.json")
 JOB_RETENTION_SECONDS = 7 * 24 * 3600
 
 _lock = threading.Lock()

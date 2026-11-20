@@ -21,7 +21,12 @@ except Exception:
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = os.path.join("data", "ad_studio.db")
+if os.environ.get("VERCEL"):
+    DB_DIR = "/tmp/data"
+    DB_PATH = "/tmp/ad_studio.db"
+else:
+    DB_DIR = "data"
+    DB_PATH = os.path.join("data", "ad_studio.db")
 
 
 def _get_supabase_url() -> str:
@@ -48,7 +53,10 @@ def _clean_uuid(val: Any) -> Optional[str]:
 
 def init_db():
     """Initialize local SQLite database tables if not exist and run migrations."""
-    os.makedirs("data", exist_ok=True)
+    try:
+        os.makedirs(DB_DIR, exist_ok=True)
+    except Exception:
+        pass
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
 
