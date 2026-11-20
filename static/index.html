@@ -179,9 +179,6 @@
           <button type="button" class="user-dropdown-item danger" id="sign_out_btn"><i class="fa-solid fa-arrow-right-from-bracket"></i> Sign out</button>
         </div>
       </div>
-      <button type="button" class="btn btn-sm btn-ghost tool-btn key-btn" id="key_btn" aria-label="Gemini API key" title="Gemini API key">
-        <i class="fa-solid fa-key"></i><span class="tool-label" id="key_label">API key</span><span class="key-state" id="key_state"></span><span class="key-dot" id="key_dot"></span>
-      </button>
     </div>
   </header>
 
@@ -667,23 +664,6 @@
       </div>
     </div>
   </main>
-
-  <!-- API key -->
-  <dialog id="key_dialog">
-    <form method="dialog" class="dialog-body" id="key_form">
-      <h3>Gemini API key</h3>
-      <p>Powers research, prompt writing, Nano Banana 2.1 and Omni Flash. Saved in this browser only and sent only to this app's server. <a class="dialog-link" href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get a key from Google AI Studio</a></p>
-      <label class="label" for="key_input">Key</label>
-      <div class="key-field">
-        <input type="password" class="input" id="key_input" placeholder="AIzaSy…" autocomplete="off" spellcheck="false">
-        <button type="button" class="btn-icon key-toggle" id="key_toggle" aria-label="Show key" aria-pressed="false"><i class="fa-regular fa-eye"></i></button>
-      </div>
-      <div class="dialog-actions">
-        <button type="button" class="btn btn-ghost" id="key_cancel">Cancel</button>
-        <button type="submit" class="btn btn-primary">Save</button>
-      </div>
-    </form>
-  </dialog>
 
   <!-- ============================================================== -->
   <!-- Creative Reference Library Modal (Pinterest Design Reference Presets) -->

@@ -177,18 +177,10 @@ async function pollJob(jobId, { intervalMs = 5000, maxMs = 30 * 60 * 1000, onPro
 }
 
 // Every network call needs the key; send people to the key dialog instead of letting the request fail.
-// Once the key is saved the interrupted action carries on, so nobody has to press the same button twice.
+// API key is handled directly by the server environment on Render
 let afterKeySaved = null;
 function requireKey(retry) {
-  if (getGeminiKey()) return true;
-  const from = document.activeElement;
-  afterKeySaved = retry || (() => {
-    const form = from && from.closest && from.closest("form");
-    if (form && form.classList.contains("composer")) form.requestSubmit();
-    else if (from && from.tagName === "BUTTON" && from.isConnected) from.click();
-  });
-  openKeyDialog("Add your Gemini API key to continue.");
-  return false;
+  return true;
 }
 
 // ---------------------------------------------------------------- confirm dialog
@@ -226,42 +218,65 @@ function askConfirm(title, text, okLabel = "Continue", { skipKey } = {}) {
 
 // ---------------------------------------------------------------- API key dialog
 function updateKeyDot() {
+  const btn = document.getElementById("key_btn");
+  if (!btn) return;
   const ok = !!getGeminiKey();
-  document.getElementById("key_dot").classList.toggle("ok", ok);
-  document.getElementById("key_btn").classList.toggle("is-missing", !ok);
-  document.getElementById("key_label").textContent = ok ? "API key" : "Add API key";
+  const dot = document.getElementById("key_dot");
+  if (dot) dot.classList.toggle("ok", ok);
+  btn.classList.toggle("is-missing", !ok);
+  const lbl = document.getElementById("key_label");
+  if (lbl) lbl.textContent = ok ? "API key" : "Add API key";
   const state = document.getElementById("key_state");
   if (state) state.textContent = ok ? "Saved" : "";
 }
 
 function setKeyVisible(visible) {
   const toggle = document.getElementById("key_toggle");
-  document.getElementById("key_input").type = visible ? "text" : "password";
+  const input = document.getElementById("key_input");
+  if (!toggle || !input) return;
+  input.type = visible ? "text" : "password";
   toggle.setAttribute("aria-pressed", String(visible));
   toggle.setAttribute("aria-label", visible ? "Hide key" : "Show key");
-  toggle.querySelector("i").className = visible ? "fa-regular fa-eye-slash" : "fa-regular fa-eye";
+  const icon = toggle.querySelector("i");
+  if (icon) icon.className = visible ? "fa-regular fa-eye-slash" : "fa-regular fa-eye";
 }
 
-const KEY_DIALOG_INTRO = document.querySelector("#key_dialog h3").textContent;
+const KEY_DIALOG_EL = document.querySelector("#key_dialog h3");
+const KEY_DIALOG_INTRO = KEY_DIALOG_EL ? KEY_DIALOG_EL.textContent : "";
 function openKeyDialog(title) {
   const dialog = document.getElementById("key_dialog");
-  document.querySelector("#key_dialog h3").textContent = typeof title === "string" ? title : KEY_DIALOG_INTRO;
-  document.getElementById("key_input").value = getGeminiKey();
+  if (!dialog) return;
+  const h3 = document.querySelector("#key_dialog h3");
+  if (h3) h3.textContent = typeof title === "string" ? title : KEY_DIALOG_INTRO;
+  const input = document.getElementById("key_input");
+  if (input) input.value = getGeminiKey();
   setKeyVisible(false);
   dialog.showModal();
-  document.getElementById("key_input").focus();
+  if (input) input.focus();
 }
 
-document.getElementById("key_btn").addEventListener("click", () => openKeyDialog());
-document.getElementById("key_toggle").addEventListener("click", () => setKeyVisible(document.getElementById("key_input").type === "password"));
-document.getElementById("key_cancel").addEventListener("click", () => document.getElementById("key_dialog").close());
+const keyBtnEl = document.getElementById("key_btn");
+if (keyBtnEl) keyBtnEl.addEventListener("click", () => openKeyDialog());
+const keyToggleEl = document.getElementById("key_toggle");
+if (keyToggleEl) keyToggleEl.addEventListener("click", () => {
+  const inp = document.getElementById("key_input");
+  if (inp) setKeyVisible(inp.type === "password");
+});
+const keyCancelEl = document.getElementById("key_cancel");
+if (keyCancelEl) keyCancelEl.addEventListener("click", () => {
+  const dlg = document.getElementById("key_dialog");
+  if (dlg) dlg.close();
+});
 let keyJustSaved = false;
-document.getElementById("key_form").addEventListener("submit", () => {
-  setGeminiKey(document.getElementById("key_input").value);
+const keyFormEl = document.getElementById("key_form");
+if (keyFormEl) keyFormEl.addEventListener("submit", () => {
+  const inp = document.getElementById("key_input");
+  if (inp) setGeminiKey(inp.value);
   keyJustSaved = !!getGeminiKey();
   notify(keyJustSaved ? "API key saved." : "API key removed.", "success");
 });
-document.getElementById("key_dialog").addEventListener("close", () => {
+const keyDialogEl = document.getElementById("key_dialog");
+if (keyDialogEl) keyDialogEl.addEventListener("close", () => {
   const retry = keyJustSaved ? afterKeySaved : null;
   keyJustSaved = false;
   afterKeySaved = null;

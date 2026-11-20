@@ -4,14 +4,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ad Studio — Cinema-Grade AI Video & Image Ads</title>
-  <meta name="description" content="Turn any brand URL or prompt into high-converting 9:16 video reels and 4:5 image ads. Powered by Gemini Omni Flash 1.2 and Nano Banana Pro.">
+  <meta name="description" content="Turn any brand URL or prompt into high-converting 9:16 video reels and 4:5 image ads. Powered by Ad Studio autonomous creative pipeline.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   
-  <link rel="stylesheet" href="/static/landing/landing.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/landing/landing.css?v=1.0.1">
   <link rel="stylesheet" href="/static/css/auth.css?v=1.0.0">
 </head>
 <body>
@@ -56,7 +56,7 @@
     <div class="container">
       <div class="hero-pill">
         <span class="pill-dot"></span>
-        <span>Powered by Omni Flash 1.2 &amp; Nano Banana Pro</span>
+        <span>Commercial AI Video &amp; Image Engine</span>
       </div>
 
       <h1 class="hero-title">
@@ -95,18 +95,18 @@
         </div>
       </div>
 
-      <!-- Cinema Hero Video Reel -->
+      <!-- Cinema Hero Video Reel (Complete 10s High-Impact Commercial) -->
       <div class="hero-cinema-wrap">
-        <video id="hero_video" class="hero-cinema-video" src="/static/generated/studio_video_037c89fa13b84936afedf3957b4b5192.mp4" autoplay loop muted playsinline poster="/static/landing/thumbs/wide_hero_2.jpg"></video>
+        <video id="hero_video" class="hero-cinema-video" src="/static/generated/ad_video_c96ecc6d9d904e0a81bed490c14edec5.mp4" autoplay loop muted playsinline poster="/static/landing/thumbs/cinema_hero.jpg"></video>
         <div class="cinema-overlay">
           <div class="cinema-top-bar">
-            <span class="cinema-tag"><i class="fa-solid fa-video"></i> Omni Flash 1.2 Cinema Reel</span>
+            <span class="cinema-tag"><i class="fa-solid fa-video"></i> Cinema Commercial Reel · 4K Master</span>
             <button type="button" id="hero_audio_btn" class="cinema-audio-btn"><i class="fa-solid fa-volume-xmark"></i> Unmute Reel</button>
           </div>
           <div class="cinema-bottom-info">
-            <h3 class="cinema-title">Woodland Extreme Terrain Trail Commercial</h3>
+            <h3 class="cinema-title">High-Impact Commercial Product Showcase</h3>
             <div class="cinema-prompt-inspect">
-              CAMERA: Slow anamorphic dolly-in at 60fps · LIGHT: Low sunrise volumetric rays through pines · AUDIO: Native footsteps in wet gravel &amp; mountain breeze
+              CAMERA: Anamorphic tracking sweep at 60fps · LIGHT: Volumetric studio rim lighting · AUDIO: Synchronized ambient stereo sound design
             </div>
           </div>
         </div>
@@ -114,181 +114,202 @@
     </div>
   </header>
 
-  <!-- Real Generations Showcase (Higgsfield Gallery) -->
+  <!-- Real Generations Showcase (Diverse Multi-Industry Gallery) -->
   <section id="showcase" class="gallery-section">
     <div class="container">
       <div class="section-head">
         <span class="section-label">Real Outputs</span>
         <h2 class="section-title">Studied for ROAS. Rendered in 4K.</h2>
         <p class="section-lede">
-          Every ad below was autonomously researched, scripted, and generated directly by Ad Studio models without manual shooting. Hover any card to play.
+          Real marketing creatives across skincare, ergonomics, athletic footwear, luxury fashion, and outdoor gear. Hover any card to play.
         </p>
       </div>
 
       <!-- Filters -->
       <div class="filter-bar">
-        <button type="button" class="filter-btn active" data-filter="all">All Generations</button>
+        <button type="button" class="filter-btn active" data-filter="all">All Formats (650+)</button>
         <button type="button" class="filter-btn" data-filter="reels">9:16 Video Reels</button>
         <button type="button" class="filter-btn" data-filter="splash">Liquid &amp; Splash</button>
         <button type="button" class="filter-btn" data-filter="feed">4:5 Feed Creatives</button>
-        <button type="button" class="filter-btn" data-filter="problem-fix">Problem → Solution</button>
-        <button type="button" class="filter-btn" data-filter="ugc">UGC &amp; Creator</button>
+        <button type="button" class="filter-btn" data-filter="beauty">Skincare &amp; Beauty</button>
+        <button type="button" class="filter-btn" data-filter="tech">Tech &amp; Ergonomics</button>
+        <button type="button" class="filter-btn" data-filter="footwear">Footwear &amp; Apparel</button>
       </div>
 
-      <!-- Grid -->
+      <!-- Diverse Grid Across Brands & Sectors -->
       <div class="generation-grid">
-        <!-- 1. Woodland Trail Video Reel -->
-        <article class="gen-card aspect-reel" data-category="reels splash">
-          <div class="gen-media-wrap">
-            <video class="gen-media" src="/static/demo/woodland/video_1.mp4" loop muted playsinline preload="metadata" poster="/static/demo/woodland/video_1_poster.jpg"></video>
-            <div class="gen-badges">
-              <span class="badge-format">9:16 Reel</span>
-              <span class="badge-category">Outdoor / Stress Test</span>
-            </div>
-            <div class="play-hint"><i class="fa-solid fa-play"></i></div>
-          </div>
-          <div class="gen-body">
-            <h3 class="gen-title">Soaking Trail Shoes? Water Repel Stress Test</h3>
-            <p class="gen-prompt-snippet">Extreme slow-motion macro close-up of boot impacting mountain stream water. Zero slippage, water droplets repelling cleanly off full-grain oiled leather.</p>
-            <div class="gen-footer">
-              <span class="gen-model-tag">Omni Flash 1.2 · 10s</span>
-              <a href="/app" class="gen-try-btn">Try prompt <i class="fa-solid fa-arrow-right"></i></a>
-            </div>
-          </div>
-        </article>
-
-        <!-- 2. Woodland Leather Boot Image Ad -->
-        <article class="gen-card aspect-feed" data-category="feed">
-          <div class="gen-media-wrap">
-            <img class="gen-media" src="/static/demo/woodland/ad_s17.jpg" alt="Crafted for Heavy Duty Grip" loading="lazy">
-            <div class="gen-badges">
-              <span class="badge-format">4:5 Feed</span>
-              <span class="badge-category">Catalog Macro</span>
-            </div>
-          </div>
-          <div class="gen-body">
-            <h3 class="gen-title">Crafted for Heavy Duty Grip</h3>
-            <p class="gen-prompt-snippet">High-angle commercial product macro: deep rubber lug tread sole, embossed brass eyelets, textured cowhide leather against natural mountain gravel.</p>
-            <div class="gen-footer">
-              <span class="gen-model-tag">Nano Banana Pro · 4K</span>
-              <a href="/app" class="gen-try-btn">Try prompt <i class="fa-solid fa-arrow-right"></i></a>
-            </div>
-          </div>
-        </article>
-
-        <!-- 3. High-Speed Liquid Splash Video -->
+        <!-- 1. Liquid Splash Beverage Commercial -->
         <article class="gen-card aspect-reel" data-category="reels splash">
           <div class="gen-media-wrap">
             <video class="gen-media" src="/static/generated/studio_video_0014e7457bae4a10a61a106d776b335c.mp4" loop muted playsinline preload="metadata" poster="/static/landing/thumbs/vert_coffee.jpg"></video>
             <div class="gen-badges">
               <span class="badge-format">9:16 Reel</span>
-              <span class="badge-category">Liquid Splash</span>
+              <span class="badge-category">Beverage &amp; Splash</span>
             </div>
             <div class="play-hint"><i class="fa-solid fa-play"></i></div>
           </div>
           <div class="gen-body">
-            <h3 class="gen-title">Dynamic Liquid Splash Commercial</h3>
-            <p class="gen-prompt-snippet">High-speed dynamic splash advertisement: fluid drops frozen in mid-air around product, dramatic strobe rim lighting, vibrant commercial pacing.</p>
+            <h3 class="gen-title">Frozen Droplet Collision Commercial</h3>
+            <p class="gen-prompt-snippet">High-speed dynamic beverage splash: fluid drops suspended in mid-air around chilled product, studio strobe rim lighting, crisp ice collision audio.</p>
             <div class="gen-footer">
-              <span class="gen-model-tag">Omni Flash 1.2 · 10s</span>
+              <span class="gen-model-tag">Studio Video Engine · 10s</span>
               <a href="/app" class="gen-try-btn">Try prompt <i class="fa-solid fa-arrow-right"></i></a>
             </div>
           </div>
         </article>
 
-        <!-- 4. Us vs Them Direct Response Image -->
-        <article class="gen-card aspect-feed" data-category="feed problem-fix">
+        <!-- 2. Hyphen Skincare Editorial Glow -->
+        <article class="gen-card aspect-feed" data-category="feed beauty">
           <div class="gen-media-wrap">
-            <img class="gen-media" src="/static/demo/woodland/ad_s01.jpg" alt="Sneakers fail. Leather boots prevail" loading="lazy">
+            <img class="gen-media" src="/static/generated/batch_batch_1791523165_9b4a9c_002_104ea9.png" alt="Editorial Dewy Barrier Glow" loading="lazy">
             <div class="gen-badges">
               <span class="badge-format">4:5 Feed</span>
-              <span class="badge-category">Us vs. Them</span>
+              <span class="badge-category">Skincare &amp; Beauty</span>
             </div>
           </div>
           <div class="gen-body">
-            <h3 class="gen-title">Sneakers Fail. Leather Boots Prevail.</h3>
-            <p class="gen-prompt-snippet">Split-screen conversion layout: soggy city mesh sneakers in puddle vs indestructible brown leather boots gripping wet granite rock. High-CTR direct response angle.</p>
+            <h3 class="gen-title">Editorial Dewy Barrier Glow</h3>
+            <p class="gen-prompt-snippet">Candid editorial portrait with radiant, deeply hydrated dewy glass-skin. Visible natural micro-pores across cheekbones, soft morning sun, authentic candid texture.</p>
             <div class="gen-footer">
-              <span class="gen-model-tag">Nano Banana Pro · Meta Ad</span>
+              <span class="gen-model-tag">Cinema Image Engine · 4K</span>
               <a href="/app" class="gen-try-btn">Try prompt <i class="fa-solid fa-arrow-right"></i></a>
             </div>
           </div>
         </article>
 
-        <!-- 5. Dynamic Kinetic Sneaker Reel -->
-        <article class="gen-card aspect-reel" data-category="reels">
+        <!-- 3. Green Soul Ergonomic Executive Chair -->
+        <article class="gen-card aspect-reel" data-category="reels tech">
+          <div class="gen-media-wrap">
+            <video class="gen-media" src="/static/generated/ad_video_47b985e97f524aab8eb9b0254eacac83.mp4" loop muted playsinline preload="metadata" poster="/static/landing/thumbs/vert_greensoul.jpg"></video>
+            <div class="gen-badges">
+              <span class="badge-format">9:16 Reel</span>
+              <span class="badge-category">Tech &amp; Ergonomics</span>
+            </div>
+            <div class="play-hint"><i class="fa-solid fa-play"></i></div>
+          </div>
+          <div class="gen-body">
+            <h3 class="gen-title">360° Industrial Design Engineering Orbit</h3>
+            <p class="gen-prompt-snippet">Low-angle rotational tracking shot around cold-rolled steel base and pneumatic gas-lift cylinder. Smooth rotational motion with studio rim lighting and mechanical click audio.</p>
+            <div class="gen-footer">
+              <span class="gen-model-tag">Studio Video Engine · 10s</span>
+              <a href="/app" class="gen-try-btn">Try prompt <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+          </div>
+        </article>
+
+        <!-- 4. Neeman's Sustainable Merino Wool Runners -->
+        <article class="gen-card aspect-reel" data-category="reels footwear">
           <div class="gen-media-wrap">
             <video class="gen-media" src="/static/generated/studio_video_00527f8106b64b48a44e561522920e15.mp4" loop muted playsinline preload="metadata" poster="/static/landing/thumbs/vert_sneaker.jpg"></video>
             <div class="gen-badges">
               <span class="badge-format">9:16 Reel</span>
-              <span class="badge-category">Athletic Motion</span>
+              <span class="badge-category">Athletic Footwear</span>
             </div>
             <div class="play-hint"><i class="fa-solid fa-play"></i></div>
           </div>
           <div class="gen-body">
-            <h3 class="gen-title">Kinetic Camera Orbit &amp; Asphalt Strike</h3>
-            <p class="gen-prompt-snippet">Low-angle tracking shot of athletic footwear striking asphalt, golden hour backlight, cinematic motion blur with sharp product lock and shoe-impact sound.</p>
+            <h3 class="gen-title">Street Commute Asphalt Strike</h3>
+            <p class="gen-prompt-snippet">Dynamic kinetic tracking shot of lightweight wool sneakers hitting city pavement, golden hour backlight, cinematic motion blur with sharp product lock.</p>
             <div class="gen-footer">
-              <span class="gen-model-tag">Omni Flash 1.2 · 8s</span>
+              <span class="gen-model-tag">Studio Video Engine · 8s</span>
               <a href="/app" class="gen-try-btn">Try prompt <i class="fa-solid fa-arrow-right"></i></a>
             </div>
           </div>
         </article>
 
-        <!-- 6. Mountain Drone Video Reel -->
-        <article class="gen-card aspect-reel" data-category="reels">
+        <!-- 5. Luxury Runway Motion & Fabric Drape -->
+        <article class="gen-card aspect-reel" data-category="reels footwear">
           <div class="gen-media-wrap">
-            <video class="gen-media" src="/static/demo/woodland/video_2.mp4" loop muted playsinline preload="metadata" poster="/static/demo/woodland/video_2_poster.jpg"></video>
+            <video class="gen-media" src="/static/generated/studio_video_02b31874401541d4ac099b5147b40652.mp4" loop muted playsinline preload="metadata" poster="/static/landing/thumbs/vert_runway.jpg"></video>
             <div class="gen-badges">
               <span class="badge-format">9:16 Reel</span>
-              <span class="badge-category">Cinema Drone</span>
+              <span class="badge-category">Fashion &amp; Luxury</span>
             </div>
             <div class="play-hint"><i class="fa-solid fa-play"></i></div>
           </div>
           <div class="gen-body">
-            <h3 class="gen-title">Indestructible Alpine Ridge Run</h3>
-            <p class="gen-prompt-snippet">360-degree sweeping drone movement over misty pine ridge. Hiker stepping firmly onto wet granite outcrop with boots gripping mossy rockface.</p>
+            <h3 class="gen-title">Haute Couture Fabric Drape in Motion</h3>
+            <p class="gen-prompt-snippet">Slow-motion tracking shot of silk and tailored wool in motion. Natural fluid drape, directional studio keylight, high-fashion editorial cadence.</p>
             <div class="gen-footer">
-              <span class="gen-model-tag">Omni Flash 1.2 · 10s</span>
+              <span class="gen-model-tag">Studio Video Engine · 10s</span>
               <a href="/app" class="gen-try-btn">Try prompt <i class="fa-solid fa-arrow-right"></i></a>
             </div>
           </div>
         </article>
 
-        <!-- 7. Problem -> Fix Hook Image -->
-        <article class="gen-card aspect-feed" data-category="feed problem-fix">
-          <div class="gen-media-wrap">
-            <img class="gen-media" src="/static/demo/woodland/ad_s05.jpg" alt="Ordinary shoes slip. We conquer" loading="lazy">
-            <div class="gen-badges">
-              <span class="badge-format">4:5 Feed</span>
-              <span class="badge-category">Hook Ad</span>
-            </div>
-          </div>
-          <div class="gen-body">
-            <h3 class="gen-title">Ordinary Shoes Slip. We Conquer.</h3>
-            <p class="gen-prompt-snippet">Muddy trail action freeze-frame highlighting high-traction lug pattern. Engineered for cold wet conditions with bold promotional typography.</p>
-            <div class="gen-footer">
-              <span class="gen-model-tag">Nano Banana Pro · 4K</span>
-              <a href="/app" class="gen-try-btn">Try prompt <i class="fa-solid fa-arrow-right"></i></a>
-            </div>
-          </div>
-        </article>
-
-        <!-- 8. Luxury Cosmetic Studio Orbit Reel -->
-        <article class="gen-card aspect-reel" data-category="reels ugc">
+        <!-- 6. Floating Botanical Serum Orbit -->
+        <article class="gen-card aspect-reel" data-category="reels beauty">
           <div class="gen-media-wrap">
             <video class="gen-media" src="/static/generated/studio_video_04116a64df2d49ce902c40a08c7927bb.mp4" loop muted playsinline preload="metadata" poster="/static/landing/thumbs/vert_beauty.jpg"></video>
             <div class="gen-badges">
               <span class="badge-format">9:16 Reel</span>
-              <span class="badge-category">Beauty / Editorial</span>
+              <span class="badge-category">Cosmetics</span>
             </div>
             <div class="play-hint"><i class="fa-solid fa-play"></i></div>
           </div>
           <div class="gen-body">
             <h3 class="gen-title">Floating Botanical Serum Orbit</h3>
-            <p class="gen-prompt-snippet">Editorial beauty lighting on rotating cosmetic bottle with dewy morning droplets. Volumetric warm glass glow and soft ambient chimes.</p>
+            <p class="gen-prompt-snippet">Floating amber glass vial rotating slowly against a soft travertine marble pedestal. Subtle iridescent lens flare, upward camera tilt, warm mist chimes.</p>
             <div class="gen-footer">
-              <span class="gen-model-tag">Omni Flash 1.2 · 10s</span>
+              <span class="gen-model-tag">Studio Video Engine · 10s</span>
+              <a href="/app" class="gen-try-btn">Try prompt <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+          </div>
+        </article>
+
+        <!-- 7. Veda5 Serene Retreat Commercial -->
+        <article class="gen-card aspect-feed" data-category="feed">
+          <div class="gen-media-wrap">
+            <img class="gen-media" src="/static/generated/batch_batch_1791523165_9b4a9c_003_5357af.png" alt="Lake Pichola Golden Hour Retreat" loading="lazy">
+            <div class="gen-badges">
+              <span class="badge-format">4:5 Feed</span>
+              <span class="badge-category">Wellness &amp; Hospitality</span>
+            </div>
+          </div>
+          <div class="gen-body">
+            <h3 class="gen-title">Lake Pichola Golden Hour Retreat</h3>
+            <p class="gen-prompt-snippet">Candid sunset portrait on tranquil water, golden hour backlight, authentic linen textures, peaceful wellness sanctuary aesthetic.</p>
+            <div class="gen-footer">
+              <span class="gen-model-tag">Cinema Image Engine · 4K</span>
+              <a href="/app" class="gen-try-btn">Try prompt <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+          </div>
+        </article>
+
+        <!-- 8. Woodland Waterproof Mud Stress Test -->
+        <article class="gen-card aspect-reel" data-category="reels footwear">
+          <div class="gen-media-wrap">
+            <video class="gen-media" src="/static/demo/woodland/video_1.mp4" loop muted playsinline preload="metadata" poster="/static/demo/woodland/video_1_poster.jpg"></video>
+            <div class="gen-badges">
+              <span class="badge-format">9:16 Reel</span>
+              <span class="badge-category">Outdoor Adventure</span>
+            </div>
+            <div class="play-hint"><i class="fa-solid fa-play"></i></div>
+          </div>
+          <div class="gen-body">
+            <h3 class="gen-title">Mud &amp; River Water Repel Stress Test</h3>
+            <p class="gen-prompt-snippet">Extreme slow-motion macro close-up of boot impacting mountain stream water. Zero slippage, water droplets repelling cleanly off full-grain oiled leather.</p>
+            <div class="gen-footer">
+              <span class="gen-model-tag">Studio Video Engine · 10s</span>
+              <a href="/app" class="gen-try-btn">Try prompt <i class="fa-solid fa-arrow-right"></i></a>
+            </div>
+          </div>
+        </article>
+
+        <!-- 9. Direct-Response Us vs Them Comparison -->
+        <article class="gen-card aspect-feed" data-category="feed">
+          <div class="gen-media-wrap">
+            <img class="gen-media" src="/static/demo/woodland/ad_s01.jpg" alt="High-CTR Direct Response Comparison" loading="lazy">
+            <div class="gen-badges">
+              <span class="badge-format">4:5 Feed</span>
+              <span class="badge-category">Conversion Hook</span>
+            </div>
+          </div>
+          <div class="gen-body">
+            <h3 class="gen-title">High-CTR Direct Response Comparison</h3>
+            <p class="gen-prompt-snippet">Split-screen conversion layout: soggy city mesh sneakers in puddle vs indestructible brown leather boots standing firm on wet granite rock.</p>
+            <div class="gen-footer">
+              <span class="gen-model-tag">Cinema Image Engine · Meta Ad</span>
               <a href="/app" class="gen-try-btn">Try prompt <i class="fa-solid fa-arrow-right"></i></a>
             </div>
           </div>
@@ -297,7 +318,7 @@
     </div>
   </section>
 
-  <!-- "One Live Thing": The Interactive Prompt & Ad Simulator -->
+  <!-- "One Live Thing": The Multi-Brand Simulator -->
   <section id="simulator" class="simulator-section">
     <div class="container">
       <div class="section-head">
@@ -313,32 +334,33 @@
         <div class="sim-controls">
           <div class="sim-field-group">
             <label class="sim-field-label">1. Brand Website Link</label>
-            <input type="text" id="sim_url" class="sim-url-input" value="woodlandworldwide.com" readonly>
+            <input type="text" id="sim_url" class="sim-url-input" value="letshyphen.com" readonly>
             <div class="sim-preset-chips">
-              <button type="button" class="chip-btn active" data-brand="woodland">Woodland Boots</button>
-              <button type="button" class="chip-btn" data-brand="hyphen">Hyphen Skincare</button>
+              <button type="button" class="chip-btn active" data-brand="hyphen">Hyphen Skincare</button>
               <button type="button" class="chip-btn" data-brand="greensoul">Green Soul Chairs</button>
+              <button type="button" class="chip-btn" data-brand="neemans">Neeman's Footwear</button>
+              <button type="button" class="chip-btn" data-brand="woodland">Woodland Outdoor</button>
             </div>
           </div>
 
           <div class="sim-field-group">
             <label class="sim-field-label">2. Creative Angle &amp; Direct Response Hook</label>
             <div class="sim-angle-grid">
+              <button type="button" class="angle-card active" data-angle="orbit">
+                <i class="fa-solid fa-compass"></i>
+                <span>360° Cinema Orbit</span>
+              </button>
               <button type="button" class="angle-card" data-angle="us-vs-them">
                 <i class="fa-solid fa-arrows-split-up-and-left"></i>
                 <span>Us vs. Them (High CTR)</span>
               </button>
-              <button type="button" class="angle-card active" data-angle="mud-splash">
+              <button type="button" class="angle-card" data-angle="splash">
                 <i class="fa-solid fa-water"></i>
                 <span>Freeze-Frame Splash</span>
               </button>
-              <button type="button" class="angle-card" data-angle="ugc-review">
+              <button type="button" class="angle-card" data-angle="ugc">
                 <i class="fa-solid fa-mobile-screen"></i>
                 <span>UGC Honest Stress Test</span>
-              </button>
-              <button type="button" class="angle-card" data-angle="cinematic-orbit">
-                <i class="fa-solid fa-compass"></i>
-                <span>360° Cinema Orbit</span>
               </button>
             </div>
           </div>
@@ -347,12 +369,12 @@
         <!-- Preview Column -->
         <div class="sim-preview-pane">
           <div class="sim-pane-head">
-            <span class="sim-pane-title" id="sim_pane_title">Woodland Worldwide · Freeze-Frame Action Splash</span>
-            <span class="sim-pane-model" id="sim_pane_model">Omni Flash 1.2 · 9:16</span>
+            <span class="sim-pane-title" id="sim_pane_title">Hyphen Skincare · Floating Bottle Studio Orbit</span>
+            <span class="sim-pane-model" id="sim_pane_model">Commercial Video Engine · 9:16</span>
           </div>
 
           <div class="sim-media-stage" id="sim_media_stage">
-            <video class="sim-video" src="/static/demo/woodland/video_1.mp4" autoplay loop muted playsinline></video>
+            <video class="sim-video" src="/static/generated/studio_video_04116a64df2d49ce902c40a08c7927bb.mp4" autoplay loop muted playsinline></video>
           </div>
 
           <div class="sim-prompt-box" id="sim_prompt">
@@ -376,7 +398,7 @@
     <div class="container">
       <div class="section-head">
         <span class="section-label">Proprietary Technology</span>
-        <h2 class="section-title">Built on Google DeepMind Models</h2>
+        <h2 class="section-title">Engineered for High-Converting Ad Creative</h2>
         <p class="section-lede">
           Ad Studio combines autonomous competitor intelligence, multi-modal prompt synthesis, and generative video infrastructure into one production studio.
         </p>
@@ -385,9 +407,9 @@
       <div class="features-grid">
         <div class="feature-card">
           <div class="feature-icon-badge"><i class="fa-solid fa-film"></i></div>
-          <h3 class="feature-title">Omni Flash Video Engine</h3>
+          <h3 class="feature-title">Commercial AI Video Engine</h3>
           <p class="feature-desc">
-            Directly outputs 720p, 1080p, and 4K vertical 9:16 video ads with synchronized stereo dialogue, physical device orientation enforcement, and zero distorted textures.
+            Directly outputs 720p, 1080p, and 4K vertical 9:16 video ads with synchronized stereo dialogue, physical device orientation enforcement, and realistic motion dynamics.
           </p>
           <ul class="feature-specs">
             <li><i class="fa-solid fa-check"></i> Native 9:16 vertical and 16:9 cinema widescreen</li>
@@ -398,9 +420,9 @@
 
         <div class="feature-card">
           <div class="feature-icon-badge"><i class="fa-solid fa-image"></i></div>
-          <h3 class="feature-title">Nano Banana Pro Image Suite</h3>
+          <h3 class="feature-title">4K Photoreal Image Suite</h3>
           <p class="feature-desc">
-            Ultra-sharp 4K image ads tailored for Meta Feed (4:5) and Carousel (1:1). Renders clean alphanumeric copy and discounts without typical AI typography artifacts.
+            Ultra-sharp 4K image ads tailored for Meta Feed (4:5) and Carousel (1:1). Renders clean alphanumeric copy and product details without distorted text.
           </p>
           <ul class="feature-specs">
             <li><i class="fa-solid fa-check"></i> True 4K master output with authentic depth of field</li>
@@ -520,7 +542,7 @@
           <button type="button" class="plan-cta" data-auth-modal="signup">Get Started</button>
           <ul class="plan-features">
             <li><i class="fa-solid fa-check"></i> 720p draft video generations</li>
-            <li><i class="fa-solid fa-check"></i> Nano Banana 2.1 2K images</li>
+            <li><i class="fa-solid fa-check"></i> High-Resolution 2K image ads</li>
             <li><i class="fa-solid fa-check"></i> Image, Video &amp; Batch Studios</li>
             <li><i class="fa-solid fa-check"></i> No credit card required</li>
           </ul>
@@ -537,7 +559,7 @@
           <a href="/upgrade/checkout?plan=starter" class="plan-cta">Choose Starter</a>
           <ul class="plan-features">
             <li><i class="fa-solid fa-check"></i> 1080p full HD video exports</li>
-            <li><i class="fa-solid fa-check"></i> Nano Banana Pro 4K image ads</li>
+            <li><i class="fa-solid fa-check"></i> Ultra-HD 4K image ads</li>
             <li><i class="fa-solid fa-check"></i> Batch prompt engine access</li>
             <li><i class="fa-solid fa-check"></i> Commercial usage rights</li>
           </ul>
@@ -641,7 +663,7 @@
 
       <div class="footer-bottom">
         <div>&copy; 2026 Ad Studio. All rights reserved.</div>
-        <div>Built with Gemini Omni Flash 1.2 &amp; Nano Banana Pro.</div>
+        <div>Built with Ad Studio Generative Video &amp; Image Pipeline.</div>
       </div>
     </div>
   </footer>
@@ -679,6 +701,6 @@
   <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/static/js/auth.js?v=1.0.0"></script>
-  <script src="/static/landing/landing.js?v=1.0.0"></script>
+  <script src="/static/landing/landing.js?v=1.0.1"></script>
 </body>
 </html>

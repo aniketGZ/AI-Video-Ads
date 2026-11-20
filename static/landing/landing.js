@@ -53,81 +53,43 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  // 4. "One Live Thing": Interactive Simulator State & Presets
+  // 4. "One Live Thing": Interactive Simulator State across Multiple Diverse Brands
   const PRESET_DATA = {
-    woodland: {
-      url: "woodlandworldwide.com",
-      brand: "Woodland Worldwide",
-      angles: {
-        "us-vs-them": {
-          title: "Us vs. Them (High CTR)",
-          format: "4:5",
-          model: "Nano Banana Pro (gemini-3-pro-image)",
-          media: "/static/demo/woodland/ad_s01.jpg",
-          isVideo: false,
-          prompt: `[SPLIT-SCREEN COMPARISON AD]\nLEFT: Soggy, torn white mesh sneakers sitting in a cold puddle of mud and dirty water. Desaturated cold lighting. Caption overlay: 'City Sneakers Fail'.\n\nRIGHT: Rugged waterproof oiled nubuck leather boots standing unshakeable on wet granite rock. Golden morning sun highlights, crisp leather grain texture, zero moisture penetration. Bold headline: 'Woodland Prevails'.\n\n[ANATOMY & LIGHTING]\nPhotoreal lighting, 4K resolution, authentic tactile materials.`,
-        },
-        "mud-splash": {
-          title: "Freeze-Frame Action Splash",
-          format: "9:16",
-          model: "Omni Flash 1.2 (gemini-omni-1.2-flash)",
-          media: "/static/demo/woodland/video_1.mp4",
-          isVideo: true,
-          prompt: `[EXTREME SLOW-MOTION VIDEO REEL]\nClose-up macro tracking shot at 120fps. A rugged brown leather boot impacts a mountain trail puddle, sending high-speed liquid water droplets flying through the air in sharp focus. Synchronous audio of deep muddy impact and rushing river spray.\n\n[CAMERA & LIGHTING]\nLow-angle dynamic tracking, volumetric rim lighting, genuine outdoor grit.`,
-        },
-        "ugc-review": {
-          title: "UGC Honest Stress Test",
-          format: "4:5",
-          model: "Nano Banana Pro (gemini-3-pro-image)",
-          media: "/static/demo/woodland/ad_s05.jpg",
-          isVideo: false,
-          prompt: `[UGC CREATOR SMARTPHONE SHOT]\nReal hiker in mountain trail gear holding boot at chest level against a scenic foggy pine ridge. Hand-held smartphone depth of field, authentic daylight, visible mud splatter across the rubber lug sole. Authentic candid testimonial aesthetic.`,
-        },
-        "cinematic-orbit": {
-          title: "360° Mountain Ridge Orbit",
-          format: "9:16",
-          model: "Omni Flash 1.2 (gemini-omni-1.2-flash)",
-          media: "/static/demo/woodland/video_2.mp4",
-          isVideo: true,
-          prompt: `[CINEMA DRONE REEL]\n360-degree sweeping crane movement over a misty Himalayan peak. Hiker steps confidently onto slippery lichen-covered granite rocks. Spatial ambient wind and crunch of gravel underfoot. High-production outdoor commercial grade.`,
-        },
-      },
-    },
     hyphen: {
       url: "letshyphen.com",
       brand: "Hyphen Skincare",
       angles: {
-        "us-vs-them": {
-          title: "Barrier Repair vs Strip",
-          format: "4:5",
-          model: "Nano Banana Pro (gemini-3-pro-image)",
-          media: "/static/generated/banana_ad_002a038076b64559b41108b2cec2bf10.png",
-          isVideo: false,
-          prompt: `[EDITORIAL BEAUTY COMPARISON]\nSplit-screen cosmetic ad: Left side irritated red dry skin patch; Right side radiant, deeply hydrated dewy glass-skin glow with peptide barrier glaze. Soft daylight studio bounce, micro skin pores visible, zero plastic beauty filter.`,
-        },
-        "mud-splash": {
-          title: "Hydration Splash & Texture",
-          format: "9:16",
-          model: "Omni Flash 1.2 (gemini-omni-1.2-flash)",
-          media: "/static/generated/studio_video_0014e7457bae4a10a61a106d776b335c.mp4",
-          isVideo: true,
-          prompt: `[LIQUID SPLASH MACRO REEL]\nHigh-speed macro capture of clear botanical serum droplet colliding with smooth water surface, blooming outwards in radiant circular ripples. Translucent glass dropper bottle reflecting soft pastel studio lighting. Crisp water splash audio.`,
-        },
-        "ugc-review": {
-          title: "Morning Routine UGC",
-          format: "4:5",
-          model: "Nano Banana Pro (gemini-3-pro-image)",
-          media: "/static/generated/banana_ad_006ac9e3d36b482ea68b1edb0cdc8922.png",
-          isVideo: false,
-          prompt: `[AUTHENTIC UGC MORNING SHOT]\nNatural creator in clean bathroom holding the peptide cream tube near cheek. Gentle morning golden window light, visible skin texture, relatable lifestyle candid aesthetic.`,
-        },
-        "cinematic-orbit": {
+        "orbit": {
           title: "Floating Bottle Studio Orbit",
-          format: "9:16",
-          model: "Omni Flash 1.2 (gemini-omni-1.2-flash)",
+          format: "9:16 Vertical Reel",
+          model: "Commercial Video Engine",
           media: "/static/generated/studio_video_04116a64df2d49ce902c40a08c7927bb.mp4",
           isVideo: true,
-          prompt: `[LUXURY COSMETIC COMMERCIAL]\nFloating amber glass vial rotating slowly against a soft beige marble pedestal. Subtle iridescent lens flare, gentle upward camera tilt, high-end editorial lighting.`,
+          prompt: `[LUXURY COSMETIC COMMERCIAL]\nFloating amber glass vial rotating slowly against a soft travertine marble pedestal. Subtle iridescent lens flare, gentle upward camera tilt, high-end editorial lighting with ambient chimes.`,
+        },
+        "us-vs-them": {
+          title: "Barrier Glaze vs Dry Skin",
+          format: "4:5 Meta Feed",
+          model: "4K Photoreal Image Suite",
+          media: "/static/generated/batch_batch_1791523165_9b4a9c_002_104ea9.png",
+          isVideo: false,
+          prompt: `[EDITORIAL BEAUTY COMPARISON]\nSplit-screen cosmetic ad: Left side irritated dry skin texture; Right side radiant, deeply hydrated dewy glass-skin glow with peptide barrier glaze. Soft daylight studio bounce, visible micro skin pores.`,
+        },
+        "splash": {
+          title: "Hydration Splash & Texture",
+          format: "9:16 Vertical Reel",
+          model: "Commercial Video Engine",
+          media: "/static/generated/studio_video_0014e7457bae4a10a61a106d776b335c.mp4",
+          isVideo: true,
+          prompt: `[LIQUID SPLASH MACRO REEL]\nHigh-speed macro capture of clear botanical serum droplet colliding with smooth water surface, blooming outwards in radiant circular ripples. Translucent glass dropper bottle with crisp liquid collision audio.`,
+        },
+        "ugc": {
+          title: "Morning Routine Creator Testimonial",
+          format: "4:5 Meta Feed",
+          model: "4K Photoreal Image Suite",
+          media: "/static/generated/batch_batch_1791523165_9b4a9c_003_5357af.png",
+          isVideo: false,
+          prompt: `[AUTHENTIC UGC MORNING SHOT]\nNatural creator in clean sunlit bathroom holding the peptide cream tube near cheek. Gentle morning golden window light, visible natural skin texture, relatable lifestyle candid aesthetic.`,
         },
       },
     },
@@ -135,44 +97,120 @@ document.addEventListener("DOMContentLoaded", () => {
       url: "greensoul.online",
       brand: "Green Soul Ergonomics",
       angles: {
+        "orbit": {
+          title: "360° Industrial Design Orbit",
+          format: "9:16 Vertical Reel",
+          model: "Commercial Video Engine",
+          media: "/static/generated/ad_video_47b985e97f524aab8eb9b0254eacac83.mp4",
+          isVideo: true,
+          prompt: `[INDUSTRIAL DESIGN COMMERCIAL]\n360-degree rotational tracking shot around cold-rolled steel wheel base and pneumatic gas-lift cylinder. Smooth cinematic motion with soft studio rim lighting and mechanical precision sound design.`,
+        },
         "us-vs-them": {
           title: "Ergonomic Alignment vs Slouch",
-          format: "4:5",
-          model: "Nano Banana Pro (gemini-3-pro-image)",
+          format: "4:5 Meta Feed",
+          model: "4K Photoreal Image Suite",
           media: "/static/demo/woodland/ad_s10.jpg",
           isVideo: false,
           prompt: `[POSTURE COMPARISON AD]\nDirect comparison graphic: Left shows painful spine slouch on standard wooden dining chair; Right shows orthopedically aligned spine support on breathable mesh executive chair. Clear anatomical callouts.`,
         },
-        "mud-splash": {
+        "splash": {
           title: "Kinetic Cushion Stress Test",
-          format: "9:16",
-          model: "Omni Flash 1.2 (gemini-omni-1.2-flash)",
+          format: "9:16 Vertical Reel",
+          model: "Commercial Video Engine",
           media: "/static/generated/studio_video_00527f8106b64b48a44e561522920e15.mp4",
           isVideo: true,
           prompt: `[HIGH-SPEED IMPACT REEL]\nHeavy weight dropping onto high-density moulded foam seat, immediately rebounding and absorbing kinetic shock. Studio spotlight highlights breathable honeycomb fabric weave.`,
         },
-        "ugc-review": {
+        "ugc": {
           title: "10-Hour Coding Setup Review",
-          format: "4:5",
-          model: "Nano Banana Pro (gemini-3-pro-image)",
+          format: "4:5 Meta Feed",
+          model: "4K Photoreal Image Suite",
           media: "/static/demo/woodland/ad_s15.jpg",
           isVideo: false,
           prompt: `[REAL TECH WORKSPACE]\nDeveloper desk setup at night with ultra-wide monitor, warm desk lamp, and ergonomic chair. Relaxed working posture, honest testimonial caption overlay.`,
         },
-        "cinematic-orbit": {
-          title: "Precision Engineering Orbit",
-          format: "9:16",
-          model: "Omni Flash 1.2 (gemini-omni-1.2-flash)",
-          media: "/static/generated/ad_video_47b985e97f524aab8eb9b0254eacac83.mp4",
+      },
+    },
+    neemans: {
+      url: "neemans.com",
+      brand: "Neeman's Sustainable Footwear",
+      angles: {
+        "orbit": {
+          title: "Kinetic Street Commute Orbit",
+          format: "9:16 Vertical Reel",
+          model: "Commercial Video Engine",
+          media: "/static/generated/studio_video_00527f8106b64b48a44e561522920e15.mp4",
           isVideo: true,
-          prompt: `[INDUSTRIAL DESIGN COMMERCIAL]\n360-degree tracking shot around cold-rolled steel wheel base and pneumatic gas-lift cylinder. Smooth cinematic motion with soft studio rim lighting.`,
+          prompt: `[KINETIC FOOTWEAR COMMERCIAL]\nLow-angle dynamic tracking shot of sustainable merino wool runners striking city asphalt in morning light. Smooth motion blur with crisp product lock and authentic street sound design.`,
+        },
+        "us-vs-them": {
+          title: "Featherweight Wool vs Heavy Synthetics",
+          format: "4:5 Meta Feed",
+          model: "4K Photoreal Image Suite",
+          media: "/static/demo/woodland/ad_s01.jpg",
+          isVideo: false,
+          prompt: `[MATERIAL COMPARISON AD]\nLeft shows rigid, sweaty synthetic gym sneaker; Right shows breathable natural merino wool shoe floating weightlessly on scale. Clean high-contrast typography: 'Walk On Clouds'.`,
+        },
+        "splash": {
+          title: "Water-Resistant Wool Drizzle Test",
+          format: "9:16 Vertical Reel",
+          model: "Commercial Video Engine",
+          media: "/static/generated/studio_video_0014e7457bae4a10a61a106d776b335c.mp4",
+          isVideo: true,
+          prompt: `[RAIN STRESS TEST VIDEO]\nHigh-speed macro capture of rain droplets beading and rolling cleanly off merino wool upper without soaking through. Natural outdoor drizzle audio.`,
+        },
+        "ugc": {
+          title: "All-Day Airport Walk Review",
+          format: "4:5 Meta Feed",
+          model: "4K Photoreal Image Suite",
+          media: "/static/demo/woodland/ad_s05.jpg",
+          isVideo: false,
+          prompt: `[AIRPORT UGC PERSPECTIVE]\nFirst-person POV walking through international terminal in slip-on runners. Comfortable effortless stride, smartphone video depth of field.`,
+        },
+      },
+    },
+    woodland: {
+      url: "woodlandworldwide.com",
+      brand: "Woodland Outdoor Boots",
+      angles: {
+        "orbit": {
+          title: "360° Alpine Ridge Orbit",
+          format: "9:16 Vertical Reel",
+          model: "Commercial Video Engine",
+          media: "/static/demo/woodland/video_2.mp4",
+          isVideo: true,
+          prompt: `[CINEMA DRONE REEL]\n360-degree sweeping crane movement over a misty mountain peak. Hiker steps confidently onto slippery lichen-covered granite rocks. Spatial ambient wind and crunch of gravel underfoot.`,
+        },
+        "us-vs-them": {
+          title: "Sneakers Fail vs Leather Prevails",
+          format: "4:5 Meta Feed",
+          model: "4K Photoreal Image Suite",
+          media: "/static/demo/woodland/ad_s01.jpg",
+          isVideo: false,
+          prompt: `[SPLIT-SCREEN COMPARISON AD]\nLEFT: Soggy, torn white mesh sneakers sitting in cold mud puddle. RIGHT: Rugged waterproof oiled nubuck leather boots standing unshakeable on wet granite rock.`,
+        },
+        "splash": {
+          title: "Mud Impact & Stream Splash",
+          format: "9:16 Vertical Reel",
+          model: "Commercial Video Engine",
+          media: "/static/demo/woodland/video_1.mp4",
+          isVideo: true,
+          prompt: `[SLOW-MOTION WATER REEL]\nMacro action close-up showing footwear actively splashing through mountain water. Water repelling off oiled leather with deep muddy impact sound design.`,
+        },
+        "ugc": {
+          title: "Mountain Guide Field Review",
+          format: "4:5 Meta Feed",
+          model: "4K Photoreal Image Suite",
+          media: "/static/demo/woodland/ad_s17.jpg",
+          isVideo: false,
+          prompt: `[OUTDOOR GUIDE TESTIMONIAL]\nTrekker holding boot at chest level against scenic pine valley. Visible authentic trail dust across rubber lug tread, honest rugged aesthetic.`,
         },
       },
     },
   };
 
-  let activeBrandKey = "woodland";
-  let activeAngleKey = "mud-splash";
+  let activeBrandKey = "hyphen";
+  let activeAngleKey = "orbit";
 
   const urlInput = document.getElementById("sim_url");
   const brandChips = document.querySelectorAll(".chip-btn");
@@ -184,8 +222,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const simLaunchBtn = document.getElementById("sim_launch_btn");
 
   function renderSimulator() {
-    const brand = PRESET_DATA[activeBrandKey] || PRESET_DATA.woodland;
-    const angle = brand.angles[activeAngleKey] || brand.angles["mud-splash"];
+    const brand = PRESET_DATA[activeBrandKey] || PRESET_DATA.hyphen;
+    const angle = brand.angles[activeAngleKey] || brand.angles["orbit"];
 
     if (urlInput) urlInput.value = brand.url;
     if (simTitle) simTitle.textContent = `${brand.brand} · ${angle.title}`;
