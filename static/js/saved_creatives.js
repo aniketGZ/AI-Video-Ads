@@ -291,10 +291,23 @@
         }
       });
 
+      const changeBtn = $("btn_change_product");
+      const removeBtn = $("btn_remove_product");
+
       if (changeBtn) {
         changeBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           fileInput.click();
+        });
+      }
+
+      if (removeBtn) {
+        removeBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          uploadedProductFile = null;
+          fileInput.value = "";
+          if ($("rec_product_preview")) $("rec_product_preview").hidden = true;
+          if ($("rec_product_cta")) $("rec_product_cta").hidden = false;
         });
       }
 
@@ -391,22 +404,24 @@
   async function handleRecreateSubmit(e) {
     e.preventDefault();
 
-    if (!uploadedProductFile) {
-      if (typeof notify === "function") notify("Please upload your product image to recreate this template.", "warning");
-      const drop = $("rec_product_drop");
-      if (drop) {
-        drop.style.borderColor = "var(--danger)";
-        setTimeout(() => (drop.style.borderColor = ""), 1500);
-      }
-      return;
-    }
-
     const tplId = $("rec_template_id")?.value;
     if (!tplId) return;
 
     const brandName = $("rec_brand_name")?.value.trim() || "";
     const productName = $("rec_product_name")?.value.trim() || "";
     const userEdit = $("rec_user_edit")?.value.trim() || "";
+
+    // Product upload is optional; if neither product nor prompt is entered, suggest providing an idea
+    if (!uploadedProductFile && !userEdit && !brandName && !productName) {
+      if (typeof notify === "function") notify("Please enter a prompt or upload a product to recreate.", "warning");
+      const editArea = $("rec_user_edit");
+      if (editArea) {
+        editArea.focus();
+        editArea.style.borderColor = "var(--accent)";
+        setTimeout(() => (editArea.style.borderColor = ""), 1500);
+      }
+      return;
+    }
 
     const btnSubmit = $("btn_submit_recreate");
     const statusAlert = $("rec_status_alert");
@@ -419,14 +434,20 @@
     }
     if (statusAlert) {
       statusAlert.hidden = false;
-      if (statusText) statusText.textContent = "Gemini is analyzing visual composition & synthesizing prompt...";
+      if (statusText) {
+        statusText.textContent = uploadedProductFile
+          ? "Gemini is analyzing visual composition & synthesizing prompt..."
+          : "Gemini is composing commercial prompt from template & your instructions...";
+      }
     }
     if (resultBox) resultBox.hidden = true;
 
     try {
       const fd = new FormData();
       fd.append("template_id", tplId);
-      fd.append("product_image", uploadedProductFile);
+      if (uploadedProductFile) {
+        fd.append("product_image", uploadedProductFile);
+      }
       if (brandName) fd.append("brand_name", brandName);
       if (productName) fd.append("product_name", productName);
       if (userEdit) fd.append("user_edit", userEdit);

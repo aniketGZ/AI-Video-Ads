@@ -1299,22 +1299,26 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
           <form id="recreate_form" class="recreate-form-body">
             <input type="hidden" id="rec_template_id" value="">
 
-            <!-- 1. Replace Product (Required) -->
+            <!-- 1. Product Photo (Optional) -->
             <div class="rec-field">
               <div class="rec-field-header">
-                <label class="rec-field-title">Replace product</label>
-                <span class="rec-badge-required">Required</span>
+                <label class="rec-field-title">Product photo <span class="muted small">(optional)</span></label>
+                <span class="rec-badge-optional">Optional</span>
               </div>
               <div class="rec-dropzone" id="rec_product_drop" role="button" tabindex="0">
                 <div class="rec-drop-cta" id="rec_product_cta">
                   <div class="rec-plus-circle"><i class="fa-solid fa-plus"></i></div>
-                  <span class="rec-drop-text">Upload product</span>
+                  <span class="rec-drop-text">Upload product (optional)</span>
+                  <span class="muted small" style="font-size: 11px;">Or leave empty to generate using your prompt below</span>
                 </div>
                 <div class="rec-drop-preview" id="rec_product_preview" hidden>
                   <img id="rec_product_thumb" src="" alt="Uploaded Product">
                   <div class="rec-preview-info">
                     <span id="rec_product_filename" class="rec-file-name">product.png</span>
-                    <button type="button" class="rec-change-btn" id="btn_change_product">Change</button>
+                    <div style="display: flex; gap: 8px; margin-top: 2px;">
+                      <button type="button" class="rec-change-btn" id="btn_change_product">Change</button>
+                      <button type="button" class="rec-change-btn" id="btn_remove_product" style="color: var(--danger);">Remove</button>
+                    </div>
                   </div>
                 </div>
                 <input type="file" id="rec_product_file" accept="image/*" hidden>
@@ -1333,14 +1337,15 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
               </div>
             </div>
 
-            <!-- 3. Describe Your Edit -->
+            <!-- 3. Prompt / Custom Idea -->
             <div class="rec-field">
               <div class="rec-field-header">
-                <label for="rec_user_edit" class="rec-field-title">Describe your edit</label>
+                <label for="rec_user_edit" class="rec-field-title">Prompt / Custom Idea</label>
+                <span class="muted small">Scene description or custom edits</span>
               </div>
               <div class="rec-textarea-wrap">
-                <i class="fa-solid fa-wand-magic rec-pen-icon"></i>
-                <textarea id="rec_user_edit" class="rec-textarea" rows="2" placeholder="What do you want to change? (e.g. add water droplets, yellow sunset backdrop...)"></textarea>
+                <i class="fa-solid fa-wand-magic-sparkles rec-pen-icon"></i>
+                <textarea id="rec_user_edit" class="rec-textarea" rows="2" placeholder="Describe what you want to create or change (e.g. A green tea beverage can on a block of crystal ice with water droplets...)"></textarea>
               </div>
             </div>
 

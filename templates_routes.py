@@ -108,7 +108,7 @@ async def get_template_detail(template_id: str):
 async def recreate_template_visual(
     request: Request,
     template_id: str = Form(...),
-    product_image: UploadFile = File(...),
+    product_image: Optional[UploadFile] = File(None),
     logo_image: Optional[UploadFile] = File(None),
     brand_name: Optional[str] = Form(""),
     product_name: Optional[str] = Form(""),
@@ -119,10 +119,10 @@ async def recreate_template_visual(
     user: Optional[Dict[str, Any]] = Depends(current_user),
 ):
     """
-    Recreate a Pinterest ad template with the user's product, branding, and custom edits.
+    Recreate a Pinterest ad template with custom prompt and/or uploaded product & branding.
     Flow:
-      1. Gemini Multimodal Analysis: Analyzes user-selected template visual & authentic product image.
-      2. Prompt Synthesis: Synthesizes a high-converting commercial prompt based on visual analysis & instructions.
+      1. Gemini Multimodal Analysis: Analyzes template visual + optional product photo + user prompt.
+      2. Prompt Synthesis: Synthesizes a high-converting commercial prompt tailored for Nano Banana 2.1.
       3. Render via Nano Banana 2.1: Executes photorealistic rendering with nano-banana-2.1.
       4. Auto-save to user library and project folder.
     """
@@ -134,17 +134,22 @@ async def recreate_template_visual(
     if not template:
         raise HTTPException(status_code=404, detail="Template reference not found")
 
-    # 2. Process product image
-    if not product_image or not product_image.filename:
-        raise HTTPException(status_code=400, detail="Product image is required")
+    # 2. Process product image (OPTIONAL - user can generate via prompt alone)
+    prod_bytes: Optional[bytes] = None
+    prod_mime: Optional[str] = None
+    saved_ref_urls = []
 
-    prod_bytes, prod_ext, prod_mime = await read_upload(product_image, IMAGE_EXTS, ".png", MAX_IMAGE_BYTES)
-    prod_filename = f"ref_prod_{uuid.uuid4().hex}{prod_ext}"
-    prod_path = os.path.join(GENERATED_DIR, prod_filename)
-    with open(prod_path, "wb") as f:
-        f.write(prod_bytes)
-    prod_url = f"/static/generated/{prod_filename}"
-    saved_ref_urls = [prod_url]
+    if product_image and product_image.filename:
+        try:
+            prod_bytes, prod_ext, prod_mime = await read_upload(product_image, IMAGE_EXTS, ".png", MAX_IMAGE_BYTES)
+            prod_filename = f"ref_prod_{uuid.uuid4().hex}{prod_ext}"
+            prod_path = os.path.join(GENERATED_DIR, prod_filename)
+            with open(prod_path, "wb") as f:
+                f.write(prod_bytes)
+            prod_url = f"/static/generated/{prod_filename}"
+            saved_ref_urls.append(prod_url)
+        except Exception as e:
+            logger.warning(f"Could not read uploaded product image: {e}")
 
     # 3. Fetch template visual reference (local file or remote URL)
     tpl_bytes: Optional[bytes] = None
@@ -191,14 +196,15 @@ async def recreate_template_visual(
     client = require_client()
 
     analysis_parts = []
-    # Part 1: User's authentic product
-    analysis_parts.append(types.Part.from_bytes(data=prod_bytes, mime_type=prod_mime))
+    has_product = prod_bytes is not None and prod_mime is not None
+
+    if has_product:
+        analysis_parts.append(types.Part.from_bytes(data=prod_bytes, mime_type=prod_mime))
 
     tpl_context = []
     if tpl_bytes and tpl_mime:
-        # Part 2: Selected template visual reference
         analysis_parts.append(types.Part.from_bytes(data=tpl_bytes, mime_type=tpl_mime))
-        tpl_context.append("IMAGE 2 is the reference commercial advertising visual selected by the user.")
+        tpl_context.append("IMAGE REFERENCE: The commercial advertising visual selected by the user from Pinterest.")
     else:
         tpl_context.append("Template composition and lighting metadata is described below.")
 
@@ -206,34 +212,42 @@ async def recreate_template_visual(
         analysis_parts.append(types.Part.from_bytes(data=logo_bytes, mime_type=logo_mime))
 
     brand = brand_name.strip() if brand_name else "the featured brand"
-    prod = product_name.strip() if product_name else "the authentic product"
-    edits = user_edit.strip() if user_edit else "None provided. Recreate the reference aesthetic faithfully with the user's authentic product."
+    prod = product_name.strip() if product_name else "the hero product"
+    edits = user_edit.strip() if user_edit else "Faithfully recreate the template composition, studio lighting, and aesthetic."
+
+    if has_product:
+        product_instruction = (
+            "1. VISUAL AUDIT: Examine the packaging geometry, materials, cap/closure, typography, and palette of the authentic product in IMAGE 1.\n"
+            "2. SCENE RECREATION: Examine the composition, camera angle, focal depth, surface materials, and lighting in the template visual.\n"
+            "3. WRITE THE PROMPT: Feature the authentic product from IMAGE 1 as the central hero subject, situated within the lighting and composition of the reference template, applying user directives."
+        )
+    else:
+        product_instruction = (
+            "1. SCENE RECREATION: Examine the composition, camera angle, lighting setup, surface textures, reflections, and mood of the reference template visual.\n"
+            f"2. HERO CONCEPT: Feature {brand}'s {prod} as the hero subject based on user prompt/directives: '{edits}'.\n"
+            "3. WRITE THE PROMPT: Write a photorealistic commercial advertising photograph prompt for Nano Banana 2.1 that places this hero concept into the exact studio lighting, environment surfaces, and aesthetic of the reference template."
+        )
+
+    palette_list = template.get("colors") or template.get("color_palette") or []
 
     analysis_prompt = (
         "You are an elite commercial advertising art director and generative vision prompt engineer.\n\n"
-        "You are analyzing the provided reference images to synthesize an exact generation prompt for the Nano Banana 2.1 image model.\n"
-        "- IMAGE 1 is the user's authentic product photograph.\n"
-        f"- {' '.join(tpl_context)}\n\n"
+        "You are synthesizing an exact generation prompt tailored specifically for the Nano Banana 2.1 image model.\n\n"
         "TEMPLATE CREATIVE ATTRIBUTES:\n"
         f"- Title: {template.get('title', 'Advertising Template')}\n"
         f"- Category: {template.get('category', 'Product shot')}\n"
         f"- Industry: {template.get('industry_label', template.get('industry', 'Commercial'))}\n"
         f"- Movement / Style: {template.get('movement', 'High-end commercial aesthetic')}\n"
         f"- Studio Lighting: {template.get('lighting', 'Clean studio lighting with soft diffused shadows and crisp highlights')}\n"
-        f"- Color Palette: {', '.join(template.get('color_palette', []))}\n"
+        f"- Color Palette: {', '.join(palette_list[:5])}\n"
         f"- Scene Atmosphere: {template.get('description', '')}\n\n"
-        "USER BRAND & DIRECTIVES:\n"
+        "USER DIRECTIVES & PROMPT:\n"
         f"- Brand Name: {brand}\n"
-        f"- Product Name: {prod}\n"
-        f"- User Custom Edits / Instructions: {edits}\n\n"
-        "SYNTHESIS INSTRUCTIONS:\n"
-        "1. VISUAL AUDIT: Examine the packaging geometry, materials (glass, matte, gloss, brushed aluminum, textured paper), cap/closure design, typography, and palette of the product in IMAGE 1.\n"
-        "2. SCENE RECREATION: Examine the composition, camera angle, focal depth, surface materials (podium, water ripples, ice, natural stone, colored backdrop), and lighting directions in the reference template.\n"
-        "3. WRITE THE PROMPT: Write a photorealistic commercial advertising photograph prompt tailored specifically for Nano Banana 2.1.\n"
-        "   - The authentic product from IMAGE 1 must be the clear hero subject, faithfully preserving its real packaging, label, and form.\n"
-        "   - The composition, studio lighting, textures, reflections, and atmosphere of the reference visual must be recreated around the product.\n"
-        "   - Incorporate the user's custom instructions seamlessly.\n"
-        "   - Include details on true-to-life surface contact, soft cast shadows, realistic reflections, and commercial negative space.\n\n"
+        f"- Product / Subject: {prod}\n"
+        f"- User Custom Prompt / Instructions: {edits}\n\n"
+        f"SYNTHESIS PROTOCOL:\n"
+        f"{product_instruction}\n"
+        "- Direct camera optics, physical surface contact shadows, realistic reflections, and balanced commercial negative space.\n\n"
         "Output ONLY the final synthesized prompt string. Do not include markdown quotes, preambles, or conversational commentary."
     )
     analysis_parts.append(analysis_prompt)
@@ -266,20 +280,25 @@ async def recreate_template_visual(
 
     # Algorithmic fallback if vision API call was unavailable
     if not synthesized_prompt:
+        if has_product:
+            product_clause = "The authentic product from Image 1 is featured as the hero subject with exact packaging geometry, materials, and label typography. "
+        else:
+            product_clause = f"Featuring {brand}'s {prod} as the hero subject based on user concept: {edits}. "
+
         synthesized_prompt = (
             f"Award-winning commercial advertising photograph for {brand}'s {prod}. "
-            f"The authentic product from Image 1 is featured as the hero subject with exact packaging geometry, materials, and label typography. "
+            f"{product_clause}"
             f"Recreating the signature aesthetic of {template.get('title', 'Template')}: {template.get('movement', 'Commercial advertising')}. "
             f"Studio Lighting: {template.get('lighting', 'clean diffused commercial lighting with crisp specular highlights and soft contact shadows')}. "
             f"Environment and surfaces: {template.get('description', 'Balanced commercial set with authentic textures')}. "
-            f"User modifications: {edits}. "
+            f"User directives: {edits}. "
             "Pristine optical clarity, physical contact shadows on surfaces, hyper-detailed commercial ad photography."
         )
 
     # 6. STEP 2: Render using Nano Banana 2.1
-    render_contents = [
-        types.Part.from_bytes(data=prod_bytes, mime_type=prod_mime),
-    ]
+    render_contents = []
+    if has_product:
+        render_contents.append(types.Part.from_bytes(data=prod_bytes, mime_type=prod_mime))
     if logo_bytes and logo_mime:
         render_contents.append(types.Part.from_bytes(data=logo_bytes, mime_type=logo_mime))
 
@@ -317,6 +336,7 @@ async def recreate_template_visual(
                 "template_title": template.get("title"),
                 "analysis_model": analysis_model_used,
                 "user_edit": user_edit,
+                "has_product_reference": has_product,
             },
             "tags": [template.get("category", "Ads"), template.get("industry", "general"), "recreation"],
             "reference_images": saved_ref_urls,
@@ -336,4 +356,5 @@ async def recreate_template_visual(
         "analysis_model": analysis_model_used,
         "template": template,
         "reference_images": saved_ref_urls,
+        "has_product_reference": has_product,
     }

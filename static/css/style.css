@@ -2467,6 +2467,7 @@ dialog.viewer::backdrop { display: none; }
   color: var(--ink);
 }
 
+.rec-badge-optional,
 .rec-badge-required {
   font-size: 10px;
   font-weight: 600;
