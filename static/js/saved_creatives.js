@@ -1,5 +1,5 @@
-// Saved Creatives, Project Folders & Creator Profile Management
-// Connects to /api/projects, /api/saved/*, and /api/user/profile.
+// Saved Creatives, Project Folders, Creator Profile & Pinterest Ad Templates
+// Connects to /api/projects, /api/saved/*, /api/user/profile, and /api/templates/*.
 (function () {
   const $ = (id) => document.getElementById(id);
   const esc = (s) =>
@@ -12,11 +12,20 @@
   // State
   let projects = [];
   let savedCreatives = [];
+  let exploreTemplates = [];
   let currentFolder = ""; // '' (all) | 'favorites' | 'unassigned' | <uuid>
   let currentMediaType = ""; // '' | 'image' | 'video'
   let searchQuery = "";
   let selectedColor = "#8d3624";
   let userProfile = null;
+
+  // Templates State
+  let currentViewMode = "templates"; // 'templates' | 'generations'
+  let activeCategory = "all";
+  let templateSearchQuery = "";
+  let templateMediaType = "all";
+  let recreateAspect = "4:5";
+  let uploadedProductFile = null;
 
   // -------------------------------------------------------------------------
   // Helper: Relative Time Format
@@ -32,6 +41,394 @@
       return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
     } catch (_) {
       return "";
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Primary View Mode Switching: Explore Templates vs My Generations
+  // -------------------------------------------------------------------------
+  function setViewMode(mode) {
+    currentViewMode = mode;
+    const secTemplates = $("lib_section_templates");
+    const secGenerations = $("lib_section_generations");
+    const navTemplates = $("lib_nav_templates");
+    const navGenerations = $("lib_nav_generations");
+    const subnavGenerations = $("lib_generations_subnav");
+
+    if (mode === "templates") {
+      if (secTemplates) secTemplates.hidden = false;
+      if (secGenerations) secGenerations.hidden = true;
+      if (navTemplates) navTemplates.classList.add("active");
+      if (navGenerations) navGenerations.classList.remove("active");
+      if (subnavGenerations) subnavGenerations.hidden = true;
+      loadExploreTemplates();
+    } else {
+      if (secTemplates) secTemplates.hidden = true;
+      if (secGenerations) secGenerations.hidden = false;
+      if (navTemplates) navTemplates.classList.remove("active");
+      if (navGenerations) navGenerations.classList.add("active");
+      if (subnavGenerations) subnavGenerations.hidden = false;
+      loadSavedCreatives();
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Explore Templates API & Showcase
+  // -------------------------------------------------------------------------
+  async function loadExploreTemplates() {
+    const grid = $("explore_templates_grid");
+    if (!grid) return;
+
+    try {
+      const params = new URLSearchParams();
+      if (activeCategory && activeCategory !== "all") params.set("category", activeCategory);
+      if (templateMediaType && templateMediaType !== "all") params.set("media_type", templateMediaType);
+      if (templateSearchQuery) params.set("q", templateSearchQuery);
+
+      const res = await fetch(`/api/templates/explore?${params.toString()}`);
+      if (!res.ok) throw new Error("Failed to load templates");
+      const data = await res.json();
+      exploreTemplates = data.templates || [];
+      renderTemplatesGrid();
+    } catch (err) {
+      if (grid) {
+        grid.innerHTML = `<div class="media-empty error" style="grid-column: 1 / -1;"><i class="fa-solid fa-triangle-exclamation"></i><span>Could not load templates: ${esc(err.message)}</span></div>`;
+      }
+    }
+  }
+
+  function renderTemplatesGrid() {
+    const grid = $("explore_templates_grid");
+    if (!grid) return;
+
+    if (!exploreTemplates.length) {
+      grid.innerHTML = `
+        <div class="media-empty" style="grid-column: 1 / -1; padding: 48px 20px; text-align: center;">
+          <i class="fa-solid fa-compass" style="font-size: 32px; color: var(--ink-3); margin-bottom: 12px;"></i>
+          <h3>No templates matched your filter</h3>
+          <p class="muted">Try selecting "All" or search for another keyword like "perfume", "watch", or "can".</p>
+          <button type="button" class="btn btn-sm btn-outline" style="margin-top: 14px;" id="btn_reset_tpl_filters">Reset Filters</button>
+        </div>
+      `;
+      const resetBtn = $("btn_reset_tpl_filters");
+      if (resetBtn) {
+        resetBtn.addEventListener("click", () => {
+          activeCategory = "all";
+          templateSearchQuery = "";
+          const catBtns = document.querySelectorAll(".tpl-cat-btn");
+          catBtns.forEach((b) => b.classList.toggle("active", b.dataset.cat === "all"));
+          if ($("tpl_search_input")) $("tpl_search_input").value = "";
+          loadExploreTemplates();
+        });
+      }
+      return;
+    }
+
+    grid.innerHTML = exploreTemplates
+      .map((tpl) => {
+        const cat = tpl.category || "Ads";
+        const ind = tpl.industry_label || "";
+        const title = tpl.title || "Advertising Visual Reference";
+        const movement = tpl.movement || "";
+
+        return `
+        <article class="tpl-card" data-template-id="${esc(tpl.id)}">
+          <div class="tpl-card-media" role="button" tabindex="0" title="Click to recreate visual with your product">
+            <img src="${esc(tpl.image_url)}" alt="${esc(title)}" loading="lazy">
+            <div class="tpl-card-top-badges">
+              <span class="tpl-pill-badge">${esc(cat)}</span>
+              ${ind ? `<span class="tpl-pill-badge" style="font-size:10px;">${esc(ind)}</span>` : ""}
+            </div>
+            <div class="tpl-card-hover-overlay">
+              <h4 class="tpl-hover-title">${esc(title)}</h4>
+              ${movement ? `<p class="tpl-hover-sub">${esc(movement)}</p>` : ""}
+              <button type="button" class="btn-tpl-recreate-hover" data-open-recreate="${esc(tpl.id)}">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Recreate ✨
+              </button>
+            </div>
+          </div>
+        </article>
+      `;
+      })
+      .join("");
+
+    // Wire template card click
+    grid.querySelectorAll(".tpl-card").forEach((card) => {
+      card.addEventListener("click", (e) => {
+        const tplId = card.dataset.templateId;
+        if (tplId) openRecreateModal(tplId);
+      });
+    });
+  }
+
+  // -------------------------------------------------------------------------
+  // Recreate Template Modal (Exact User Provided Design)
+  // -------------------------------------------------------------------------
+  async function openRecreateModal(templateId) {
+    const dlg = $("recreate_template_modal");
+    if (!dlg) return;
+
+    let tpl = exploreTemplates.find((t) => String(t.id) === String(templateId));
+    if (!tpl) {
+      try {
+        const res = await fetch(`/api/templates/detail/${templateId}`);
+        if (res.ok) {
+          const d = await res.json();
+          tpl = d.template;
+        }
+      } catch (_) {}
+    }
+
+    if (!tpl) return;
+
+    // Populate Left Column
+    if ($("rec_template_id")) $("rec_template_id").value = tpl.id;
+    if ($("rec_preview_img")) {
+      $("rec_preview_img").src = tpl.image_url;
+      $("rec_preview_img").alt = tpl.title;
+    }
+    if ($("rec_tpl_category")) $("rec_tpl_category").textContent = tpl.category || "Product shot";
+    if ($("rec_tpl_industry")) $("rec_tpl_industry").textContent = tpl.industry_label || "Ad Creative";
+    if ($("rec_tpl_name")) $("rec_tpl_name").textContent = tpl.title || "Advertising Reference";
+    if ($("rec_tpl_movement")) $("rec_tpl_movement").textContent = tpl.movement || tpl.lighting || "Commercial visual aesthetic";
+
+    // Palette dots
+    const paletteRow = $("rec_tpl_palette");
+    if (paletteRow && Array.isArray(tpl.colors)) {
+      paletteRow.innerHTML = tpl.colors
+        .slice(0, 6)
+        .map((c) => `<span class="rec-color-dot" style="background-color: ${esc(c)};" title="${esc(c)}"></span>`)
+        .join("");
+    }
+
+    // Reset Form Fields
+    uploadedProductFile = null;
+    if ($("rec_product_preview")) $("rec_product_preview").hidden = true;
+    if ($("rec_product_cta")) $("rec_product_cta").hidden = false;
+    if ($("rec_product_file")) $("rec_product_file").value = "";
+    if ($("rec_brand_name")) $("rec_brand_name").value = "";
+    if ($("rec_product_name")) $("rec_product_name").value = "";
+    if ($("rec_user_edit")) $("rec_user_edit").value = "";
+
+    // Reset Aspect Ratio
+    recreateAspect = "4:5";
+    document.querySelectorAll("#rec_aspect_seg button").forEach((b) => {
+      b.classList.toggle("active", b.dataset.ratio === "4:5");
+    });
+
+    // Reset Status & Result
+    if ($("rec_status_alert")) $("rec_status_alert").hidden = true;
+    if ($("rec_result_box")) $("rec_result_box").hidden = true;
+
+    const btnSubmit = $("btn_submit_recreate");
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = `<span>Recreate ✨ 1.5</span>`;
+    }
+
+    if (!dlg.open) dlg.showModal();
+  }
+
+  function closeRecreateModal() {
+    const dlg = $("recreate_template_modal");
+    if (dlg && dlg.open) dlg.close();
+  }
+
+  // Handle Product Upload Dropzone
+  function setupRecreateUpload() {
+    const drop = $("rec_product_drop");
+    const fileInput = $("rec_product_file");
+    const changeBtn = $("btn_change_product");
+
+    if (drop && fileInput) {
+      drop.addEventListener("click", (e) => {
+        if (e.target !== changeBtn) {
+          fileInput.click();
+        }
+      });
+
+      if (changeBtn) {
+        changeBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          fileInput.click();
+        });
+      }
+
+      fileInput.addEventListener("change", () => {
+        if (fileInput.files && fileInput.files[0]) {
+          handleProductFile(fileInput.files[0]);
+        }
+      });
+
+      // Drag and drop
+      drop.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        drop.style.borderColor = "var(--accent)";
+      });
+      drop.addEventListener("dragleave", () => {
+        drop.style.borderColor = "";
+      });
+      drop.addEventListener("drop", (e) => {
+        e.preventDefault();
+        drop.style.borderColor = "";
+        if (e.dataTransfer?.files?.[0]) {
+          handleProductFile(e.dataTransfer.files[0]);
+        }
+      });
+    }
+
+    // Aspect ratio selector
+    const aspectSeg = $("rec_aspect_seg");
+    if (aspectSeg) {
+      aspectSeg.querySelectorAll("button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          aspectSeg.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          recreateAspect = btn.dataset.ratio || "4:5";
+        });
+      });
+    }
+
+    // Form submission
+    const form = $("recreate_form");
+    if (form) {
+      form.addEventListener("submit", handleRecreateSubmit);
+    }
+
+    // Modal Close
+    const closeBtn = $("btn_close_recreate");
+    if (closeBtn) closeBtn.addEventListener("click", closeRecreateModal);
+
+    // Again button in result
+    const againBtn = $("rec_btn_again");
+    if (againBtn) {
+      againBtn.addEventListener("click", () => {
+        if ($("rec_result_box")) $("rec_result_box").hidden = true;
+        const btnSubmit = $("btn_submit_recreate");
+        if (btnSubmit) {
+          btnSubmit.disabled = false;
+          btnSubmit.innerHTML = `<span>Recreate ✨ 1.5</span>`;
+        }
+      });
+    }
+
+    // Studio button in result
+    const studioBtn = $("rec_btn_studio");
+    if (studioBtn) {
+      studioBtn.addEventListener("click", () => {
+        closeRecreateModal();
+        if (typeof window.showView === "function") window.showView("image", { push: true });
+      });
+    }
+  }
+
+  function handleProductFile(file) {
+    if (!file || !file.type.startsWith("image/")) {
+      if (typeof notify === "function") notify("Please select a valid image file (PNG/JPG)", "warning");
+      return;
+    }
+    uploadedProductFile = file;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const thumb = $("rec_product_thumb");
+      const nameEl = $("rec_product_filename");
+      const previewBox = $("rec_product_preview");
+      const ctaBox = $("rec_product_cta");
+
+      if (thumb) thumb.src = e.target.result;
+      if (nameEl) nameEl.textContent = file.name;
+      if (previewBox) previewBox.hidden = false;
+      if (ctaBox) ctaBox.hidden = true;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleRecreateSubmit(e) {
+    e.preventDefault();
+
+    if (!uploadedProductFile) {
+      if (typeof notify === "function") notify("Please upload your product image to recreate this template.", "warning");
+      const drop = $("rec_product_drop");
+      if (drop) {
+        drop.style.borderColor = "var(--danger)";
+        setTimeout(() => (drop.style.borderColor = ""), 1500);
+      }
+      return;
+    }
+
+    const tplId = $("rec_template_id")?.value;
+    if (!tplId) return;
+
+    const brandName = $("rec_brand_name")?.value.trim() || "";
+    const productName = $("rec_product_name")?.value.trim() || "";
+    const userEdit = $("rec_user_edit")?.value.trim() || "";
+
+    const btnSubmit = $("btn_submit_recreate");
+    const statusAlert = $("rec_status_alert");
+    const statusText = $("rec_status_text");
+    const resultBox = $("rec_result_box");
+
+    if (btnSubmit) {
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Rendering with AI...</span>`;
+    }
+    if (statusAlert) {
+      statusAlert.hidden = false;
+      if (statusText) statusText.textContent = "Nano Banana Pro is matching composition & lighting with your product...";
+    }
+    if (resultBox) resultBox.hidden = true;
+
+    try {
+      const fd = new FormData();
+      fd.append("template_id", tplId);
+      fd.append("product_image", uploadedProductFile);
+      if (brandName) fd.append("brand_name", brandName);
+      if (productName) fd.append("product_name", productName);
+      if (userEdit) fd.append("user_edit", userEdit);
+      fd.append("aspect_ratio", recreateAspect);
+      fd.append("resolution", "2K");
+
+      const res = await fetch("/api/templates/recreate", {
+        method: "POST",
+        body: fd,
+      });
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || "Recreation failed");
+      }
+
+      const data = await res.json();
+
+      if (statusAlert) statusAlert.hidden = true;
+      if (resultBox) {
+        resultBox.hidden = false;
+        const resImg = $("rec_result_img");
+        if (resImg) resImg.src = data.image_url;
+        const resRatio = $("rec_result_ratio");
+        if (resRatio) resRatio.textContent = data.aspect_ratio || "4:5";
+        const dlBtn = $("rec_download_btn");
+        if (dlBtn) dlBtn.href = data.image_url;
+      }
+
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = `<i class="fa-solid fa-check"></i> <span>Recreated Successfully</span>`;
+      }
+
+      if (typeof notify === "function") notify("Commercial ad created and stored in your library!", "success");
+
+      // Notify updates
+      window.dispatchEvent(new CustomEvent("saved-creatives-updated"));
+      updateCategoryCounts();
+    } catch (err) {
+      if (statusAlert) statusAlert.hidden = true;
+      if (btnSubmit) {
+        btnSubmit.disabled = false;
+        btnSubmit.innerHTML = `<span>Recreate ✨ 1.5</span>`;
+      }
+      if (typeof notify === "function") notify(err.message || "Could not recreate template", "error");
     }
   }
 
@@ -178,12 +575,12 @@
   }
 
   function updateCategoryCounts() {
-    // If viewing all, we can compute rough totals or fetch user stats
     fetch("/api/user/profile")
       .then((r) => r.json())
       .then((d) => {
         if (d.stats) {
           if ($("lib_count_all")) $("lib_count_all").textContent = d.stats.total_creatives || 0;
+          if ($("lib_count_all_sub")) $("lib_count_all_sub").textContent = d.stats.total_creatives || 0;
           if ($("lib_count_favorites")) $("lib_count_favorites").textContent = d.stats.favorites_count || 0;
           if ($("lib_count_unassigned")) $("lib_count_unassigned").textContent = d.stats.unassigned_count || 0;
           if ($("prof_stat_total")) $("prof_stat_total").textContent = d.stats.total_creatives || 0;
@@ -459,7 +856,6 @@
 
     try {
       if (id) {
-        // Update existing project
         const res = await fetch(`/api/projects/${id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
@@ -468,7 +864,6 @@
         if (!res.ok) throw new Error("Could not update project");
         if (typeof notify === "function") notify("Project updated!", "success");
       } else {
-        // Create new project
         const res = await fetch("/api/projects", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -583,7 +978,7 @@
     const loadBtn = e.target.closest(".btn-load-studio");
     if (loadBtn) {
       e.stopPropagation();
-      const targetStudio = loadBtn.dataset.loadType; // 'video' | 'image'
+      const targetStudio = loadBtn.dataset.loadType;
       const prompt = loadBtn.dataset.loadPrompt;
 
       if (typeof window.showView === "function") {
@@ -642,7 +1037,7 @@
           savedCreatives = savedCreatives.filter((x) => x.id !== id);
           renderGrid();
           updateCategoryCounts();
-          loadProjects(); // update folder count
+          loadProjects();
           if (typeof notify === "function") notify("Creative removed from library", "info");
         }
       } catch (_) {}
@@ -655,7 +1050,6 @@
       e.stopPropagation();
       const cid = triggerMoveBtn.dataset.cid;
       const pop = document.querySelector(`.lib-move-pop[data-pop-cid="${cid}"]`);
-      // Hide all other pops
       document.querySelectorAll(".lib-move-pop").forEach((p) => {
         if (p !== pop) p.hidden = true;
       });
@@ -663,7 +1057,6 @@
       return;
     }
 
-    // Close move pops on click outside
     if (!e.target.closest(".lib-move-dropdown")) {
       document.querySelectorAll(".lib-move-pop").forEach((p) => (p.hidden = true));
     }
@@ -694,42 +1087,99 @@
       return;
     }
 
-    // 7. Sidebar Filter Buttons (All, Favorites, Unassigned)
-    const filterBtn = e.target.closest(".lib-filter-btn");
+    // 7. Sidebar View Mode: Explore Templates
+    if (e.target.closest("#lib_nav_templates")) {
+      setViewMode("templates");
+      return;
+    }
+
+    // 8. Sidebar View Mode: My Generations
+    if (e.target.closest("#lib_nav_generations")) {
+      setViewMode("generations");
+      return;
+    }
+
+    // 9. Sidebar Sub-filter buttons (All Assets, Favorites, Unassigned)
+    const filterBtn = e.target.closest("#lib_generations_subnav .lib-filter-btn");
     if (filterBtn) {
-      document.querySelectorAll(".lib-filter-btn, .lib-folder-item").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll("#lib_generations_subnav .lib-filter-btn, #lib_generations_subnav .lib-folder-item").forEach((b) => b.classList.remove("active"));
       filterBtn.classList.add("active");
       currentFolder = filterBtn.dataset.folder || "";
       loadSavedCreatives();
       return;
     }
 
-    // 8. Sidebar Project Folder Item
-    const folderItem = e.target.closest(".lib-folder-item");
+    // 10. Sidebar Project Folder Item
+    const folderItem = e.target.closest("#lib_generations_subnav .lib-folder-item");
     if (folderItem) {
-      document.querySelectorAll(".lib-filter-btn, .lib-folder-item").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll("#lib_generations_subnav .lib-filter-btn, #lib_generations_subnav .lib-folder-item").forEach((b) => b.classList.remove("active"));
       folderItem.classList.add("active");
       currentFolder = folderItem.dataset.folderId;
       loadSavedCreatives();
       return;
     }
 
-    // 9. Profile modal: "View Folder" button
+    // 11. Explore Templates: Category filter pills matching Screenshot 1
+    const catBtn = e.target.closest(".tpl-cat-btn");
+    if (catBtn) {
+      document.querySelectorAll(".tpl-cat-btn").forEach((b) => b.classList.remove("active"));
+      catBtn.classList.add("active");
+      activeCategory = catBtn.dataset.cat || "all";
+      loadExploreTemplates();
+      return;
+    }
+
+    // 12. Explore Templates: Hover Recreate Button
+    const recHoverBtn = e.target.closest(".btn-tpl-recreate-hover");
+    if (recHoverBtn) {
+      e.stopPropagation();
+      const tplId = recHoverBtn.dataset.openRecreate;
+      if (tplId) openRecreateModal(tplId);
+      return;
+    }
+
+    // 13. Explore Templates: Quick bottom bar generate
+    const quickGenBtn = e.target.closest("#btn_tpl_quick_generate");
+    if (quickGenBtn) {
+      const qInput = $("tpl_quick_prompt");
+      const promptVal = qInput?.value.trim();
+      if (!promptVal) {
+        if (typeof notify === "function") notify("Write an ad idea first.", "warning");
+        if (qInput) qInput.focus();
+        return;
+      }
+      // Populate prompt into Image Studio
+      if (typeof window.showView === "function") {
+        window.showView("image", { push: true });
+        setTimeout(() => {
+          const ta = $("img_prompt");
+          if (ta) {
+            ta.value = promptVal;
+            ta.dispatchEvent(new Event("input", { bubbles: true }));
+            ta.focus();
+          }
+        }, 80);
+      }
+      return;
+    }
+
+    // 14. Profile modal: "View Folder" button
     const viewFolderFromProf = e.target.closest(".btn-open-proj-from-prof");
     if (viewFolderFromProf) {
       const projId = viewFolderFromProf.dataset.projId;
       closeProfileModal();
+      setViewMode("generations");
       if (typeof window.showView === "function") {
         window.showView("library", { push: true });
       }
       setTimeout(() => {
         const item = document.querySelector(`.lib-folder-item[data-folder-id="${projId}"]`);
         if (item) item.click();
-      }, 50);
+      }, 60);
       return;
     }
 
-    // 10. Color dot picker in Project modal
+    // 15. Color dot picker in Project modal
     const colorDot = e.target.closest(".color-dot-pick");
     if (colorDot) {
       document.querySelectorAll(".color-dot-pick").forEach((d) => d.classList.remove("active"));
@@ -738,7 +1188,7 @@
       return;
     }
 
-    // 11. Project Action Bar Actions
+    // 16. Project Action Bar Actions
     if (e.target.closest("#btn_create_image_in_project")) {
       const proj = projects.find((p) => p.id === currentFolder);
       if (proj) {
@@ -774,7 +1224,7 @@
         if (res.ok) {
           if (typeof notify === "function") notify("Project folder removed", "info");
           currentFolder = "";
-          const allBtn = document.querySelector('.lib-filter-btn[data-folder=""]');
+          const allBtn = document.querySelector('#lib_generations_subnav .lib-filter-btn[data-folder=""]');
           if (allBtn) allBtn.click();
           await loadProjects();
         }
@@ -782,7 +1232,7 @@
       return;
     }
 
-    // 12. Studio Project Popover item select
+    // 17. Studio Project Popover item select
     const projPopItem = e.target.closest(".project-pop-item");
     if (projPopItem) {
       const val = projPopItem.dataset.val || "";
@@ -803,7 +1253,7 @@
       return;
     }
 
-    // 13. Studio project pill open/close toggle
+    // 18. Studio project pill open/close toggle
     if (e.target.closest("#btn_img_project")) {
       e.stopPropagation();
       const pop = $("img_project_pop");
@@ -818,7 +1268,6 @@
       return;
     }
 
-    // Close studio project popovers on click outside
     if (!e.target.closest("#img_project_menu") && $("img_project_pop")) {
       $("img_project_pop").hidden = true;
     }
@@ -828,9 +1277,11 @@
   });
 
   // -------------------------------------------------------------------------
-  // Setup Dialogs and Wire Event Handlers
+  // Setup Dialogs & Event Listeners
   // -------------------------------------------------------------------------
   function setupLibraryEvents() {
+    setupRecreateUpload();
+
     // Project Editor Modal Triggers
     if ($("btn_new_project_modal")) $("btn_new_project_modal").addEventListener("click", () => openProjectModal(null));
     if ($("prof_btn_new_project")) $("prof_btn_new_project").addEventListener("click", () => openProjectModal(null));
@@ -875,7 +1326,7 @@
       });
     }
 
-    // Media type filter buttons (All, Images, Videos)
+    // Media type filter buttons in My Generations
     const typeSeg = $("lib_media_type_filter");
     if (typeSeg) {
       typeSeg.querySelectorAll("button").forEach((btn) => {
@@ -884,6 +1335,19 @@
           btn.classList.add("active");
           currentMediaType = btn.dataset.type || "";
           loadSavedCreatives();
+        });
+      });
+    }
+
+    // Media filter in Explore Templates (All, Images, Videos)
+    const tplMediaSeg = $("tpl_media_type_filter");
+    if (tplMediaSeg) {
+      tplMediaSeg.querySelectorAll("button").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          tplMediaSeg.querySelectorAll("button").forEach((b) => b.classList.remove("active"));
+          btn.classList.add("active");
+          templateMediaType = btn.dataset.media || "all";
+          loadExploreTemplates();
         });
       });
     }
@@ -897,7 +1361,7 @@
       });
     }
 
-    // Search Input with debounce
+    // Search Input in My Generations
     const searchInput = $("lib_search_input");
     if (searchInput) {
       let timer = null;
@@ -906,6 +1370,19 @@
         timer = setTimeout(() => {
           searchQuery = e.target.value.trim();
           loadSavedCreatives();
+        }, 220);
+      });
+    }
+
+    // Search Input in Explore Templates
+    const tplSearchInput = $("tpl_search_input");
+    if (tplSearchInput) {
+      let timer = null;
+      tplSearchInput.addEventListener("input", (e) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => {
+          templateSearchQuery = e.target.value.trim();
+          loadExploreTemplates();
         }, 220);
       });
     }
@@ -918,7 +1395,11 @@
     const v = e.detail?.view;
     if (v === "library" || v === "saved") {
       loadProjects();
-      loadSavedCreatives();
+      if (currentViewMode === "templates") {
+        loadExploreTemplates();
+      } else {
+        loadSavedCreatives();
+      }
     }
   });
 
@@ -930,16 +1411,16 @@
   document.addEventListener("DOMContentLoaded", () => {
     setupLibraryEvents();
     loadProjects();
-    // If initially on library or saved view
-    const activeNav = document.querySelector('.nav-btn[data-view="library"], .nav-btn[data-view="saved"]');
-    if (activeNav?.classList.contains("active")) {
-      loadSavedCreatives();
-    }
+    // Default to explore templates
+    loadExploreTemplates();
   });
 
   // Global exports
   window.openProfileModal = openProfileModal;
   window.openProjectModal = openProjectModal;
+  window.openRecreateModal = openRecreateModal;
   window.loadSavedCreatives = loadSavedCreatives;
   window.loadProjects = loadProjects;
+  window.loadExploreTemplates = loadExploreTemplates;
+  window.setLibraryViewMode = setViewMode;
 })();

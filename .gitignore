@@ -50,7 +50,8 @@ ref videos/
 *.pdf
 
 # Server-side job cache
-data/
+data/*
+!data/explore_templates.json
 
 # Competitor ad agent runs (keep the example) and Playwright MCP output
 runs/*

@@ -27,7 +27,7 @@
       <button type="button" class="nav-btn" data-view="image" data-menu="menu_image">Image</button>
       <button type="button" class="nav-btn" data-view="video" data-menu="menu_video">Video</button>
       <button type="button" class="nav-btn" data-view="batch" hidden style="display:none !important;">Batch</button>
-      <button type="button" class="nav-btn" data-view="library" id="nav_library"><i class="fa-solid fa-folder-open"></i> Projects &amp; Library</button>
+      <button type="button" class="nav-btn" data-view="library" id="nav_library"><i class="fa-solid fa-compass"></i> Templates &amp; Library</button>
     </nav>
 
     <!-- Hover menus: what each studio can do, with real outputs. Each item opens the studio set up for it. -->
@@ -720,46 +720,112 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
   <!-- ================================================================== -->
   <main class="page page-library" id="view_library" data-view-panel="library" hidden>
     <div class="library-shell">
-      <!-- Left Sidebar: Project Folders & Quick Filters -->
+      <!-- Left Sidebar: Templates & Project Folders -->
       <aside class="library-sidebar">
         <div class="library-sidebar-head">
           <div class="library-sidebar-title">
-            <i class="fa-solid fa-folder-tree" style="color: var(--accent);"></i>
-            <span>Projects &amp; Folders</span>
+            <i class="fa-solid fa-shapes" style="color: var(--accent);"></i>
+            <span>Library &amp; Presets</span>
           </div>
           <button type="button" class="btn btn-xs btn-primary" id="btn_new_project_modal" title="Create new project folder">
             <i class="fa-solid fa-plus"></i> New
           </button>
         </div>
 
-        <div class="library-nav-filters">
-          <button type="button" class="lib-filter-btn active" data-folder="">
+        <!-- Primary Mode Toggles: Explore Templates vs My Generations -->
+        <div class="library-nav-filters" style="margin-bottom: 12px;">
+          <button type="button" class="lib-filter-btn active" id="lib_nav_templates" data-section="templates">
+            <i class="fa-solid fa-compass" style="color: var(--accent);"></i>
+            <span>Explore Templates</span>
+            <span class="lib-badge" style="background: var(--accent); color: #fff;">110+</span>
+          </button>
+          <button type="button" class="lib-filter-btn" id="lib_nav_generations" data-section="generations">
             <i class="fa-solid fa-layer-group"></i>
-            <span>All Generations</span>
+            <span>My Generations</span>
             <span class="lib-badge" id="lib_count_all">0</span>
-          </button>
-          <button type="button" class="lib-filter-btn" data-folder="favorites">
-            <i class="fa-solid fa-star" style="color: #f59e0b;"></i>
-            <span>Favorites</span>
-            <span class="lib-badge" id="lib_count_favorites">0</span>
-          </button>
-          <button type="button" class="lib-filter-btn" data-folder="unassigned">
-            <i class="fa-regular fa-folder"></i>
-            <span>Unassigned</span>
-            <span class="lib-badge" id="lib_count_unassigned">0</span>
           </button>
         </div>
 
-        <div class="library-folders-section">
-          <div class="library-section-label">Your Projects</div>
-          <div class="library-folder-list" id="library_folder_list">
-            <!-- Dynamically rendered project folders -->
+        <!-- Sub-filters visible when My Generations is active -->
+        <div class="library-generations-subnav" id="lib_generations_subnav" hidden>
+          <div class="library-section-label">Filter Generations</div>
+          <div class="library-nav-filters" style="margin-bottom: 12px;">
+            <button type="button" class="lib-filter-btn active" data-folder="">
+              <i class="fa-solid fa-images"></i>
+              <span>All Assets</span>
+              <span class="lib-badge" id="lib_count_all_sub">0</span>
+            </button>
+            <button type="button" class="lib-filter-btn" data-folder="favorites">
+              <i class="fa-solid fa-star" style="color: #f59e0b;"></i>
+              <span>Favorites</span>
+              <span class="lib-badge" id="lib_count_favorites">0</span>
+            </button>
+            <button type="button" class="lib-filter-btn" data-folder="unassigned">
+              <i class="fa-regular fa-folder"></i>
+              <span>Unassigned</span>
+              <span class="lib-badge" id="lib_count_unassigned">0</span>
+            </button>
+          </div>
+
+          <div class="library-folders-section">
+            <div class="library-section-label">Your Projects</div>
+            <div class="library-folder-list" id="library_folder_list">
+              <!-- Dynamically rendered project folders -->
+            </div>
           </div>
         </div>
       </aside>
 
-      <!-- Main Content Area: Project Header + Generations Grid -->
-      <section class="library-main">
+      <!-- 1. EXPLORE TEMPLATES SHOWCASE (Matching User Attached UI) -->
+      <section class="library-main" id="lib_section_templates">
+        <div class="explore-head">
+          <div class="explore-title-row">
+            <div>
+              <h1 class="explore-main-title">EXPLORE TEMPLATES</h1>
+              <p class="muted small" style="margin: 2px 0 0;">Curated Pinterest advertising designs. Upload your product to recreate any visual with photorealistic fidelity.</p>
+            </div>
+            <div class="explore-head-right">
+              <div class="input-with-icon explore-search-wrap">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="search" id="tpl_search_input" class="input input-sm" placeholder="Search templates by aesthetic, category, or industry..." autocomplete="off">
+              </div>
+              <div class="segmented seg-list" id="tpl_media_type_filter">
+                <button type="button" data-media="all" class="active">All</button>
+                <button type="button" data-media="image"><i class="fa-regular fa-image"></i> Images</button>
+                <button type="button" data-media="video"><i class="fa-solid fa-film"></i> Videos</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Category filter pills matching Screenshot 1 -->
+          <div class="explore-cat-bar" id="explore_cat_bar">
+            <button type="button" class="tpl-cat-btn active" data-cat="all"><i class="fa-solid fa-border-all"></i> All</button>
+            <button type="button" class="tpl-cat-btn" data-cat="Product shot"><i class="fa-solid fa-cube"></i> Product shot</button>
+            <button type="button" class="tpl-cat-btn" data-cat="Motion"><i class="fa-solid fa-bolt"></i> Motion</button>
+            <button type="button" class="tpl-cat-btn" data-cat="UGC"><i class="fa-solid fa-user"></i> UGC</button>
+            <button type="button" class="tpl-cat-btn" data-cat="TikTok"><i class="fa-brands fa-tiktok"></i> TikTok</button>
+            <button type="button" class="tpl-cat-btn" data-cat="Ads"><i class="fa-solid fa-rectangle-ad"></i> Ads</button>
+            <button type="button" class="tpl-cat-btn" data-cat="Posters"><i class="fa-solid fa-file-lines"></i> Posters</button>
+            <button type="button" class="tpl-cat-btn" data-cat="Marketplace"><i class="fa-solid fa-store"></i> Marketplace</button>
+          </div>
+        </div>
+
+        <!-- Templates Grid (Masonry / Cards) -->
+        <div class="explore-grid" id="explore_templates_grid">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Floating Bottom Prompt Bar matching Screenshot 1 -->
+        <div class="explore-floating-bar" id="explore_floating_bar">
+          <div class="explore-floating-inner">
+            <input type="text" id="tpl_quick_prompt" class="explore-floating-input" placeholder="Describe the scene you imagine..." autocomplete="off">
+            <button type="button" class="btn-floating-generate" id="btn_tpl_quick_generate" title="Create with AI"><i class="fa-solid fa-wand-magic-sparkles"></i></button>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. MY GENERATIONS SECTION (Existing User History & Folders) -->
+      <section class="library-main" id="lib_section_generations" hidden>
         <div class="library-main-head">
           <div class="library-title-wrap">
             <h2 id="lib_active_folder_title">All Generations</h2>
@@ -812,6 +878,8 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
           <!-- Rendered dynamically -->
         </div>
       </section>
+    </div>
+  </main>
     </div>
   </main>
 
@@ -1195,6 +1263,130 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
         <button type="submit" class="btn btn-primary" id="btn_save_project">Save Project</button>
       </footer>
     </form>
+  </dialog>
+
+  <!-- ============================================================== -->
+  <!-- Recreate Template Modal (Exact User Provided Design)            -->
+  <!-- ============================================================== -->
+  <dialog id="recreate_template_modal" class="recreate-dialog" aria-labelledby="rec_modal_title">
+    <div class="recreate-modal-content">
+      <div class="recreate-grid-wrap">
+        <!-- Left: Large Reference Template Preview -->
+        <div class="recreate-preview-col">
+          <div class="recreate-img-frame">
+            <img id="rec_preview_img" src="" alt="Template Reference Visual" loading="lazy">
+          </div>
+          <div class="recreate-tpl-meta">
+            <div class="rec-meta-top">
+              <span class="badge badge-accent" id="rec_tpl_category">Product shot</span>
+              <span class="rec-tpl-industry" id="rec_tpl_industry">Beauty &amp; Cosmetics</span>
+            </div>
+            <h4 id="rec_tpl_name" class="rec-meta-title">Template Name</h4>
+            <p id="rec_tpl_movement" class="muted small rec-meta-desc">Design movement &amp; lighting aesthetic</p>
+            <div class="rec-palette-row" id="rec_tpl_palette">
+              <!-- Color dots -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Upload Product & Describe Edit Form -->
+        <div class="recreate-form-col">
+          <header class="recreate-col-head">
+            <h3 id="rec_modal_title">RECREATE TEMPLATE</h3>
+            <button type="button" class="btn btn-ghost btn-sm recreate-close-btn" id="btn_close_recreate" aria-label="Close dialog"><i class="fa-solid fa-xmark"></i></button>
+          </header>
+
+          <form id="recreate_form" class="recreate-form-body">
+            <input type="hidden" id="rec_template_id" value="">
+
+            <!-- 1. Replace Product (Required) -->
+            <div class="rec-field">
+              <div class="rec-field-header">
+                <label class="rec-field-title">Replace product</label>
+                <span class="rec-badge-required">Required</span>
+              </div>
+              <div class="rec-dropzone" id="rec_product_drop" role="button" tabindex="0">
+                <div class="rec-drop-cta" id="rec_product_cta">
+                  <div class="rec-plus-circle"><i class="fa-solid fa-plus"></i></div>
+                  <span class="rec-drop-text">Upload product</span>
+                </div>
+                <div class="rec-drop-preview" id="rec_product_preview" hidden>
+                  <img id="rec_product_thumb" src="" alt="Uploaded Product">
+                  <div class="rec-preview-info">
+                    <span id="rec_product_filename" class="rec-file-name">product.png</span>
+                    <button type="button" class="rec-change-btn" id="btn_change_product">Change</button>
+                  </div>
+                </div>
+                <input type="file" id="rec_product_file" accept="image/*" hidden>
+              </div>
+            </div>
+
+            <!-- 2. Brand & Product Name -->
+            <div class="rec-field-grid">
+              <div class="rec-field">
+                <label for="rec_brand_name" class="rec-label-sub">Brand name</label>
+                <input type="text" id="rec_brand_name" class="input input-sm rec-input" placeholder="e.g. Griotte, Rhode, Acme">
+              </div>
+              <div class="rec-field">
+                <label for="rec_product_name" class="rec-label-sub">Product name</label>
+                <input type="text" id="rec_product_name" class="input input-sm rec-input" placeholder="e.g. Sour Cherry Mist, Serum">
+              </div>
+            </div>
+
+            <!-- 3. Describe Your Edit -->
+            <div class="rec-field">
+              <div class="rec-field-header">
+                <label for="rec_user_edit" class="rec-field-title">Describe your edit</label>
+              </div>
+              <div class="rec-textarea-wrap">
+                <i class="fa-solid fa-wand-magic rec-pen-icon"></i>
+                <textarea id="rec_user_edit" class="rec-textarea" rows="2" placeholder="What do you want to change? (e.g. add water droplets, yellow sunset backdrop...)"></textarea>
+              </div>
+            </div>
+
+            <!-- 4. Aspect Ratio & Target Folder -->
+            <div class="rec-field-row">
+              <div class="rec-field" style="flex:1;">
+                <label class="rec-label-sub">Aspect ratio</label>
+                <div class="segmented seg-list rec-aspect-seg" id="rec_aspect_seg">
+                  <button type="button" data-ratio="4:5" class="active">4:5</button>
+                  <button type="button" data-ratio="1:1">1:1</button>
+                  <button type="button" data-ratio="9:16">9:16</button>
+                  <button type="button" data-ratio="16:9">16:9</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Live Status Alert -->
+            <div class="rec-status-alert" id="rec_status_alert" hidden>
+              <i class="fa-solid fa-spinner fa-spin"></i>
+              <span id="rec_status_text">Recreating visual with Nano Banana Pro...</span>
+            </div>
+
+            <!-- Generated Result Box (shown on complete) -->
+            <div class="rec-result-box" id="rec_result_box" hidden>
+              <div class="rec-result-head">
+                <span class="badge badge-accent"><i class="fa-solid fa-check"></i> Generated Visual</span>
+                <span class="muted small" id="rec_result_ratio">4:5</span>
+              </div>
+              <div class="rec-result-img-wrap">
+                <img id="rec_result_img" src="" alt="Generated Ad Creative">
+              </div>
+              <div class="rec-result-actions">
+                <a id="rec_download_btn" href="#" download="ad_creative.png" class="btn btn-sm btn-primary" target="_blank"><i class="fa-solid fa-download"></i> Download</a>
+                <button type="button" class="btn btn-sm btn-outline" id="rec_btn_studio"><i class="fa-solid fa-arrow-up-right-from-square"></i> Studio</button>
+                <button type="button" class="btn btn-sm btn-ghost" id="rec_btn_again"><i class="fa-solid fa-rotate-right"></i> Try Again</button>
+              </div>
+            </div>
+
+            <!-- Submit Recreate Button matching Screenshot 2 -->
+            <button type="submit" class="btn-recreate-cta" id="btn_submit_recreate">
+              <span>Recreate ✨ 1.5</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
   </dialog>
 
   <dialog id="confirm_dialog">

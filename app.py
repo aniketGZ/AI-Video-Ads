@@ -52,6 +52,7 @@ from access import current_plan, plan_summary, require_feature  # noqa: E402
 from upgrade_routes import router as upgrade_router  # noqa: E402
 from auth import router as auth_router  # noqa: E402
 from saved_routes import router as saved_router  # noqa: E402
+from templates_routes import router as templates_router  # noqa: E402
 
 # Pro and Studio only (see pricing.PLANS)
 CAMPAIGN_ACCESS = [Depends(require_feature("campaign_manager"))]
@@ -1023,6 +1024,7 @@ app.include_router(batch_prompt_router)
 app.include_router(demo_session_router)
 app.include_router(auth_router)
 app.include_router(saved_router)
+app.include_router(templates_router)
 
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
