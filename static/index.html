@@ -385,6 +385,15 @@
             <input type="file" id="img_files" accept="image/*" multiple hidden>
           </div>
           <span class="sr-only" id="img_refs_hint">· optional, up to 6 · product photos, styling or packaging</span>
+          <div class="pill-menu" id="img_template_menu">
+            <button type="button" class="pill" id="btn_img_template" aria-haspopup="true" aria-expanded="false" aria-label="Industry template" title="Pinterest Industry Design Templates"><i class="fa-solid fa-wand-magic-sparkles"></i><span class="pill-value" id="img_template_label">Template</span><i class="fa-solid fa-chevron-up pill-caret"></i></button>
+            <div class="pill-pop" id="img_template_pop" hidden style="min-width: 290px; max-height: 400px; overflow-y: auto;">
+              <div class="pill-pop-title">Industry Template (Pinterest)</div>
+              <div class="template-pop-list" id="img_preset_template_list" style="display: flex; flex-direction: column; gap: 4px; padding: 4px 0;">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
           <div class="pill-menu">
             <button type="button" class="pill" aria-haspopup="true" aria-expanded="false" aria-label="Model"><i class="fa-solid fa-cube"></i><span class="pill-value"></span><i class="fa-solid fa-chevron-up pill-caret"></i></button>
             <div class="pill-pop" hidden>
@@ -824,6 +833,146 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
     </div>
   </dialog>
 
+  <!-- Industry Template Studio Modal (Pinterest Creative Reference System) -->
+  <dialog id="industry_template_modal" class="industry-template-dialog">
+    <div class="industry-template-modal-content">
+      <header class="industry-template-head">
+        <div class="industry-template-title-wrap">
+          <div class="industry-template-eyebrow">
+            <span class="badge badge-accent" id="tpl_modal_industry_badge">Beauty &amp; Cosmetics</span>
+            <span class="industry-template-source"><i class="fa-brands fa-pinterest"></i> Pinterest Creative Library</span>
+          </div>
+          <h3 id="tpl_modal_preset_name">Rhode Editorial Skincare Minimalist</h3>
+          <p id="tpl_modal_movement" class="muted small">Organic Luxury Minimalist / Editorial Skincare Aesthetic</p>
+        </div>
+        <button type="button" class="btn btn-ghost btn-sm" id="btn_close_industry_template" aria-label="Close dialog"><i class="fa-solid fa-xmark"></i></button>
+      </header>
+
+      <div class="industry-template-body">
+        <!-- Left: User Input Form -->
+        <div class="industry-template-form-col">
+          <div class="template-field">
+            <label for="tpl_preset_picker" class="field-label">Industry Style</label>
+            <select id="tpl_preset_picker" class="input input-sm">
+              <!-- Dynamically populated with all presets grouped by industry -->
+            </select>
+          </div>
+
+          <div class="template-field-grid">
+            <div class="template-field">
+              <label for="tpl_brand_name" class="field-label">Brand Name</label>
+              <input type="text" id="tpl_brand_name" class="input input-sm" placeholder="e.g. Rhode, Acme, Glossier">
+            </div>
+            <div class="template-field">
+              <label for="tpl_product_name" class="field-label">Product Name</label>
+              <input type="text" id="tpl_product_name" class="input input-sm" placeholder="e.g. Peptide Glazing Fluid">
+            </div>
+          </div>
+
+          <div class="template-field">
+            <label for="tpl_idea" class="field-label">Creative Concept / Idea <span class="muted small">(Scene setting, props, mood)</span></label>
+            <textarea id="tpl_idea" class="textarea input-sm" rows="2" placeholder="e.g. Morning sunlight across warm travertine counter, gentle water caustics, fresh botanicals..."></textarea>
+          </div>
+
+          <div class="template-field-grid">
+            <div class="template-field">
+              <label for="tpl_headline" class="field-label">Headline</label>
+              <input type="text" id="tpl_headline" class="input input-sm" placeholder="e.g. Dewy Hydration in One Drop">
+            </div>
+            <div class="template-field">
+              <label for="tpl_cta" class="field-label">Call To Action (CTA)</label>
+              <input type="text" id="tpl_cta" class="input input-sm" placeholder="e.g. Shop The Drop">
+            </div>
+          </div>
+
+          <div class="template-field-grid">
+            <div class="template-field">
+              <label for="tpl_aspect_ratio" class="field-label">Aspect Ratio</label>
+              <select id="tpl_aspect_ratio" class="input input-sm">
+                <option value="4:5" selected>4:5 · Vertical Meta Feed</option>
+                <option value="1:1">1:1 · Square</option>
+                <option value="9:16">9:16 · Stories / Reels</option>
+                <option value="16:9">16:9 · Landscape</option>
+              </select>
+            </div>
+            <div class="template-field">
+              <label for="tpl_resolution" class="field-label">Resolution</label>
+              <select id="tpl_resolution" class="input input-sm">
+                <option value="1K" selected>1K (Fast ~1024px)</option>
+                <option value="2K">2K (High ~2048px)</option>
+                <option value="4K">4K (Ultra ~4096px)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Product Image & Brand Logo Upload Zones -->
+          <div class="template-upload-zones">
+            <div class="template-dropzone" id="tpl_product_dropzone">
+              <div class="template-dropzone-header">
+                <span class="dropzone-tag"><i class="fa-solid fa-camera"></i> Product Photo (IMAGE 1)</span>
+                <span class="badge badge-accent small">Product Lock</span>
+              </div>
+              <p class="dropzone-desc">Drop product photo to lock exact physical packaging &amp; materials</p>
+              <input type="file" id="tpl_product_file" accept="image/*" hidden>
+              <div class="dropzone-preview" id="tpl_product_preview" hidden>
+                <img id="tpl_product_preview_img" src="" alt="Product">
+                <button type="button" class="btn-remove-thumb" id="btn_remove_tpl_product"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+            </div>
+
+            <div class="template-dropzone" id="tpl_logo_dropzone">
+              <div class="template-dropzone-header">
+                <span class="dropzone-tag"><i class="fa-solid fa-trademark"></i> Brand Logo (IMAGE 2)</span>
+                <span class="badge small">Logo Lock</span>
+              </div>
+              <p class="dropzone-desc">Drop transparent SVG/PNG logo for crisp corner lock</p>
+              <input type="file" id="tpl_logo_file" accept="image/*" hidden>
+              <div class="dropzone-preview" id="tpl_logo_preview" hidden>
+                <img id="tpl_logo_preview_img" src="" alt="Logo">
+                <button type="button" class="btn-remove-thumb" id="btn_remove_tpl_logo"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Visual Reference & Live Prompt Preview -->
+        <div class="industry-template-preview-col">
+          <div class="template-pins-strip" id="tpl_pins_strip">
+            <!-- Reference Pins thumbnails -->
+          </div>
+
+          <div class="template-specs-box">
+            <div class="template-specs-head">
+              <span><i class="fa-solid fa-swatchbook"></i> Visual DNA &amp; Palette</span>
+              <div class="template-palette-dots" id="tpl_palette_dots"></div>
+            </div>
+            <div class="template-typo-stack" id="tpl_typo_tags"></div>
+          </div>
+
+          <div class="template-prompt-preview-wrap">
+            <div class="template-prompt-preview-head">
+              <span><i class="fa-solid fa-terminal"></i> Compiled Commercial Prompt</span>
+              <button type="button" class="btn btn-xs btn-ghost" id="btn_copy_tpl_prompt" title="Copy prompt"><i class="fa-regular fa-copy"></i> Copy</button>
+            </div>
+            <pre class="template-prompt-pre" id="tpl_prompt_preview"></pre>
+          </div>
+        </div>
+      </div>
+
+      <footer class="industry-template-foot">
+        <button type="button" class="btn btn-ghost" id="btn_cancel_template">Cancel</button>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <button type="button" class="btn btn-outline" id="btn_load_into_studio">
+            <i class="fa-solid fa-arrow-down-to-bracket"></i> Load into Studio
+          </button>
+          <button type="button" class="btn btn-primary" id="btn_generate_from_template">
+            <i class="fa-solid fa-wand-magic-sparkles"></i> Generate Image Now
+          </button>
+        </div>
+      </footer>
+    </div>
+  </dialog>
+
   <dialog id="confirm_dialog">
     <form method="dialog" class="dialog-body">
       <h3 id="confirm_title">Are you sure?</h3>
@@ -844,8 +993,8 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
   <script src="/static/js/auth.js?v=1.0.0"></script>
   <script src="/static/js/core.js?v=3.9.0"></script>
   <script src="/static/js/render_loader.js?v=3.1.0"></script>
-  <script src="/static/js/campaign.js?v=3.3.1"></script>
-  <script src="/static/js/studios.js?v=3.4.0"></script>
+  <script src="/static/js/campaign.js?v=3.4.0"></script>
+  <script src="/static/js/studios.js?v=3.5.0"></script>
   <script src="/static/js/viewer.js?v=1.0.0"></script>
   <script src="/static/js/saved_creatives.js?v=1.0.0"></script>
   <script src="/static/js/composer.js?v=1.1.0"></script>

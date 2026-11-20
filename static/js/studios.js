@@ -492,5 +492,326 @@
     });
   });
 
+  // =========================================================================
+  // Industry Preset Templates (Pinterest Reference Creative Studio)
+  // =========================================================================
+  let allIndustryTemplates = [];
+  let activeTemplate = null;
+  let tplProductFile = null;
+  let tplLogoFile = null;
+
+  async function loadIndustryTemplates() {
+    try {
+      const res = await fetch("/api/campaign/preset-templates");
+      if (!res.ok) return;
+      const data = await res.json();
+      allIndustryTemplates = data.templates || [];
+      renderTemplatePillList();
+      populateTemplateModalSelect();
+      if (allIndustryTemplates.length > 0) {
+        setModalTemplate(allIndustryTemplates[0].id);
+      }
+    } catch (err) {
+      console.warn("Could not load preset templates:", err);
+    }
+  }
+
+  function renderTemplatePillList() {
+    const listEl = $("img_preset_template_list");
+    if (!listEl) return;
+    listEl.innerHTML = `
+      <button type="button" class="btn btn-sm btn-primary w-full" id="btn_open_full_template_modal" style="margin-bottom: 6px; justify-content:center;">
+        <i class="fa-solid fa-wand-magic-sparkles"></i> Open Template Studio
+      </button>
+      <div style="font-size:11px; text-transform:uppercase; letter-spacing:0.04em; color:var(--ink-3); padding:4px 8px;">Popular Styles</div>
+      ${allIndustryTemplates.map((t) => `
+        <button type="button" class="template-item-btn" data-pick-template="${esc(t.id)}">
+          <span class="tpl-btn-name">${esc(t.name)}</span>
+          <span class="tpl-btn-sub">${esc(t.industry_label)}</span>
+        </button>
+      `).join("")}
+    `;
+
+    $("btn_open_full_template_modal")?.addEventListener("click", () => {
+      openIndustryTemplateModal(activeTemplate?.id || "beauty_editorial_rhode");
+    });
+
+    listEl.querySelectorAll("[data-pick-template]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const tid = btn.dataset.pickTemplate;
+        openIndustryTemplateModal(tid);
+      });
+    });
+  }
+
+  function populateTemplateModalSelect() {
+    const sel = $("tpl_preset_picker");
+    if (!sel) return;
+    sel.innerHTML = allIndustryTemplates.map((t) => `
+      <option value="${esc(t.id)}">${esc(t.industry_label)} — ${esc(t.name)}</option>
+    `).join("");
+
+    sel.addEventListener("change", () => {
+      setModalTemplate(sel.value);
+    });
+  }
+
+  function setModalTemplate(templateId) {
+    const t = allIndustryTemplates.find((x) => x.id === templateId) || allIndustryTemplates[0];
+    if (!t) return;
+    activeTemplate = t;
+
+    // Update Header
+    if ($("tpl_modal_preset_name")) $("tpl_modal_preset_name").textContent = t.name;
+    if ($("tpl_modal_industry_badge")) $("tpl_modal_industry_badge").textContent = t.industry_label;
+    if ($("tpl_modal_movement")) $("tpl_modal_movement").textContent = t.movement;
+    if ($("tpl_preset_picker") && $("tpl_preset_picker").value !== t.id) {
+      $("tpl_preset_picker").value = t.id;
+    }
+
+    // Prefill form defaults
+    const defs = t.template_defaults || {};
+    if ($("tpl_brand_name")) $("tpl_brand_name").value = defs.brand_name || "";
+    if ($("tpl_product_name")) $("tpl_product_name").value = defs.product_name || "";
+    if ($("tpl_idea")) $("tpl_idea").value = defs.idea || "";
+    if ($("tpl_headline")) $("tpl_headline").value = defs.headline || "";
+    if ($("tpl_cta")) $("tpl_cta").value = defs.cta || "Shop Now";
+    if ($("tpl_aspect_ratio")) $("tpl_aspect_ratio").value = defs.aspect_ratio || "4:5";
+
+    // Reference Pins
+    const pinsEl = $("tpl_pins_strip");
+    if (pinsEl) {
+      const pins = t.reference_pins || [];
+      pinsEl.innerHTML = pins.map((p) => `
+        <a class="template-pin-card" href="${esc(p.pin_url || p.image_url)}" target="_blank" rel="noopener" title="${esc(p.title || 'Pinterest Pin')}">
+          <img src="${esc(p.image_url)}" alt="${esc(p.title || 'Reference')}" loading="lazy">
+          <div class="template-pin-badge"><i class="fa-brands fa-pinterest"></i> Reference</div>
+        </a>
+      `).join("");
+    }
+
+    // Palette Dots
+    const dotsEl = $("tpl_palette_dots");
+    if (dotsEl) {
+      const palette = t.colors?.palette || [t.colors?.background_tone, t.colors?.secondary_accent, t.colors?.primary_accent].filter(Boolean);
+      dotsEl.innerHTML = palette.map((c) => `<span class="template-dot" style="background:${esc(c)}" title="${esc(c)}"></span>`).join("");
+    }
+
+    // Typography Tags
+    const typoEl = $("tpl_typo_tags");
+    if (typoEl) {
+      const fonts = (t.typography?.recommended_headline_fonts || []).slice(0, 3);
+      typoEl.innerHTML = fonts.map((f) => `<span class="badge small"><i class="fa-solid fa-font"></i> ${esc(f)}</span>`).join("");
+    }
+
+    updateCompiledPromptPreview();
+  }
+
+  function getModalFormData() {
+    return {
+      preset_id: activeTemplate?.id || "beauty_editorial_rhode",
+      brand_name: $("tpl_brand_name")?.value.trim() || "",
+      product_name: $("tpl_product_name")?.value.trim() || "",
+      idea: $("tpl_idea")?.value.trim() || "",
+      headline: $("tpl_headline")?.value.trim() || "",
+      cta: $("tpl_cta")?.value.trim() || "Shop Now",
+      aspect_ratio: $("tpl_aspect_ratio")?.value || "4:5",
+      has_product_ref: !!tplProductFile,
+      has_logo: !!tplLogoFile,
+    };
+  }
+
+  let promptDebounceTimer = null;
+  function updateCompiledPromptPreview() {
+    clearTimeout(promptDebounceTimer);
+    promptDebounceTimer = setTimeout(async () => {
+      const fd = getModalFormData();
+      try {
+        const body = new FormData();
+        Object.entries(fd).forEach(([k, v]) => body.append(k, String(v)));
+        const res = await fetch("/api/campaign/presets/render-template", {
+          method: "POST",
+          headers: apiHeaders(),
+          body,
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if ($("tpl_prompt_preview")) {
+            $("tpl_prompt_preview").textContent = data.rendered_prompt;
+          }
+        }
+      } catch (err) {
+        console.warn("Could not recompile preview:", err);
+      }
+    }, 150);
+  }
+
+  function openIndustryTemplateModal(presetId) {
+    if (typeof showView === "function") {
+      showView("image", { push: true });
+    }
+    const modal = $("industry_template_modal");
+    if (!modal) return;
+    if (presetId) {
+      setModalTemplate(presetId);
+    }
+    if (typeof modal.showModal === "function") {
+      modal.showModal();
+    } else {
+      modal.setAttribute("open", "");
+    }
+  }
+  window.openIndustryTemplateModal = openIndustryTemplateModal;
+
+  function closeIndustryTemplateModal() {
+    const modal = $("industry_template_modal");
+    if (!modal) return;
+    if (typeof modal.close === "function") {
+      modal.close();
+    } else {
+      modal.removeAttribute("open");
+    }
+  }
+
+  // Hook input events on modal form fields
+  ["tpl_brand_name", "tpl_product_name", "tpl_idea", "tpl_headline", "tpl_cta", "tpl_aspect_ratio"].forEach((id) => {
+    $(id)?.addEventListener("input", updateCompiledPromptPreview);
+    $(id)?.addEventListener("change", updateCompiledPromptPreview);
+  });
+
+  // Modal Buttons
+  $("btn_close_industry_template")?.addEventListener("click", closeIndustryTemplateModal);
+  $("btn_cancel_template")?.addEventListener("click", closeIndustryTemplateModal);
+
+  // Copy prompt button
+  $("btn_copy_tpl_prompt")?.addEventListener("click", async () => {
+    const txt = $("tpl_prompt_preview")?.textContent || "";
+    if (!txt) return;
+    try {
+      await navigator.clipboard.writeText(txt);
+      notify("Prompt copied to clipboard!", "success");
+    } catch {
+      notify("Could not copy to clipboard.", "error");
+    }
+  });
+
+  // Wire product & logo dropzones inside modal
+  function wireModalDropzone(zoneId, inputId, previewId, imgId, rmBtnId, onFile) {
+    const zone = $(zoneId);
+    const input = $(inputId);
+    const prev = $(previewId);
+    const img = $(imgId);
+    const rm = $(rmBtnId);
+    if (!zone || !input) return;
+
+    zone.addEventListener("click", (e) => {
+      if (e.target.closest("button")) return;
+      input.click();
+    });
+
+    zone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      zone.classList.add("dragover");
+    });
+    zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+    zone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      zone.classList.remove("dragover");
+      const f = Array.from(e.dataTransfer?.files || []).find((x) => x.type.startsWith("image/"));
+      if (f) handleFile(f);
+    });
+
+    input.addEventListener("change", () => {
+      if (input.files && input.files[0]) handleFile(input.files[0]);
+    });
+
+    function handleFile(file) {
+      onFile(file);
+      if (img && prev) {
+        img.src = URL.createObjectURL(file);
+        prev.hidden = false;
+      }
+      updateCompiledPromptPreview();
+    }
+
+    rm?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      onFile(null);
+      if (input) input.value = "";
+      if (prev) prev.hidden = true;
+      if (img) img.src = "";
+      updateCompiledPromptPreview();
+    });
+  }
+
+  wireModalDropzone("tpl_product_dropzone", "tpl_product_file", "tpl_product_preview", "tpl_product_preview_img", "btn_remove_tpl_product", (f) => {
+    tplProductFile = f;
+  });
+
+  wireModalDropzone("tpl_logo_dropzone", "tpl_logo_file", "tpl_logo_preview", "tpl_logo_preview_img", "btn_remove_tpl_logo", (f) => {
+    tplLogoFile = f;
+  });
+
+  function applyTemplateToStudio() {
+    const promptText = $("tpl_prompt_preview")?.textContent.trim();
+    if (!promptText) {
+      notify("Template prompt is empty.", "warning");
+      return false;
+    }
+
+    // Set prompt box
+    const primaryBox = imgPromptBoxes()[0];
+    if (primaryBox) {
+      primaryBox.value = promptText;
+      primaryBox.dispatchEvent(new Event("input", { bubbles: true }));
+      primaryBox.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+
+    // Set aspect ratio
+    const ratio = $("tpl_aspect_ratio")?.value || "4:5";
+    const ratioBtn = $("img_aspect")?.querySelector(`button[data-ratio="${ratio}"]`);
+    if (ratioBtn) {
+      ratioBtn.click();
+    }
+
+    // Set resolution if selected
+    const res = $("tpl_resolution")?.value || "1K";
+    const resBtn = $("img_resolution")?.querySelector(`button[data-res="${res}"]`);
+    if (resBtn) {
+      resBtn.click();
+    }
+
+    // Transfer uploaded files to studio references
+    const toAdd = [tplProductFile, tplLogoFile].filter(Boolean);
+    if (toAdd.length && imgRefs) {
+      imgRefs.add(toAdd);
+    }
+
+    // Update template label in composer bar
+    if (activeTemplate && $("img_template_label")) {
+      $("img_template_label").textContent = activeTemplate.name.split(" ")[0];
+    }
+
+    closeIndustryTemplateModal();
+    return true;
+  }
+
+  $("btn_load_into_studio")?.addEventListener("click", () => {
+    if (applyTemplateToStudio()) {
+      notify(`Loaded "${activeTemplate?.name || 'Industry'}" template into Studio!`, "success");
+    }
+  });
+
+  $("btn_generate_from_template")?.addEventListener("click", () => {
+    if (applyTemplateToStudio()) {
+      notify(`Generating ad with "${activeTemplate?.name || 'Industry'}" template…`, "info");
+      setTimeout(() => {
+        $("img_form").requestSubmit();
+      }, 50);
+    }
+  });
+
+  loadIndustryTemplates();
+
   window.addEventListener("viewchange", (e) => { if (e.detail === "image") loadImageHistory(); });
 })();

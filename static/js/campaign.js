@@ -191,9 +191,14 @@
 
         <div class="preset-card-foot">
           <span class="muted small"><i class="fa-solid fa-lightbulb"></i> ${(p.decorative_elements || []).slice(0, 2).join(", ")}</span>
-          <button type="button" class="btn btn-sm ${isSel ? "btn-ghost" : "btn-primary"}" data-select-preset="${esc(p.id)}">
-            ${isSel ? '<i class="fa-solid fa-check"></i> Selected' : '<i class="fa-solid fa-wand-magic-sparkles"></i> Use Preset'}
-          </button>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <button type="button" class="btn btn-sm btn-ghost btn-preset-to-studio" data-template-id="${esc(p.id)}" title="Use this industry template with your product & logo in Image Studio">
+              <i class="fa-solid fa-wand-magic-sparkles"></i> Studio Template
+            </button>
+            <button type="button" class="btn btn-sm ${isSel ? "btn-ghost" : "btn-primary"}" data-select-preset="${esc(p.id)}">
+              ${isSel ? '<i class="fa-solid fa-check"></i> Selected' : '<i class="fa-solid fa-check"></i> Select'}
+            </button>
+          </div>
         </div>
       </article>`;
     }).join("");
@@ -322,6 +327,15 @@
   });
 
   $("preset_cards_grid")?.addEventListener("click", (e) => {
+    const studioBtn = e.target.closest("[data-template-id]");
+    if (studioBtn) {
+      const pid = studioBtn.dataset.templateId;
+      closePresetModal();
+      if (window.openIndustryTemplateModal) {
+        window.openIndustryTemplateModal(pid);
+      }
+      return;
+    }
     const btn = e.target.closest("[data-select-preset]");
     if (btn) {
       selectPreset(btn.dataset.selectPreset);
