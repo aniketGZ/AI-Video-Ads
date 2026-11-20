@@ -255,9 +255,9 @@ async def recreate_template_visual(
     synthesized_prompt: Optional[str] = None
     analysis_model_used: str = "algorithmic_fallback"
     analysis_candidates = [
-        os.environ.get("GEMINI_ANALYSIS_MODEL", "gemini-2.5-flash"),
-        "gemini-1.5-flash",
-        "gemini-3.6-flash",
+        os.environ.get("GEMINI_ANALYSIS_MODEL", "gemini-3.6-flash"),
+        "gemini-3.8-flash",
+        "gemini-2.5-flash",
     ]
     seen_models = set()
     candidate_list = [m for m in analysis_candidates if m and not (m in seen_models or seen_models.add(m))]
