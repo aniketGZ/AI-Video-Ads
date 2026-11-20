@@ -436,6 +436,7 @@ function imageDropzone({ zone, input, thumbs, max = 4 }) {
 
   return {
     files: () => files.slice(),
+    add: (list) => add(list),
     clear: () => { files = []; render(); },
     setMax: (m) => {
       max = Number(m) || 4;

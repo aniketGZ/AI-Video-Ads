@@ -860,6 +860,7 @@
             </a>` : (ad.reference ? `<a class="ref-chip" href="${esc(ad.reference.image_url)}" target="_blank" rel="noopener"><img src="${esc(ad.reference.image_url)}" alt="">Concept and layout from this ${esc(ad.reference.competitor)} ad</a>` : "")}
           <div class="ad-actions">
             <button type="button" class="btn btn-sm" id="btn_${ad.id}" data-render="${ad.id}"><i class="fa-solid fa-play"></i> Render</button>
+            <button type="button" class="btn btn-sm btn-save-creative" id="save_${ad.id}" hidden data-type="image" data-url="" data-prompt="${esc(ad.prompt || ad.image_prompt || ad.headline || '')}" data-aspect="${esc(flow.aspect || '4:5')}" title="Save creative & prompt to library"><i class="fa-regular fa-bookmark"></i> Save</button>
             <a class="btn btn-sm" id="dl_${ad.id}" hidden download><i class="fa-solid fa-download"></i> Download</a>
           </div>
         </div>
@@ -956,6 +957,12 @@
       dl.href = result.image_url;
       dl.setAttribute("download", `${(intel.brand_name || "ad").replace(/\W+/g, "_")}_${id}.png`);
       dl.hidden = false;
+      const saveBtn = $(`save_${id}`);
+      if (saveBtn) {
+        saveBtn.dataset.url = result.image_url;
+        saveBtn.dataset.prompt = ad.prompt || ad.image_prompt || ad.headline || "";
+        saveBtn.hidden = false;
+      }
       setImageState(id, "done");
       return true;
     } catch (err) {
@@ -1040,6 +1047,7 @@
               <option value="4k" ${resVal === "4k" ? "selected" : ""}>4K</option>
             </select>
             <button type="button" class="btn btn-sm" id="vbtn_${ad.id}" data-vrender="${ad.id}"><i class="fa-solid fa-clapperboard"></i> Render video</button>
+            <button type="button" class="btn btn-sm btn-save-creative" id="vsave_${ad.id}" hidden data-type="video" data-url="" data-prompt="${esc(ad.prompt || ad.script || ad.hook_line || '')}" data-aspect="9:16" title="Save video & prompt to library"><i class="fa-regular fa-bookmark"></i> Save</button>
             <a class="btn btn-sm" id="vdl_${ad.id}" hidden download><i class="fa-solid fa-download"></i> Download</a>
           </div>
         </div>
@@ -1123,6 +1131,12 @@
       const dl = $(`vdl_${id}`);
       dl.href = job.video_url;
       dl.hidden = false;
+      const vsave = $(`vsave_${id}`);
+      if (vsave) {
+        vsave.dataset.url = job.video_url;
+        vsave.dataset.prompt = ad.prompt || ad.script || ad.hook_line || "";
+        vsave.hidden = false;
+      }
       setVideoState(id, "done");
       notify(`Video ad “${ad.angle_name}” (${ad.rendered_resolution}) is ready.`, "success");
     } catch (err) {

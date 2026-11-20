@@ -43,6 +43,11 @@ scratch_image_*.jpg
 scratch_video.mp4
 ref videos/
 *.png
+!static/landing/**
+!static/showcase_images/*
+!static/showcase_videos/*
+.taste-skill/
+*.pdf
 
 # Server-side job cache
 data/

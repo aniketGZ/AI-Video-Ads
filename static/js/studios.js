@@ -29,8 +29,8 @@
 
   const MAX_PROMPTS = 5;
 
-  // ------------------------------------------------------------ markdown file drop helper
-  function wireMarkdownDrop({ containerId, getBoxes, addBtnId, onUpdate }) {
+  // ------------------------------------------------------------ prompt drop helper (accepts text, markdown, and reference images)
+  function wireMarkdownDrop({ containerId, getBoxes, addBtnId, onUpdate, onImageDrop }) {
     const container = $(containerId);
     if (!container) return;
 
@@ -56,10 +56,18 @@
       container.classList.remove("dragover");
       if (targetTextarea) targetTextarea.classList.remove("dragover");
 
+      // Ingest dropped images as reference images
+      const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+      if (imageFiles.length && onImageDrop) {
+        onImageDrop(imageFiles);
+        notify(imageFiles.length === 1 ? `Added ${imageFiles[0].name} as reference image` : `Added ${imageFiles.length} reference images`, "success");
+      }
+
+      // Ingest markdown or text prompt files
       const mdFiles = files.filter(isMdFile);
       if (!mdFiles.length) {
-        if (files.some((f) => f.type.startsWith("image/"))) {
-          notify("Add reference images with the + button under the prompt.", "info");
+        if (!imageFiles.length) {
+          notify("Please drop an image or a text/markdown file.", "info");
         }
         return;
       }
@@ -182,6 +190,7 @@
     getBoxes: imgPromptBoxes,
     addBtnId: "img_add_prompt",
     onUpdate: syncImgPromptUi,
+    onImageDrop: (imgs) => imgRefs.add(imgs),
   });
 
   async function loadImageHistory() {
@@ -267,10 +276,13 @@
         if (item && item.image_url && item.status !== "failed") {
           ok++;
           tileEl.innerHTML = `
-            <img src="${esc(item.image_url)}" alt="${esc(p)}">
+            <img src="${esc(item.image_url)}" alt="${esc(p)}" data-prompt="${esc(p)}" data-aspect="${esc(imgAspect() || "1:1")}">
             <div class="tile-bar">
               <span class="badge badge-accent small">${esc(item.resolution || selectedRes)}</span>
-              <a href="${esc(item.image_url)}" download="${esc(item.filename || `image_${i+1}.png`)}" class="btn-link small" target="_blank"><i class="fa-solid fa-download"></i> Save</a>
+              <div style="display:inline-flex; gap:10px; align-items:center;">
+                <button type="button" class="btn-link small btn-save-creative" data-type="image" data-url="${esc(item.image_url)}" data-prompt="${esc(p)}" data-aspect="${esc(imgAspect() || "1:1")}" title="Save prompt and image to library"><i class="fa-regular fa-bookmark"></i> Save Prompt</button>
+                <a href="${esc(item.image_url)}" download="${esc(item.filename || `image_${i+1}.png`)}" class="btn-link small" target="_blank"><i class="fa-solid fa-download"></i> Save</a>
+              </div>
             </div>`;
           revealRendered(tileEl.querySelector("img"));
         } else {
@@ -342,6 +354,7 @@
     getBoxes: promptBoxes,
     addBtnId: "vid_add_prompt",
     onUpdate: syncPromptUi,
+    onImageDrop: (imgs) => vidRefs.add(imgs),
   });
 
   function rememberVideo(url, job) {
@@ -436,10 +449,13 @@
         pollJob(id, { onProgress: (j) => j.progress_msg && loading(i, j.progress_msg) })
           .then((job) => {
             const rBadge = (job.resolution || vidResolution() || "1080p").toUpperCase();
-            tileState(i, `<video src="${esc(job.video_url)}" controls playsinline></video>
+            tileState(i, `<video src="${esc(job.video_url)}" controls playsinline data-prompt="${esc(prompts[i])}" data-aspect="${esc(ratio)}"></video>
               <div class="tile-meta" style="display:flex; justify-content:space-between; align-items:center; width:100%;">
                 <span class="badge badge-accent">${esc(rBadge)}</span>
-                <a href="${esc(job.video_url)}" download="video_${i+1}_${rBadge.toLowerCase()}.mp4" class="btn-link small" title="Download video"><i class="fa-solid fa-download"></i> Save</a>
+                <div style="display:inline-flex; gap:10px; align-items:center;">
+                  <button type="button" class="btn-link small btn-save-creative" data-type="video" data-url="${esc(job.video_url)}" data-prompt="${esc(prompts[i])}" data-aspect="${esc(ratio)}" title="Save prompt and video to library"><i class="fa-regular fa-bookmark"></i> Save Prompt</button>
+                  <a href="${esc(job.video_url)}" download="video_${i+1}_${rBadge.toLowerCase()}.mp4" class="btn-link small" title="Download video"><i class="fa-solid fa-download"></i> Download</a>
+                </div>
               </div>`);
             revealRendered($(`vid_tile_${i}`).querySelector("video"));
             rememberVideo(job.video_url, job);

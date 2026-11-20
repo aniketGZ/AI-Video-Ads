@@ -87,6 +87,7 @@
       <span class="viewer-count num" aria-live="polite"></span>
       <button type="button" class="viewer-btn" data-go="1" aria-label="Next" title="Next (→)"><i class="fa-solid fa-arrow-right"></i></button>
       <span class="viewer-sep" aria-hidden="true"></span>
+      <button type="button" class="viewer-btn viewer-save-btn" data-save aria-label="Save to library" title="Save prompt & asset"><i class="fa-regular fa-bookmark"></i><span>Save</span></button>
       <a class="viewer-btn" data-download download aria-label="Download" title="Download"><i class="fa-solid fa-download"></i><span>Download</span></a>
       <button type="button" class="viewer-btn" data-close aria-label="Close" title="Close (Esc)"><i class="fa-solid fa-xmark"></i></button>
     </div>`;
@@ -210,6 +211,11 @@
     prev.disabled = i === 0;
     next.disabled = i === items.length - 1;
     count.textContent = `${i + 1} of ${items.length}`;
+    const saveBtn = bar.querySelector("[data-save]");
+    if (saveBtn) {
+      saveBtn.innerHTML = '<i class="fa-regular fa-bookmark"></i><span>Save</span>';
+      saveBtn.disabled = false;
+    }
     layout();
   }
 
@@ -262,6 +268,42 @@
     const goBtn = e.target.closest("[data-go]");
     if (goBtn) go(Number(goBtn.dataset.go));
     if (e.target.closest("[data-close]")) close();
+
+    const saveBtn = e.target.closest("[data-save]");
+    if (saveBtn) {
+      const item = items[index];
+      if (!item) return;
+      const promptText = item.prompt || item.el?.dataset?.prompt || item.alt || "";
+      const isVid = item.type === "video" || item.url?.endsWith(".mp4");
+      const aspect = item.aspect || item.el?.dataset?.aspect || (isVid ? "9:16" : "4:5");
+      const title = item.title || item.el?.dataset?.title || (isVid ? "Saved Video Creative" : "Saved Image Ad");
+
+      saveBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i><span>Saving</span>';
+      saveBtn.disabled = true;
+
+      fetch("/api/saved/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: isVid ? "video" : "image",
+          title: title,
+          prompt: promptText,
+          media_url: item.url,
+          aspect_ratio: aspect
+        })
+      })
+      .then((res) => res.json())
+      .then((data) => {
+        saveBtn.innerHTML = '<i class="fa-solid fa-bookmark" style="color:var(--accent);"></i><span>Saved</span>';
+        if (typeof notify === "function") notify("Creative & prompt saved to library!", "success");
+        window.dispatchEvent(new CustomEvent("saved-creatives-updated"));
+      })
+      .catch(() => {
+        saveBtn.innerHTML = '<i class="fa-regular fa-bookmark"></i><span>Save</span>';
+        saveBtn.disabled = false;
+        if (typeof notify === "function") notify("Could not save creative", "error");
+      });
+    }
   });
   stage.addEventListener("click", (e) => { if (e.target === stage) close(); });
   dialog.addEventListener("cancel", (e) => { e.preventDefault(); close(); }); // Esc still flies home

@@ -97,6 +97,72 @@
     form.addEventListener("submit", () => window.scrollTo({ top: 0, behavior: "smooth" }));
   });
 
+  // ------------------------------------------------------------ drag & drop on composer & prompt boxes
+  document.querySelectorAll(".composer-main").forEach((main) => {
+    const form = main.closest("form");
+    const isImage = form?.id === "img_form";
+    const fileInputId = isImage ? "img_files" : "vid_files";
+    const dropzoneId = isImage ? "img_drop" : "vid_drop";
+
+    main.addEventListener("dragover", (e) => {
+      if (e.dataTransfer?.types?.includes("Files")) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "copy";
+        main.classList.add("drag-active");
+      }
+    });
+
+    main.addEventListener("dragleave", (e) => {
+      if (!e.relatedTarget || !main.contains(e.relatedTarget)) {
+        main.classList.remove("drag-active");
+      }
+    });
+
+    main.addEventListener("drop", async (e) => {
+      const files = Array.from(e.dataTransfer?.files || []);
+      if (!files.length) return;
+      main.classList.remove("drag-active");
+
+      const imageFiles = files.filter((f) => f.type.startsWith("image/"));
+      const textFiles = files.filter((f) => {
+        const name = (f.name || "").toLowerCase();
+        return name.endsWith(".md") || name.endsWith(".txt") || f.type.startsWith("text/");
+      });
+
+      // Forward image files to the dropzone
+      if (imageFiles.length) {
+        e.preventDefault();
+        e.stopPropagation();
+        const dropEl = document.getElementById(dropzoneId);
+        if (dropEl) {
+          const dt = new DataTransfer();
+          imageFiles.forEach((file) => dt.items.add(file));
+          const inputEl = document.getElementById(fileInputId);
+          if (inputEl) {
+            inputEl.files = dt.files;
+            inputEl.dispatchEvent(new Event("change", { bubbles: true }));
+          }
+        }
+      }
+
+      // If text or markdown dropped onto prompt textarea
+      if (textFiles.length && !imageFiles.length) {
+        e.preventDefault();
+        e.stopPropagation();
+        const ta = e.target.closest("textarea") || main.querySelector("textarea[data-prompt]");
+        if (ta) {
+          try {
+            const text = await textFiles[0].text();
+            ta.value = text.trim();
+            ta.dispatchEvent(new Event("input", { bubbles: true }));
+            ta.dispatchEvent(new Event("change", { bubbles: true }));
+            grow(ta);
+          } catch (_) {}
+        }
+      }
+    });
+  });
+
   // ------------------------------------------------------------ gallery
   document.querySelectorAll(".gallery").forEach((gallery) => {
     // Tiles fade in as their picture arrives; if a thumbnail fails, fall back to the full file

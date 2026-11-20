@@ -4,13 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ad Studio</title>
-  <meta name="description" content="Turn a brand link into a researched Meta campaign: finished image ads with Nano Banana 2.1 and video ads with Omni Flash.">
+  <meta name="description" content="Turn a brand link into a researched commercial campaign: cinema-grade 9:16 video ads and 4:5 image ads ready for Meta & TikTok.">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css?v=6.5.1">
+  <link rel="stylesheet" href="css/style.css?v=6.5.2">
   <link rel="stylesheet" href="css/auth.css?v=1.0.0">
 </head>
 <body>
@@ -19,9 +19,11 @@
   <!-- Shell: one top bar (brand, studios, tools) over a full-width canvas -->
   <header class="topbar">
     <a href="/" class="brand" style="text-decoration: none; color: inherit;">
-      <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
-        <rect x="4" y="2.5" width="16" height="19" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"/>
-        <path d="M10 8.6v6.8l5.6-3.4z" fill="currentColor"/>
+      <svg class="brand-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6" stroke-opacity="0.35"/>
+        <circle cx="12" cy="12" r="3.2" fill="currentColor"/>
+        <path d="M12 2C15.5 5.5 16.5 8.5 15.2 12M22 12C18.5 15.5 15.5 16.5 12 15.2M12 22C8.5 18.5 7.5 15.5 8.8 12M2 12C5.5 8.5 8.5 7.5 12 8.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        <circle cx="12" cy="12" r="1.2" fill="#fff"/>
       </svg>
       <span>Ad Studio</span>
     </a>
@@ -30,6 +32,7 @@
       <button type="button" class="nav-btn" data-view="image" data-menu="menu_image">Image</button>
       <button type="button" class="nav-btn" data-view="video" data-menu="menu_video">Video</button>
       <button type="button" class="nav-btn" data-view="batch">Batch</button>
+      <button type="button" class="nav-btn" data-view="saved"><i class="fa-regular fa-bookmark" style="font-size: 11px; margin-right: 4px;"></i> Saved</button>
     </nav>
 
     <!-- Hover menus: what each studio can do, with real outputs. Each item opens the studio set up for it. -->
@@ -62,11 +65,11 @@
           </ul>
         </div>
         <div>
-          <p class="mega-col-head">Models</p>
+          <p class="mega-col-head">Engines</p>
           <ul class="mega-list mega-list-plain">
-            <li><i class="fa-solid fa-brain"></i>Gemini 3.6 Flash<span class="mega-badge">Research</span></li>
-            <li><i class="fa-solid fa-image"></i>Nano Banana 2.1<span class="mega-badge">Images</span></li>
-            <li><i class="fa-solid fa-film"></i>Omni 1.2 Flash<span class="mega-badge">Video</span></li>
+            <li><i class="fa-solid fa-brain"></i>Brand Intelligence Suite<span class="mega-badge">Research</span></li>
+            <li><i class="fa-solid fa-image"></i>Commercial Creative Engine<span class="mega-badge">Images</span></li>
+            <li><i class="fa-solid fa-film"></i>High-Fidelity Cinema Engine<span class="mega-badge">Video</span></li>
           </ul>
         </div>
       </div>
@@ -103,10 +106,10 @@
           </ul>
         </div>
         <div>
-          <p class="mega-col-head">Models</p>
+          <p class="mega-col-head">Rendering Modes</p>
           <ul class="mega-list">
-            <li><button type="button" data-go="image" data-pick="#img_model [data-model='nano-banana-2.1']"><i class="fa-solid fa-image"></i>Nano Banana 2.1<span class="mega-badge mega-badge-hot">Fast</span></button></li>
-            <li><button type="button" data-go="image" data-pick="#img_model [data-model='nano-banana-pro']"><i class="fa-solid fa-wand-magic-sparkles"></i>Nano Banana Pro<span class="mega-badge">Best detail</span></button></li>
+            <li><button type="button" data-go="image" data-pick="#img_model [data-model='nano-banana-2.1']"><i class="fa-solid fa-image"></i>Creative Engine<span class="mega-badge mega-badge-hot">High-Speed</span></button></li>
+            <li><button type="button" data-go="image" data-pick="#img_model [data-model='nano-banana-pro']"><i class="fa-solid fa-wand-magic-sparkles"></i>Studio Precision<span class="mega-badge">Ultra-Detail</span></button></li>
           </ul>
           <p class="mega-col-head">Sizes</p>
           <ul class="mega-list">
@@ -145,9 +148,9 @@
           </ul>
         </div>
         <div>
-          <p class="mega-col-head">Models</p>
+          <p class="mega-col-head">Cinema Engine</p>
           <ul class="mega-list">
-            <li><button type="button" data-go="video"><i class="fa-solid fa-film"></i>Omni 1.2 Flash<span class="mega-badge mega-badge-hot">4–15s</span></button></li>
+            <li><button type="button" data-go="video"><i class="fa-solid fa-film"></i>Cinema Motion 1.2<span class="mega-badge mega-badge-hot">4–15s</span></button></li>
           </ul>
           <p class="mega-col-head">Quality</p>
           <ul class="mega-list">
@@ -197,13 +200,13 @@
     <!-- What a campaign looks like: real ads from one run, shown until a campaign starts -->
     <section class="showcase" id="campaign_showcase" aria-label="Example campaign">
       <div class="showcase-fan">
-        <figure class="fan-card fan-1"><img src="/static/demo/woodland/ad_s01.jpg" width="928" height="1152" alt="Example ad: Sneakers fail. Leather boots prevail" loading="lazy"><figcaption>Us vs them</figcaption></figure>
-        <figure class="fan-card fan-2"><video src="/static/demo/woodland/video_1.mp4" poster="/static/demo/woodland/video_1_poster.jpg" width="540" height="960" muted loop playsinline preload="none" aria-label="Example video ad: Soaking trail shoes?"></video><figcaption>Reel · 9:16</figcaption></figure>
-        <figure class="fan-card fan-3"><img src="/static/demo/woodland/ad_s17.jpg" width="928" height="1152" alt="Example ad: Crafted for heavy duty grip"><figcaption>Product shot</figcaption></figure>
-        <figure class="fan-card fan-4"><img src="/static/demo/woodland/ad_s05.jpg" width="928" height="1152" alt="Example ad: Ordinary shoes slip. We conquer" loading="lazy"><figcaption>Problem → fix</figcaption></figure>
-        <figure class="fan-card fan-5"><img src="/static/demo/woodland/ad_s22.jpg" width="928" height="1152" alt="Example ad: Crafted for nature since 1992, with 10% off" loading="lazy"><figcaption>Offer</figcaption></figure>
+        <figure class="fan-card fan-1"><img src="/static/showcase_images/hyphen_glow.jpg" width="928" height="1152" alt="Hyphen Skincare · Golden Hour Dewy Finish" loading="lazy"><figcaption>Beauty &amp; Glow</figcaption></figure>
+        <figure class="fan-card fan-2"><video src="/static/showcase_videos/commercial_hero_wide.mp4" poster="/static/landing/thumbs/cinema_hero.jpg" width="540" height="960" muted loop playsinline preload="none" aria-label="High-Impact Commercial Reel"></video><figcaption>Cinema Reel · 9:16</figcaption></figure>
+        <figure class="fan-card fan-3"><img src="/static/showcase_images/greensoul_posture.jpg" width="928" height="1152" alt="Green Soul Ergonomics · Spine Support Matrix"><figcaption>Ergonomic Studio</figcaption></figure>
+        <figure class="fan-card fan-4"><img src="/static/showcase_images/veda5_retreat.jpg" width="928" height="1152" alt="Veda5 Luxury Wellness Resort" loading="lazy"><figcaption>Luxury Hospitality</figcaption></figure>
+        <figure class="fan-card fan-5"><img src="/static/showcase_images/neemans_commute.jpg" width="928" height="1152" alt="Neeman's Commute Footwear" loading="lazy"><figcaption>Active DTC</figcaption></figure>
       </div>
-      <p class="showcase-note">From one link: woodlandworldwide.com came back with 25 image ads and 3 videos. <a href="/upgrade/campaign">See the whole campaign</a></p>
+      <p class="showcase-note">From one brand link: enter any URL to generate 25 research-backed image ads and cinematic video reels. <a href="/upgrade/campaign">See sample campaign</a></p>
     </section>
 
     <div class="steps">
@@ -313,7 +316,7 @@
           <span class="step-num">3</span>
           <div class="step-title">
             <h2>Ads</h2>
-            <p>25 finished image ads (Nano Banana 2.1) and 25 video ads (Omni Flash).</p>
+            <p>25 finished image ads and 25 cinematic video ads tailored to your brand.</p>
           </div>
           <span class="badge" id="ads_badge" hidden></span>
         </header>
@@ -391,8 +394,8 @@
             <div class="pill-pop" hidden>
               <div class="pill-pop-title">Model</div>
               <div class="segmented seg-list" id="img_model" aria-label="Model">
-                <button type="button" data-model="nano-banana-pro" class="active">Nano Banana Pro</button>
-                <button type="button" data-model="nano-banana-2.1">Nano Banana 2.1</button>
+                <button type="button" data-model="nano-banana-pro" class="active">Studio Ultra-Detail</button>
+                <button type="button" data-model="nano-banana-2.1">High-Speed Creative</button>
               </div>
             </div>
           </div>
@@ -595,8 +598,8 @@
         <div class="field">
           <span class="label">Model</span>
           <div class="segmented" id="batch_model">
-            <button type="button" data-model="nano-banana-pro" class="active">Nano Banana Pro</button>
-            <button type="button" data-model="nano-banana-2.1">Nano Banana 2.1</button>
+            <button type="button" data-model="nano-banana-pro" class="active">Studio Ultra-Detail</button>
+            <button type="button" data-model="nano-banana-2.1">High-Speed Creative</button>
           </div>
         </div>
 
@@ -661,6 +664,48 @@
 
           <div class="batch-results-grid" id="batch_results_grid"></div>
         </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ================================================================== -->
+  <!-- Saved Creatives & Prompt Collection                                -->
+  <!-- ================================================================== -->
+  <main class="page" id="view_saved" data-view-panel="saved" hidden>
+    <div class="page-head saved-head">
+      <div>
+        <div class="saved-head-top">
+          <h1>Saved Creatives &amp; Prompts</h1>
+          <span class="badge badge-accent" id="saved_count_badge">0 items</span>
+        </div>
+        <p>Your cloud-persisted library of saved commercial ad generations, prompt formulas, and reference assets.</p>
+      </div>
+    </div>
+
+    <div class="saved-toolbar">
+      <div class="input-with-icon saved-search-wrap">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="search" id="saved_search_input" class="input input-sm" placeholder="Search prompts, angles, or titles..." aria-label="Search saved creatives">
+      </div>
+      <div class="saved-filters" role="group" aria-label="Filter saved creatives">
+        <button type="button" class="saved-filter-pill active" data-filter="all">All Creatives</button>
+        <button type="button" class="saved-filter-pill" data-filter="video"><i class="fa-solid fa-film"></i> Videos</button>
+        <button type="button" class="saved-filter-pill" data-filter="image"><i class="fa-regular fa-image"></i> Images</button>
+        <button type="button" class="saved-filter-pill" data-filter="favorites"><i class="fa-solid fa-star"></i> Favorites</button>
+      </div>
+    </div>
+
+    <div class="saved-grid" id="saved_grid">
+      <!-- Rendered dynamically by saved_creatives.js -->
+    </div>
+
+    <div class="media-empty saved-empty-state" id="saved_empty" hidden>
+      <div class="saved-empty-icon"><i class="fa-regular fa-bookmark"></i></div>
+      <h3>No saved creatives found</h3>
+      <p>Save prompts and finished video or image ads by clicking the bookmark button on any generation card or in the full-screen viewer.</p>
+      <div class="saved-empty-actions">
+        <button type="button" class="btn btn-primary btn-sm" onclick="document.querySelector('.nav-btn[data-view=\'campaign\']').click()">Build a Campaign</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="document.querySelector('.nav-btn[data-view=\'video\']').click()">Generate Video</button>
       </div>
     </div>
   </main>
@@ -799,6 +844,7 @@
   <script src="js/campaign.js?v=3.3.1"></script>
   <script src="js/studios.js?v=3.4.0"></script>
   <script src="js/viewer.js?v=1.0.0"></script>
+  <script src="js/saved_creatives.js?v=1.0.0"></script>
   <script src="js/composer.js?v=1.1.0"></script>
   <script src="js/batch.js?v=1.2.0"></script>
   <script src="js/navmenu.js?v=1.0.0"></script>
