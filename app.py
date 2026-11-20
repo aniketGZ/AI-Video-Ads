@@ -882,12 +882,18 @@ app.mount("/css", StaticFiles(directory="static/css"), name="css")
 app.mount("/js", StaticFiles(directory="static/js"), name="js")
 
 
-# Serve index.html at root (supports both GET and HEAD for cloud health checks)
+# Serve product landing page at root (Higgsfield-style showcase)
 @app.api_route("/", methods=["GET", "HEAD"])
-async def read_index(request: Request):
+async def read_landing(request: Request):
     if request.method == "HEAD":
         return Response(status_code=200)
-    # Revalidate on every load so new ?v= script/style versions are picked up right after an update
+    return FileResponse("static/landing/index.html", headers={"Cache-Control": "no-cache"})
+
+
+# Serve the Ad Studio workspace at /app and /studio
+@app.get("/app", include_in_schema=False)
+@app.get("/studio", include_in_schema=False)
+async def read_studio_app(request: Request):
     return FileResponse("static/index.html", headers={"Cache-Control": "no-cache"})
 
 
