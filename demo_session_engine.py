@@ -16,9 +16,12 @@ from pathlib import Path
 from typing import Optional, Dict, List, Any
 from playwright.async_api import async_playwright
 
-BASE_DIR = Path(r"E:\Aniket\Ai Video Ads")
+BASE_DIR = Path("/tmp" if os.environ.get("VERCEL") else Path(__file__).resolve().parent)
 SESSIONS_DIR = BASE_DIR / "runs" / "demo_sessions"
-SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+try:
+    SESSIONS_DIR.mkdir(parents=True, exist_ok=True)
+except Exception:
+    pass
 
 class DemoSessionManager:
     _instance = None

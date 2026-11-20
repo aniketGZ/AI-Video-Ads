@@ -18,12 +18,15 @@ from pathlib import Path
 from typing import Optional, Dict, List, Any
 from playwright.async_api import async_playwright
 
-BASE_DIR = Path(r"E:\Aniket\Ai Video Ads")
+BASE_DIR = Path("/tmp" if os.environ.get("VERCEL") else Path(__file__).resolve().parent)
 DATA_DIR = BASE_DIR / "data"
 TRACES_FILE = DATA_DIR / "backend_traces.jsonl"
 TECH_REPORTS_DIR = BASE_DIR / "runs" / "tech_reports"
-DATA_DIR.mkdir(parents=True, exist_ok=True)
-TECH_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+try:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    TECH_REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+except Exception:
+    pass
 
 
 class BackendTracer:

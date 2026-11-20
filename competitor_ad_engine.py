@@ -33,7 +33,7 @@ logger.setLevel(logging.INFO)
 
 # Base directories
 BASE_DIR = Path(__file__).resolve().parent
-RUNS_DIR = BASE_DIR / "runs"
+RUNS_DIR = Path("/tmp/runs") if os.environ.get("VERCEL") else BASE_DIR / "runs"
 TOOLS_DIR = BASE_DIR / "tools" / "competitor_ad_agent"
 EXTRACT_CARDS_JS = TOOLS_DIR / "extract_cards.js"
 VIDEO_FRAMES_PY = TOOLS_DIR / "video_frames.py"
