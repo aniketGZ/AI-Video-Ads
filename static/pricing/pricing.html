@@ -3,250 +3,222 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Pricing &amp; Plans · Ad Studio</title>
-  <meta name="description" content="Transparent pricing for Ad Studio: Free, Starter, Pro, and Studio plans. Multi-angle 9:16 video reels, 4K image ads, and autonomous Meta campaign research.">
+  <title>Pricing · Ad Studio</title>
+  <meta name="description" content="Ad Studio plans: Free, Starter, Pro and Studio. What each plan's credits make, every credit rate, and which plan fits how many ads you run.">
+  <link rel="icon" href="/static/brand/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/static/upgrade/upgrade.css?v=2.0.0">
-  <link rel="stylesheet" href="/static/pricing/pricing.css?v=2.0.0">
+  <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:wght@300&family=Stack+Sans+Text:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/system.css?v=2.0.0">
+  <link rel="stylesheet" href="/static/css/site.css?v=3.0.0">
+  <link rel="stylesheet" href="/static/pricing/pricing.css?v=3.0.0">
+  <script>document.documentElement.classList.add("js");</script>
 </head>
-<body>
+<body class="site">
 
-  <!-- Ambient Cinematic Background -->
-  <div class="ambient" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-
-  <!-- Unified Top Navigation -->
-  <header class="bar">
-    <a class="bar-brand" href="/" aria-label="Ad Studio Home">
-      <svg class="brand-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6" stroke-opacity="0.35"/>
-        <circle cx="12" cy="12" r="3.2" fill="currentColor"/>
-        <path d="M12 2C15.5 5.5 16.5 8.5 15.2 12M22 12C18.5 15.5 15.5 16.5 12 15.2M12 22C8.5 18.5 7.5 15.5 8.8 12M2 12C5.5 8.5 8.5 7.5 12 8.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        <circle cx="12" cy="12" r="1.2" fill="#fff"/>
-      </svg>
+  <header class="bar" id="bar">
+    <a href="/" class="logo" aria-label="Ad Studio home">
+      <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="f-video" fill-rule="evenodd" d="M3.75 1.5h6.75a2.25 2.25 0 0 1 2.25 2.25v16.5a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 20.25V3.75A2.25 2.25 0 0 1 3.75 1.5ZM5.4 8.7v6.6l5.2-3.3Z"/><rect class="f-image" x="14.5" y="12.5" width="8" height="10" rx="2"/></svg>
       <span>Ad Studio</span>
     </a>
-    <nav class="bar-links" aria-label="Navigation">
-      <a href="/app">Studio</a>
-      <a href="/#showcase">Reel Showcase</a>
-      <a href="/upgrade/campaign">Campaign Builder</a>
-      <a href="/pricing" class="active">Pricing</a>
+    <nav class="bar-links" aria-label="Main">
+      <a href="/#run">The ads</a>
+      <a href="/#how">How it works</a>
+      <a href="/upgrade/campaign">Campaign builder</a>
+      <a href="/pricing" aria-current="page">Pricing</a>
     </nav>
     <div class="bar-actions">
-      <a class="btn btn-primary" href="/app">
-        <span>Launch Studio</span>
-        <i class="fa-solid fa-arrow-right"></i>
-      </a>
+      <a href="/app" class="btn btn-primary">Open the studio</a>
     </div>
   </header>
 
   <main>
-    <!-- Top Hero Section -->
-    <section class="top" aria-labelledby="top_h">
-      <div class="top-pill reveal">
-        <i class="fa-solid fa-wand-magic-sparkles"></i>
-        <span>Transparent Production Economics</span>
+    <!-- ============================================================ title -->
+    <section class="board page-title" aria-labelledby="top_h">
+      <div class="tile title-main">
+        <h1 id="top_h" class="t-display">Plans and credits</h1>
+        <p>Every plan makes finished image and video ads. Pro and Studio add the campaign builder: one link in, a researched set of ads out.</p>
       </div>
-      <div class="top-head reveal">
-        <h1 id="top_h">Transparent Plans &amp; Creative Credits</h1>
-        <p>Every plan produces finished 4K image ads and high-converting 9:16 video reels. Pro and Studio unlock autonomous competitor research and multi-angle campaigns.</p>
-      </div>
-      <div class="billing reveal" role="radiogroup" aria-label="Billing frequency">
-        <label>
-          <input type="radio" name="billing" value="monthly" checked>
-          <span>Monthly</span>
-        </label>
-        <label>
-          <input type="radio" name="billing" value="annual">
-          <span>Yearly <span class="save-tag">Save 20%</span></span>
-        </label>
+      <div class="tile tile-paper title-side billing-tile">
+        <p class="billing-q">Pay monthly, or yearly for 20% off</p>
+        <div class="billing" role="radiogroup" aria-label="Billing">
+          <label><input type="radio" name="billing" value="monthly" checked><span>Monthly</span></label>
+          <label><input type="radio" name="billing" value="annual"><span>Yearly, 20% off</span></label>
+        </div>
+        <p class="billing-note">Sign up and get 300 credits to try every studio. No card.</p>
       </div>
     </section>
 
-    <!-- The Four Plans Grid -->
-    <section class="plans4" id="plans" aria-label="Plans">
-      <!-- Free Plan -->
-      <article class="p4 reveal" data-plan="free">
-        <div class="p4-shots p4-shots-1">
-          <img src="/static/menu/image_create.jpg" width="480" height="360" alt="Finished image ad" loading="lazy">
-        </div>
-        <h2 class="p4-name">Free</h2>
-        <p class="p4-who">Test the image &amp; video studios with instant credits.</p>
-        <p class="p4-price"><span class="js-price">$0</span><small class="js-per">forever</small></p>
-        <a class="btn btn-ghostline p4-btn js-cta" href="/app">Start Free</a>
-        <p class="p4-credits"><b class="js-credits">300</b> credits, once</p>
-        <p class="p4-yield js-yield">About 12 image ads at 2K, or 1 eight-second video at 720p</p>
-        <ul class="p4-list">
-          <li class="yes"><i class="fa-solid fa-check"></i> Image, Video &amp; Batch Studios</li>
-          <li class="yes"><i class="fa-solid fa-check"></i> High-Speed Creative Engine (up to 2K)</li>
-          <li class="yes"><i class="fa-solid fa-check"></i> Video Generation (720p HD)</li>
-          <li class="no"><i class="fa-solid fa-xmark"></i> Studio Ultra-Detail (4K)</li>
-          <li class="no"><i class="fa-solid fa-xmark"></i> Autonomous Campaign Builder</li>
-          <li class="no"><i class="fa-solid fa-xmark"></i> Credit Top-ups</li>
-        </ul>
-      </article>
-
-      <!-- Starter Plan -->
-      <article class="p4 reveal" data-plan="starter">
-        <div class="p4-shots p4-shots-2">
-          <img src="/static/menu/image_product.jpg" width="480" height="360" alt="Product image ad" loading="lazy">
-          <img src="/static/menu/video_prompt.jpg" width="480" height="360" alt="Video prompt ad" loading="lazy">
-        </div>
-        <h2 class="p4-name">Starter</h2>
-        <p class="p4-who">For brands and creators generating regular ad creative.</p>
-        <p class="p4-price"><span class="js-price">$19</span><small class="js-per">a month</small></p>
-        <a class="btn btn-ghostline p4-btn js-cta" href="/upgrade/checkout?plan=starter">Get Starter</a>
-        <p class="p4-credits"><b class="js-credits">2,000</b> credits / month</p>
-        <p class="p4-yield js-yield">About 80 image ads at 2K, or 5 eight-second videos at 1080p</p>
-        <ul class="p4-list">
-          <li class="yes"><i class="fa-solid fa-check"></i> Image, Video &amp; Batch Studios</li>
-          <li class="yes"><i class="fa-solid fa-check"></i> Studio Ultra-Detail Engine (up to 4K)</li>
-          <li class="yes"><i class="fa-solid fa-check"></i> Full HD Video Ads (1080p)</li>
-          <li class="yes"><i class="fa-solid fa-check"></i> Credit Top-ups on Demand</li>
-          <li class="no"><i class="fa-solid fa-xmark"></i> Autonomous Campaign Builder</li>
-          <li class="no"><i class="fa-solid fa-xmark"></i> Meta Competitor Ad Research</li>
-        </ul>
-      </article>
-
-      <!-- Pro Plan (Most Popular) -->
-      <article class="p4 p4-pro reveal" data-plan="pro">
-        <span class="p4-top-badge">Most Popular</span>
-        <div class="p4-shots p4-shots-3">
-          <video src="/static/showcase_videos/skincare_floating_orbit.mp4" poster="/static/landing/thumbs/cinema_hero.jpg" width="540" height="960" muted loop playsinline autoplay preload="metadata" aria-label="Commercial video ad"></video>
-          <img src="/static/showcase_images/hyphen_glow.jpg" width="928" height="1152" alt="Hyphen Skincare commercial ad" loading="lazy">
-          <img src="/static/showcase_images/greensoul_posture.jpg" width="928" height="1152" alt="Green Soul Ergonomic ad" loading="lazy">
-        </div>
-        <h2 class="p4-name">Pro</h2>
-        <p class="p4-who">For growing DTC brands running full Meta campaigns.</p>
-        <p class="p4-price"><span class="js-price">$49</span><small class="js-per">a month</small></p>
-        <a class="btn btn-accent p4-btn js-cta" href="/upgrade/checkout?plan=pro">Get Pro</a>
-        <p class="p4-credits"><b class="js-credits">6,000</b> credits / month</p>
-        <p class="p4-yield js-yield">About 240 image ads at 2K, or 16 eight-second videos at 1080p</p>
-        <ul class="p4-list">
-          <li class="yes"><i class="fa-solid fa-check"></i> Everything in Starter</li>
-          <li class="yes"><i class="fa-solid fa-check"></i> Autonomous Campaign Builder</li>
-          <li class="yes"><i class="fa-solid fa-check"></i> Competitor Live Ad Intelligence</li>
-          <li class="yes"><i class="fa-solid fa-check"></i> Ultra HD Cinema Video (up to 4K)</li>
-          <li class="yes"><i class="fa-solid fa-check"></i> Creative Reference Presets by Industry</li>
-        </ul>
-      </article>
-
-      <!-- Studio Plan -->
-      <article class="p4 reveal" data-plan="studio">
-        <div class="p4-shots p4-shots-4">
-          <img src="/static/showcase_images/veda5_retreat.jpg" width="928" height="1152" alt="Veda5 Luxury retreat ad" loading="lazy">
-          <img src="/static/showcase_images/neemans_commute.jpg" width="928" height="1152" alt="Neeman's footwear ad" loading="lazy">
-          <video src="/static/showcase_videos/beverage_liquid_splash.mp4" width="540" height="960" muted loop playsinline autoplay preload="metadata" aria-label="Beverage splash ad"></video>
-          <img src="/static/showcase_images/woodland_heavy_duty.jpg" width="928" height="1152" alt="Outdoor commercial ad" loading="lazy">
-        </div>
-        <h2 class="p4-name">Studio</h2>
-        <p class="p4-who">For creative agencies managing multiple high-volume brands.</p>
-        <p class="p4-price"><span class="js-price">$149</span><small class="js-per">a month</small></p>
-        <a class="btn btn-ghostline p4-btn js-cta" href="/upgrade/checkout?plan=studio">Get Studio</a>
-        <p class="p4-credits"><b class="js-credits">20,000</b> credits / month</p>
-        <p class="p4-yield js-yield">About 800 image ads at 2K, or 55 eight-second videos at 1080p</p>
-        <ul class="p4-list">
-          <li class="yes"><i class="fa-solid fa-check"></i> Everything in Pro</li>
-          <li class="yes"><i class="fa-solid fa-check"></i> Over 3x Pro's Monthly Credits</li>
-          <li class="yes"><i class="fa-solid fa-check"></i> Lowest Price per Credit</li>
-          <li class="yes"><i class="fa-solid fa-check"></i> Multi-Brand Asset Isolation</li>
-          <li class="yes"><i class="fa-solid fa-check"></i> Priority Queue &amp; Concurrent Renders</li>
-        </ul>
-      </article>
-    </section>
-
-    <!-- What Your Credits Make (Real Curated Outputs) -->
-    <section class="buys" aria-labelledby="buys_h">
-      <h2 id="buys_h" class="reveal">What Your Credits Make</h2>
-      <div class="buys-row reveal">
-        <figure class="buy">
-          <img src="/static/showcase_images/hyphen_glow.jpg" width="928" height="1152" alt="Hyphen Skincare commercial ad" loading="lazy">
-          <figcaption><b data-cost="image:nano-banana-2.1:2K">25</b> credits · 2K Image Ad</figcaption>
-        </figure>
-        <figure class="buy">
-          <video src="/static/showcase_videos/skincare_floating_orbit.mp4" width="540" height="960" muted loop playsinline autoplay preload="metadata" aria-label="Skincare orbit video"></video>
-          <figcaption><b data-cost="video:1080p:8">360</b> credits · 8s Video at 1080p</figcaption>
-        </figure>
-        <figure class="buy">
-          <img src="/static/showcase_images/greensoul_posture.jpg" width="928" height="1152" alt="Green Soul Ergonomics ad" loading="lazy">
-          <figcaption><b data-cost="image:nano-banana-2.1:4K">50</b> credits · 4K Image Ad</figcaption>
-        </figure>
-        <figure class="buy">
-          <img src="/static/showcase_images/neemans_commute.jpg" width="928" height="1152" alt="Neeman's commute footwear ad" loading="lazy">
-          <figcaption><b data-cost="image:nano-banana-pro:2K">55</b> credits · Studio Ultra-Detail</figcaption>
-        </figure>
-        <figure class="buy">
-          <video src="/static/showcase_videos/athletic_kinetic_sneaker.mp4" width="540" height="960" muted loop playsinline autoplay preload="metadata" aria-label="Athletic kinetic shoe video"></video>
-          <figcaption><b data-cost="video:720p:8">240</b> credits · 8s Video at 720p</figcaption>
-        </figure>
-      </div>
-    </section>
-
-    <!-- Interactive Plan Calculator -->
-    <section class="finder" id="finder" aria-labelledby="finder_h">
-      <div class="finder-ask reveal">
-        <h2 id="finder_h">Which Plan Fits Your Volume?</h2>
-        <fieldset class="finder-q" style="border:0; padding:0;">
-          <div class="finder-legend">What formats are you making?</div>
-          <div class="finder-chips">
-            <label><input type="checkbox" name="make" value="images" checked><span>Image Ads</span></label>
-            <label><input type="checkbox" name="make" value="videos" checked><span>Video Ads</span></label>
-            <label><input type="checkbox" name="make" value="campaigns"><span>Full Campaigns (URL → Meta)</span></label>
+    <!-- ============================================================ the four plans: frames multiply with the plan -->
+    <section class="joined" aria-label="Plans" id="plans">
+      <div class="board plan-row">
+        <article class="tile p4 rv" data-plan="free">
+          <div class="p4-frames f1"><img src="/static/demo/woodland/ad_s17.jpg" width="928" height="1152" alt="Woodland image ad: Crafted for Heavy Duty Grip" loading="lazy"></div>
+          <h2 class="p4-name">Free</h2>
+          <p class="p4-price"><span class="js-price">$0</span> <small class="js-per">forever</small></p>
+          <p class="p4-who">Try the image, video and batch studios.</p>
+          <a class="btn js-cta" href="/app">Start free</a>
+          <p class="p4-credits"><b class="js-credits num">300</b> credits, once</p>
+          <p class="p4-yield js-yield">About 12 image ads at 2K, or 1 eight-second video at 720p</p>
+          <ul class="p4-list">
+            <li>Image, video and batch studios</li>
+            <li>Images up to 2K</li>
+            <li>Video at 720p</li>
+            <li class="no">No campaign builder</li>
+            <li class="no">No top-ups</li>
+          </ul>
+        </article>
+        <article class="tile p4 rv" data-plan="starter">
+          <div class="p4-frames f2">
+            <img src="/static/showcase_images/hyphen_glow.jpg" width="928" height="1152" alt="Skincare image ad: a woman by a sandstone window" loading="lazy">
+            <img src="/static/showcase_images/neemans_commute.jpg" width="928" height="1152" alt="Woodland image ad: Ordinary Shoes Slip. We Conquer." loading="lazy">
           </div>
-        </fieldset>
-        <div class="finder-q">
-          <label for="finder_count" class="finder-legend">Estimated monthly ads: <output id="finder_count_out" for="finder_count">40</output></label>
-          <input type="range" id="finder_count" min="5" max="400" step="5" value="40">
-          <p class="finder-hint">Image ads calculated at 2K, videos at 8 seconds (1080p). Campaigns include competitor intelligence and multi-angle blueprints.</p>
-        </div>
-      </div>
-      <div class="finder-answer reveal" aria-live="polite">
-        <p class="finder-plan" id="finder_plan">Starter</p>
-        <p class="finder-plan-line">is recommended for you. You need about <b id="finder_need">1,000</b> credits a month.</p>
-        <div class="meter" aria-hidden="true"><span id="finder_meter" style="width: 50%"></span></div>
-        <p class="finder-use" id="finder_use">That uses about half of Starter's 2,000 credits.</p>
-        <a class="btn btn-accent finder-btn" id="finder_btn" href="/upgrade/checkout?plan=starter">Get Starter</a>
+          <h2 class="p4-name">Starter</h2>
+          <p class="p4-price"><span class="js-price">$19</span> <small class="js-per">a month</small></p>
+          <p class="p4-who">For brands making ads every week.</p>
+          <a class="btn js-cta" href="/upgrade/checkout?plan=starter">Get Starter</a>
+          <p class="p4-credits"><b class="js-credits num">2,000</b> credits a month</p>
+          <p class="p4-yield js-yield">About 80 image ads at 2K, or 5 eight-second videos at 1080p</p>
+          <ul class="p4-list">
+            <li>Everything in Free</li>
+            <li>Studio Precision images, up to 4K</li>
+            <li>Video at 1080p</li>
+            <li>Top-ups when you need them</li>
+            <li class="no">No campaign builder</li>
+          </ul>
+        </article>
+        <article class="tile tile-red p4 p4-pro rv" data-plan="pro">
+          <div class="p4-frames f3">
+            <video src="/static/showcase_videos/skincare_floating_orbit.mp4" poster="/static/landing/thumbs/vert_beauty.jpg" width="720" height="1280" muted loop playsinline autoplay preload="metadata" aria-label="Skincare video ad"></video>
+            <img src="/static/demo/woodland/ad_s01.jpg" width="928" height="1152" alt="Woodland image ad: Sneakers Fail. Leather Boots Prevail." loading="lazy">
+            <img src="/static/showcase_images/greensoul_posture.jpg" width="928" height="1152" alt="Woodland image ad: Conquer Muddy Trails Effortlessly" loading="lazy">
+          </div>
+          <h2 class="p4-name">Pro</h2>
+          <p class="p4-price"><span class="js-price">$49</span> <small class="js-per">a month</small></p>
+          <p class="p4-who">For brands running full Meta campaigns from one link.</p>
+          <a class="btn btn-primary js-cta" href="/upgrade/checkout?plan=pro">Get Pro</a>
+          <p class="p4-credits"><b class="js-credits num">6,000</b> credits a month</p>
+          <p class="p4-yield js-yield">About 240 image ads at 2K, or 16 eight-second videos at 1080p</p>
+          <ul class="p4-list">
+            <li>Everything in Starter</li>
+            <li>The campaign builder</li>
+            <li>Competitors' live Meta ads, studied</li>
+            <li>Video up to 4K</li>
+            <li>Creative presets by industry</li>
+          </ul>
+        </article>
+        <article class="tile p4 rv" data-plan="studio">
+          <div class="p4-frames f4">
+            <img src="/static/showcase_images/veda5_retreat.jpg" width="928" height="1152" alt="Hospitality image ad: a woman on a boat at sunset" loading="lazy">
+            <video src="/static/showcase_videos/athletic_kinetic_sneaker.mp4" poster="/static/landing/thumbs/vert_sneaker.jpg" width="720" height="1280" muted loop playsinline autoplay preload="metadata" aria-label="Sunscreen video ad"></video>
+            <img src="/static/showcase_images/woodland_heavy_duty.jpg" width="928" height="1152" alt="Woodland image ad: Crafted for Heavy Duty Grip" loading="lazy">
+            <img src="/static/demo/woodland/ad_s22.jpg" width="928" height="1152" alt="Woodland image ad: Crafted for Nature Since 1992" loading="lazy">
+          </div>
+          <h2 class="p4-name">Studio</h2>
+          <p class="p4-price"><span class="js-price">$149</span> <small class="js-per">a month</small></p>
+          <p class="p4-who">For agencies and teams running several brands.</p>
+          <a class="btn js-cta" href="/upgrade/checkout?plan=studio">Get Studio</a>
+          <p class="p4-credits"><b class="js-credits num">20,000</b> credits a month</p>
+          <p class="p4-yield js-yield">About 800 image ads at 2K, or 55 eight-second videos at 1080p</p>
+          <ul class="p4-list">
+            <li>Everything in Pro</li>
+            <li>More than 3 times Pro's credits</li>
+            <li>The lowest price per credit</li>
+          </ul>
+        </article>
       </div>
     </section>
 
-    <!-- Compare Plans Table -->
-    <section class="compare2" id="compare" aria-labelledby="compare_h">
-      <h2 id="compare_h" class="reveal">Feature Comparison</h2>
-      <div class="table-wrap reveal">
-        <table class="ctable">
-          <thead>
-            <tr>
-              <th scope="col"><span class="visually-hidden">Capability</span></th>
-              <th scope="col">Free</th>
-              <th scope="col">Starter</th>
-              <th scope="col" class="col-pro">Pro</th>
-              <th scope="col">Studio</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><th scope="row">Monthly Price</th><td class="js-tprice" data-plan="free">$0</td><td class="js-tprice" data-plan="starter">$19 a month</td><td class="js-tprice col-pro" data-plan="pro">$49 a month</td><td class="js-tprice" data-plan="studio">$149 a month</td></tr>
-            <tr><th scope="row">Monthly Credits</th><td>300 once</td><td>2,000 / mo</td><td class="col-pro">6,000 / mo</td><td>20,000 / mo</td></tr>
-            <tr><th scope="row">Estimated 2K Image Ads</th><td>About 12</td><td>About 80</td><td class="col-pro">About 240</td><td>About 800</td></tr>
-            <tr><th scope="row">Estimated 8s Videos</th><td>About 1 (720p)</td><td>About 5 (1080p)</td><td class="col-pro">About 16 (1080p)</td><td>About 55 (1080p)</td></tr>
-            <tr><th scope="row">Studio Workspaces (Image, Video, Batch)</th><td>Yes</td><td>Yes</td><td class="col-pro">Yes</td><td>Yes</td></tr>
-            <tr><th scope="row">Studio Ultra-Detail Engine</th><td>No</td><td>Yes</td><td class="col-pro">Yes</td><td>Yes</td></tr>
-            <tr><th scope="row">Maximum Image Resolution</th><td>2K</td><td>4K</td><td class="col-pro">4K</td><td>4K</td></tr>
-            <tr><th scope="row">Maximum Video Resolution</th><td>720p</td><td>1080p</td><td class="col-pro">4K</td><td>4K</td></tr>
-            <tr><th scope="row">Autonomous URL Campaign Builder</th><td>No</td><td>No</td><td class="col-pro">Yes</td><td>Yes</td></tr>
-            <tr><th scope="row">Meta Competitor Ad Library Intelligence</th><td>No</td><td>No</td><td class="col-pro">Yes</td><td>Yes</td></tr>
-            <tr><th scope="row">Credit Top-ups On Demand</th><td>No</td><td>Yes</td><td class="col-pro">Yes</td><td>Yes</td></tr>
-          </tbody>
-        </table>
+    <!-- ============================================================ what credits make -->
+    <section aria-labelledby="buys_h">
+      <div class="board sec-head">
+        <h2 id="buys_h" class="t-head rv">What credits make</h2>
+        <p class="rv">Credits are spent when an ad renders or research runs. These are real ads, with what each one cost.</p>
       </div>
+      <div class="board buys">
+        <figure class="tile tile-flush buy rv"><img src="/static/demo/woodland/ad_s10.jpg" width="928" height="1152" alt="Woodland image ad: Conquer Muddy Trails Effortlessly" loading="lazy"><figcaption><b data-cost="image:nano-banana-2.1:2K" class="num">25</b> credits for a 2K image</figcaption></figure>
+        <figure class="tile tile-flush buy buy-tall rv"><video src="/static/demo/woodland/video_2.mp4" poster="/static/demo/woodland/video_2_poster.jpg" width="540" height="960" muted loop playsinline autoplay preload="metadata" aria-label="Woodland video ad: Tired of wet sneakers?"></video><figcaption><b data-cost="video:1080p:8" class="num">360</b> credits for 8 s at 1080p</figcaption></figure>
+        <figure class="tile tile-flush buy rv"><img src="/static/demo/woodland/ad_s23.jpg" width="928" height="1152" alt="Woodland image ad: Trusted by Outdoor Explorers" loading="lazy"><figcaption><b data-cost="image:nano-banana-2.1:4K" class="num">50</b> credits for a 4K image</figcaption></figure>
+        <figure class="tile tile-flush buy rv"><img src="/static/demo/woodland/ad_s12.jpg" width="928" height="1152" alt="Woodland image ad: Built for the Toughest Terrains" loading="lazy"><figcaption><b data-cost="image:nano-banana-pro:2K" class="num">55</b> credits for Studio Precision</figcaption></figure>
+        <figure class="tile tile-flush buy buy-tall rv"><video src="/static/demo/woodland/video_1.mp4" poster="/static/demo/woodland/video_1_poster.jpg" width="540" height="960" muted loop playsinline autoplay preload="metadata" aria-label="Woodland video ad: Soaking trail shoes?"></video><figcaption><b data-cost="video:720p:8" class="num">240</b> credits for 8 s at 720p</figcaption></figure>
+      </div>
+    </section>
 
-      <!-- Cost Breakdown by Unit -->
-      <h3 class="costs-h reveal" id="costs">Itemized Production Rates</h3>
-      <div class="costs reveal" id="costs_grid">
-        <div class="cost-block">
-          <p class="cost-title">Image Creative (per render)</p>
-          <table class="ctable ctable-small">
+    <!-- ============================================================ the plan finder -->
+    <section aria-labelledby="finder_h" id="finder">
+      <div class="board finder">
+        <div class="tile finder-ask rv">
+          <h2 id="finder_h" class="t-head">Which plan fits?</h2>
+          <fieldset class="finder-q">
+            <legend>What are you making?</legend>
+            <div class="chips">
+              <label><input type="checkbox" name="make" value="images" checked><span>Image ads</span></label>
+              <label><input type="checkbox" name="make" value="videos" checked><span>Video ads</span></label>
+              <label><input type="checkbox" name="make" value="campaigns"><span>Whole campaigns from a link</span></label>
+            </div>
+          </fieldset>
+          <div class="finder-q">
+            <label for="finder_count">Ads a month: <output id="finder_count_out" for="finder_count" class="num">40</output></label>
+            <input type="range" id="finder_count" min="5" max="400" step="5" value="40">
+            <p class="hint">Images counted at 2K, videos at 8 seconds and 1080p. A campaign adds research for every 20 ads.</p>
+          </div>
+        </div>
+        <div class="tile tile-red finder-answer rv" aria-live="polite">
+          <p class="finder-plan t-display" id="finder_plan">Starter</p>
+          <p class="finder-line">fits. You need about <b id="finder_need" class="num">1,000</b> credits a month.</p>
+          <div class="meter-track" aria-hidden="true"><i id="finder_meter" style="width: 50%"></i></div>
+          <p class="finder-use" id="finder_use">That uses about half of Starter's 2,000 credits.</p>
+          <a class="btn btn-primary" id="finder_btn" href="/upgrade/checkout?plan=starter">Get Starter</a>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ side by side -->
+    <section id="compare" aria-labelledby="compare_h">
+      <div class="board sec-head">
+        <h2 id="compare_h" class="t-head rv">Side by side</h2>
+        <p class="rv">Every plan against the others, line by line. Pro is marked in red.</p>
+      </div>
+      <div class="board">
+        <div class="plans-wrap rv">
+          <table class="plans">
+            <thead>
+              <tr>
+                <th scope="col"><span class="visually-hidden">What you get</span></th>
+                <th scope="col"><span class="plan-name">Free</span></th>
+                <th scope="col"><span class="plan-name">Starter</span></th>
+                <th scope="col" class="is-rec"><span class="plan-name">Pro</span></th>
+                <th scope="col"><span class="plan-name">Studio</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><th scope="row">Price</th><td class="js-tprice num" data-plan="free">$0</td><td class="js-tprice num" data-plan="starter">$19 a month</td><td class="js-tprice num is-rec" data-plan="pro">$49 a month</td><td class="js-tprice num" data-plan="studio">$149 a month</td></tr>
+              <tr><th scope="row">Credits</th><td class="num">300, once</td><td class="num">2,000 a month</td><td class="num is-rec">6,000 a month</td><td class="num">20,000 a month</td></tr>
+              <tr><th scope="row">Image ads at 2K</th><td class="num">About 12</td><td class="num">About 80</td><td class="num is-rec">About 240</td><td class="num">About 800</td></tr>
+              <tr><th scope="row">8-second videos</th><td class="num">About 1, at 720p</td><td class="num">About 5, at 1080p</td><td class="num is-rec">About 16, at 1080p</td><td class="num">About 55, at 1080p</td></tr>
+              <tr><th scope="row">Image, video and batch studios</th><td>Included</td><td>Included</td><td class="is-rec">Included</td><td>Included</td></tr>
+              <tr><th scope="row">Studio Precision images</th><td>Not included</td><td>Included</td><td class="is-rec">Included</td><td>Included</td></tr>
+              <tr><th scope="row">Largest image</th><td>2K</td><td>4K</td><td class="is-rec">4K</td><td>4K</td></tr>
+              <tr><th scope="row">Largest video</th><td>720p</td><td>1080p</td><td class="is-rec">4K</td><td>4K</td></tr>
+              <tr><th scope="row">Campaign builder</th><td>Not included</td><td>Not included</td><td class="is-rec">Included</td><td>Included</td></tr>
+              <tr><th scope="row">Competitor ad research</th><td>Not included</td><td>Not included</td><td class="is-rec">Included</td><td>Included</td></tr>
+              <tr><th scope="row">Credit top-ups</th><td>Not included</td><td>Included</td><td class="is-rec">Included</td><td>Included</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================ every rate -->
+    <section id="costs" aria-labelledby="costs_h">
+      <div class="board sec-head">
+        <h2 id="costs_h" class="t-head rv">Every rate, in credits</h2>
+        <p class="rv">One credit is about one cent at the top-up price. Text steps are only charged on campaign runs.</p>
+      </div>
+      <div class="board rates">
+        <div class="tile rv">
+          <h3>Images, per render</h3>
+          <table class="rate-table">
             <thead><tr><th scope="col">Engine</th><th scope="col">1K</th><th scope="col">2K</th><th scope="col">4K</th></tr></thead>
             <tbody id="cost_images">
               <tr><th scope="row">Creative Engine</th><td>15</td><td>25</td><td>50</td></tr>
@@ -254,88 +226,75 @@
             </tbody>
           </table>
         </div>
-        <div class="cost-block">
-          <p class="cost-title">Cinema Video (per second)</p>
-          <table class="ctable ctable-small">
-            <thead><tr><th scope="col">Resolution</th><th scope="col">Rate / sec</th><th scope="col">8s Clip</th></tr></thead>
+        <div class="tile rv">
+          <h3>Video, per second</h3>
+          <table class="rate-table">
+            <thead><tr><th scope="col">Size</th><th scope="col">A second</th><th scope="col">8 s clip</th></tr></thead>
             <tbody id="cost_video">
-              <tr><th scope="row">720p HD</th><td>30</td><td>240</td></tr>
-              <tr><th scope="row">1080p Full HD</th><td>45</td><td>360</td></tr>
-              <tr><th scope="row">4K Ultra HD</th><td>85</td><td>680</td></tr>
+              <tr><th scope="row">720p</th><td>30</td><td>240</td></tr>
+              <tr><th scope="row">1080p</th><td>45</td><td>360</td></tr>
+              <tr><th scope="row">4K</th><td>85</td><td>680</td></tr>
             </tbody>
           </table>
         </div>
-        <div class="cost-block">
-          <p class="cost-title">Campaign Steps</p>
-          <table class="ctable ctable-small">
-            <thead><tr><th scope="col">Intelligence Phase</th><th scope="col">Credits</th></tr></thead>
+        <div class="tile rv">
+          <h3>Campaign steps</h3>
+          <table class="rate-table">
+            <thead><tr><th scope="col">Step</th><th scope="col">Credits</th></tr></thead>
             <tbody id="cost_text">
-              <tr><th scope="row">Brand &amp; Voice Research</th><td>60</td></tr>
-              <tr><th scope="row">Campaign Angle Strategy</th><td>30</td></tr>
-              <tr><th scope="row">Copy &amp; Prompt Engineering</th><td>10</td></tr>
-              <tr><th scope="row">Competitor Ad Intelligence</th><td>300</td></tr>
+              <tr><th scope="row">Brand research</th><td>60</td></tr>
+              <tr><th scope="row">Campaign strategy</th><td>30</td></tr>
+              <tr><th scope="row">Ad copy and prompt, each</th><td>10</td></tr>
+              <tr><th scope="row">Competitor research</th><td>300</td></tr>
             </tbody>
           </table>
+        </div>
+        <div class="tile tile-paper topups rv">
+          <h3>Top-ups</h3>
+          <p>On a paid plan, buy more credits whenever you run short. They keep while your plan is active.</p>
+          <div class="topup-row" id="topup_row">
+            <p class="topup"><b>1,000</b> credits <span>$12</span></p>
+            <p class="topup"><b>5,000</b> credits <span>$55</span></p>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- Top-ups Section -->
-    <section class="topups reveal" aria-labelledby="topups_h">
-      <h2 id="topups_h">Need More Credits This Month?</h2>
-      <p>On any active paid plan, you can purchase credit top-ups instantly whenever needed. Credits never expire while your plan is active.</p>
-      <div class="topup-row" id="topup_row">
-        <p class="topup"><b>1,000</b> credits <span>$12</span></p>
-        <p class="topup"><b>5,000</b> credits <span>$55</span></p>
-      </div>
-    </section>
-
-    <!-- FAQ Section -->
-    <section class="faq reveal" id="faq" aria-labelledby="faq_h">
-      <h2 id="faq_h">Frequently Asked Questions</h2>
-      <div class="faq-list">
-        <details>
-          <summary>How do creative credits work?</summary>
-          <p>Credits are only deducted when you successfully generate an ad or run campaign intelligence. Image ads use 15–100 credits based on resolution, and video reels use 30–85 credits per second. Failed generations are never billed.</p>
-        </details>
-        <details>
-          <summary>What is included in the Free tier?</summary>
-          <p>You receive 300 credits immediately upon signup with full access to the Image, Video, and Batch Studios. That gives you about 12 high-converting 2K image ads or an 8-second video ad with test images.</p>
-        </details>
-        <details>
-          <summary>What does the Autonomous Campaign Builder do?</summary>
-          <p>Simply paste your brand or product link. The pipeline analyzes your website, extracts brand colors and claims, studies your top competitors' live Meta ads, writes strategic copy angles, and renders 25 image ads and 3 vertical video reels ready for deployment.</p>
-        </details>
-        <details>
-          <summary>Can I upgrade, downgrade, or cancel anytime?</summary>
-          <p>Yes. You can upgrade, downgrade, or cancel your subscription at any time with one click. Upgrades apply immediately with prorated credits.</p>
-        </details>
+    <!-- ============================================================ questions -->
+    <section aria-labelledby="faq_h" id="faq">
+      <div class="board faq">
+        <ul class="faq-list">
+          <li class="faq-title"><h2 id="faq_h" style="margin:0;font-size:inherit;font-weight:400">Common questions</h2></li>
+          <li><button type="button" class="faq-q" aria-expanded="true">How do credits work?</button>
+            <p class="faq-inline">Credits are spent when an ad renders or research runs. An image costs 15 to 100 credits by size and engine; video costs 30 to 85 credits a second.</p></li>
+          <li><button type="button" class="faq-q" aria-expanded="false">What is in the free plan?</button>
+            <p class="faq-inline">300 credits when you sign up and the image, video and batch studios: about 12 image ads at 2K, or one 8-second video at 720p.</p></li>
+          <li><button type="button" class="faq-q" aria-expanded="false">What does the campaign builder do?</button>
+            <p class="faq-inline">Paste a brand link. It reads your site, studies competitors' live Meta ads, writes the angles and copy, and renders 25 image ads and 25 video ads.</p></li>
+          <li><button type="button" class="faq-q" aria-expanded="false">Can I change plans later?</button>
+            <p class="faq-inline">Yes. Move up, down or cancel whenever you like. Paid checkout is opening by invite while we finish billing.</p></li>
+          <li><button type="button" class="faq-q" aria-expanded="false">Do unused credits carry over?</button>
+            <p class="faq-inline">Top-up credits keep while your plan is active. Monthly plan credits renew each month.</p></li>
+        </ul>
+        <div class="faq-pane" id="faq_pane" aria-live="polite"><p>Credits are spent when an ad renders or research runs. An image costs 15 to 100 credits by size and engine; video costs 30 to 85 credits a second.</p></div>
       </div>
     </section>
   </main>
 
-  <!-- Unified Footer -->
-  <footer class="foot">
-    <div class="foot-inner">
-      <a href="/" class="foot-brand">
-        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6" stroke-opacity="0.35"/>
-          <circle cx="12" cy="12" r="3.2" fill="currentColor"/>
-          <path d="M12 2C15.5 5.5 16.5 8.5 15.2 12M22 12C18.5 15.5 15.5 16.5 12 15.2M12 22C8.5 18.5 7.5 15.5 8.8 12M2 12C5.5 8.5 8.5 7.5 12 8.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-          <circle cx="12" cy="12" r="1.2" fill="#fff"/>
-        </svg>
-        <span>Ad Studio</span>
-      </a>
-      <div class="foot-links">
-        <a href="/app">Studio</a>
-        <a href="/#showcase">Reel Showcase</a>
-        <a href="/upgrade/campaign">Campaign Builder</a>
-        <a href="/pricing">Pricing</a>
-      </div>
-      <div class="foot-copy">&copy; 2026 Ad Studio. Cinema-Grade Autonomous Production.</div>
+  <footer class="site-foot">
+    <div class="foot-grid">
+      <nav class="foot-col" aria-label="Studios"><b>Studios</b><a href="/app">Campaign builder</a><a href="/app#image">Image studio</a><a href="/app#video">Video studio</a><a href="/app#batch">Batch studio</a></nav>
+      <nav class="foot-col" aria-label="Plans"><b>Plans</b><a href="/pricing">Pricing</a><a href="/upgrade/campaign">What a campaign makes</a><a href="/#run">Ads from one run</a></nav>
+      <div class="foot-contact"><p style="margin:0">Ad Studio turns one brand link into a researched set of image and video ads for Meta and TikTok.</p></div>
+    </div>
+    <div class="foot-last">
+      <a href="/" class="logo"><svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="f-video" fill-rule="evenodd" d="M3.75 1.5h6.75a2.25 2.25 0 0 1 2.25 2.25v16.5a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 20.25V3.75A2.25 2.25 0 0 1 3.75 1.5ZM5.4 8.7v6.6l5.2-3.3Z"/><rect class="f-image" x="14.5" y="12.5" width="8" height="10" rx="2"/></svg><span>Ad Studio</span></a>
+      <span>&copy; 2026 Ad Studio</span>
     </div>
   </footer>
 
-  <script src="/static/pricing/pricing.js?v=2.0.0"></script>
+  <script src="/static/js/site.js?v=2.0.0"></script>
+  <script src="/static/pricing/pricing.js?v=3.0.0"></script>
+  <script src="/static/landing/landing.js?v=2.0.0"></script>
 </body>
 </html>

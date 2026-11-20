@@ -69,69 +69,47 @@ async def upgrade_checkout(plan: str = "pro", billing: str = "monthly"):
     if url.startswith("https://"):
         return RedirectResponse(url, status_code=303)
     label = escape(PLANS[plan]["label"])
+    price = PLANS[plan]["price_usd_month"]
+    credits = f'{PLANS[plan]["credits"]:,}'
+    # Same design system as every other page: system.css + site.css, one board of tiles.
     return HTMLResponse(
         status_code=200,
         content=f"""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>{label} Plan · Ad Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>{label} plan · Ad Studio</title>
+<link rel="icon" href="/static/brand/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:wght@300&family=Stack+Sans+Text:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/system.css?v=2.0.0">
+<link rel="stylesheet" href="/static/css/site.css?v=3.0.0">
 <style>
-body {{
-  margin: 0; min-height: 100vh; display: grid; place-items: center;
-  background: #0c0807; color: #ffffff;
-  font: 400 16px/1.6 'Inter', system-ui, sans-serif; padding: 24px;
-  position: relative; overflow: hidden;
-}}
-.glow {{
-  position: absolute; border-radius: 50%; filter: blur(120px); opacity: 0.16; pointer-events: none;
-}}
-.glow-1 {{ width: 500px; height: 500px; background: #ff6b1f; top: -100px; left: 20%; }}
-.glow-2 {{ width: 450px; height: 450px; background: #9333ea; bottom: -50px; right: 20%; }}
-.card {{
-  position: relative; z-index: 10; max-width: 520px; width: 100%;
-  background: linear-gradient(150deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.02) 100%), rgba(20,14,12,0.85);
-  border: 1px solid rgba(255,255,255,0.12); border-radius: 20px;
-  padding: 44px 36px; text-align: center;
-  box-shadow: 0 24px 60px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.15);
-  backdrop-filter: blur(24px);
-}}
-.logo {{ width: 40px; height: 40px; margin: 0 auto 20px; color: #ff6b1f; display: block; }}
-h1 {{ font-size: 30px; font-weight: 700; letter-spacing: -0.03em; margin: 0 0 12px; line-height: 1.15; }}
-p {{ color: rgba(255,255,255,0.72); margin: 0 0 28px; font-size: 15px; }}
-.badge {{
-  display: inline-block; padding: 4px 14px; border-radius: 999px;
-  background: rgba(255,107,31,0.16); color: #ffa36b;
-  font-size: 12px; font-weight: 600; text-transform: uppercase; margin-bottom: 16px;
-}}
-.actions {{ display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }}
-.btn {{
-  display: inline-flex; align-items: center; justify-content: center;
-  height: 42px; padding: 0 22px; border-radius: 999px;
-  font-size: 14px; font-weight: 600; text-decoration: none; transition: all 150ms ease;
-}}
-.btn-primary {{ background: #ff6b1f; color: #000; border: 1px solid #ff6b1f; }}
-.btn-primary:hover {{ background: #ff8547; }}
-.btn-ghost {{ background: rgba(255,255,255,0.06); color: #fff; border: 1px solid rgba(255,255,255,0.12); }}
-.btn-ghost:hover {{ background: rgba(255,255,255,0.12); }}
+.checkout {{ min-height: calc(100svh - var(--bar) - 8px); grid-template-rows: 1fr; }}
+.checkout .title-main {{ grid-column: 1 / 8; }}
+.checkout .title-main h1 {{ font-size: clamp(3rem, 1.5rem + 5vw, 6.5rem); }}
+.checkout .side {{ grid-column: 8 / 13; display: flex; flex-direction: column; justify-content: space-between; gap: 24px; padding: 32px; }}
+.checkout .side p {{ margin: 0; }}
+.checkout .plan {{ font-family: var(--font-display); font-weight: 300; font-size: var(--step-head); line-height: 1; letter-spacing: -0.022em; }}
+.checkout .actions {{ display: flex; flex-wrap: wrap; gap: 8px; }}
+@media (max-width: 760px) {{ .checkout .title-main, .checkout .side {{ grid-column: 1 / -1; }} }}
 </style></head>
-<body>
-<div class="glow glow-1"></div>
-<div class="glow glow-2"></div>
-<div class="card">
-  <svg class="logo" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6" stroke-opacity="0.35"/>
-    <circle cx="12" cy="12" r="3.2" fill="currentColor"/>
-    <path d="M12 2C15.5 5.5 16.5 8.5 15.2 12M22 12C18.5 15.5 15.5 16.5 12 15.2M12 22C8.5 18.5 7.5 15.5 8.8 12M2 12C5.5 8.5 8.5 7.5 12 8.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-    <circle cx="12" cy="12" r="1.2" fill="#fff"/>
-  </svg>
-  <div class="badge">{label} Plan Checkout</div>
-  <h1>Early Access En Route</h1>
-  <p>Paid checkouts are currently opening on invite. You have full free studio credits waiting to build your next high-converting ad set.</p>
-  <div class="actions">
-    <a href="/app" class="btn btn-primary">Open Free Studio</a>
-    <a href="/pricing" class="btn btn-ghost">Back to Pricing</a>
+<body class="site">
+<header class="bar">
+  <a href="/" class="logo" aria-label="Ad Studio home"><svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="f-video" fill-rule="evenodd" d="M3.75 1.5h6.75a2.25 2.25 0 0 1 2.25 2.25v16.5a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 20.25V3.75A2.25 2.25 0 0 1 3.75 1.5ZM5.4 8.7v6.6l5.2-3.3Z"/><rect class="f-image" x="14.5" y="12.5" width="8" height="10" rx="2"/></svg><span>Ad Studio</span></a>
+  <nav class="bar-links" aria-label="Main"><a href="/pricing">Pricing</a></nav>
+  <div class="bar-actions"><a href="/app" class="btn btn-primary">Open the studio</a></div>
+</header>
+<main class="board page-title checkout">
+  <div class="tile title-main">
+    <h1 class="t-display">Checkout opens by invite</h1>
+    <p>Paid plans are opening a few accounts at a time while billing is finished. Your free credits work in every studio today.</p>
   </div>
-</div>
+  <div class="tile tile-red side">
+    <div><p class="plan">{label}</p><p>${price} a month, {credits} credits</p></div>
+    <div class="actions">
+      <a href="/app" class="btn btn-primary">Open the studio</a>
+      <a href="/pricing" class="btn">Back to pricing</a>
+    </div>
+  </div>
+</main>
 </body></html>""",
     )

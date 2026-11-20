@@ -1,0 +1,366 @@
+/* ==========================================================================
+   Ad Studio — the design system
+   One file every page loads first: the landing page, pricing, the campaign
+   page, checkout and the studio app.
+
+   The idea: Ad Studio renders ads in fixed frames (4:5, 9:16, 1:1), so the
+   whole product is built from frames. Everything is a flat tile on black,
+   8px apart, one 8px radius. Controls are pills. The one colour is record
+   red, the light on a camera: it marks what is live, selected or being made,
+   and never decorates. Elevation is a step in lightness, never a shadow,
+   except on what truly floats (menus, dialogs, toasts).
+   ========================================================================== */
+
+:root {
+  /* ground and surfaces: one lightness step each */
+  --bg: #0a0a0a;
+  --surface: #141414;
+  --raised: #1d1d1d;
+  --raised-2: #272727;
+  --raised-3: #333333;
+  --rule: #232323;           /* the only line: tables, form fields, app dividers */
+
+  /* ink */
+  --ink: #efefef;
+  --ink-2: #b4b4b4;          /* secondary text */
+  --ink-3: #949494;          /* meta; still 4.5:1 on --raised-2 */
+
+  /* paper: the light field and the primary control */
+  --paper: #efefef;
+  --paper-ink: #0a0a0a;
+  --paper-2: #d9d9d9;
+
+  /* record red */
+  --accent: #b11226;
+  --accent-hover: #c5172d;
+  --accent-ink: #ffffff;
+  --accent-1: #2b070d;       /* the ramp, darkest to full */
+  --accent-2: #4a0a15;
+  --accent-3: #730e1e;
+  --accent-soft: rgba(177, 18, 38, 0.18);
+
+  /* status */
+  --warning: #e8a53a;
+  --warning-soft: rgba(232, 165, 58, 0.14);
+  --danger: #ff6170;
+  --danger-soft: rgba(255, 97, 112, 0.13);
+  --success: #efefef;        /* done reads as full ink */
+  --success-soft: rgba(239, 239, 239, 0.12);
+
+  /* type */
+  --font-display: "Stack Sans Headline", "Stack Sans Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font: "Stack Sans Text", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --step-small: clamp(0.8125rem, 0.79rem + 0.1vw, 0.875rem);
+  --step-body: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+  --step-lead: clamp(1.25rem, 1.1rem + 0.7vw, 1.625rem);
+  --step-head: clamp(2rem, 1.3rem + 3.2vw, 4rem);
+
+  /* shape and rhythm */
+  --r: 8px;
+  --r-full: 999px;
+  --gap: 8px;
+  --bar: 56px;
+
+  /* motion */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+}
+
+/* ------------------------------------------------------------------ base */
+*, *::before, *::after { box-sizing: border-box; }
+html { color-scheme: dark; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font);
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+img, video, svg { display: block; max-width: 100%; }
+button, input, textarea, select { font: inherit; color: inherit; }
+a { color: inherit; }
+h1, h2, h3, h4 { text-wrap: balance; }
+p { text-wrap: pretty; }
+[hidden] { display: none !important; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+::selection { background: var(--accent); color: var(--accent-ink); }
+.num, .tabular { font-variant-numeric: tabular-nums; }
+.sr-only, .visually-hidden {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0;
+}
+button, a, summary, label, select { -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+
+/* ------------------------------------------------------------------ the mark */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  flex: none;
+}
+.logo-mark { width: 24px; height: 24px; flex: none; }
+.logo-mark .f-video { fill: var(--ink); }
+.logo-mark .f-image { fill: var(--accent); }
+
+/* ------------------------------------------------------------------ buttons
+   Pills. Primary is paper on black; accent is record red, used for the one
+   action on a marketing page. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: var(--r-full);
+  background: var(--raised-2);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 150ms ease, color 150ms ease, transform 160ms var(--ease-out);
+}
+.btn:hover:not(:disabled):not([aria-disabled="true"]) { background: var(--raised-3); }
+.btn:active:not(:disabled) { transform: scale(0.97); transition-duration: 150ms, 150ms, 80ms; }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: 0.45; cursor: not-allowed; }
+.btn i { font-size: 0.9em; }
+.btn-primary { background: var(--paper); color: var(--paper-ink); }
+.btn-primary:hover:not(:disabled):not([aria-disabled="true"]) { background: #ffffff; }
+.btn-accent { background: var(--accent); color: var(--accent-ink); }
+.btn-accent:hover:not(:disabled):not([aria-disabled="true"]) { background: var(--accent-hover); }
+.btn-ghost { background: transparent; color: var(--ink-2); }
+.btn-ghost:hover:not(:disabled) { background: var(--raised-2); color: var(--ink); }
+.btn-danger { background: var(--danger-soft); color: var(--danger); }
+.btn-danger:hover:not(:disabled) { background: rgba(255, 97, 112, 0.22); }
+.btn-sm { height: 32px; padding: 0 13px; font-size: 13px; }
+.btn-lg { height: 48px; padding: 0 24px; font-size: 16px; }
+.btn-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font-size: 14px;
+  text-decoration: underline;
+  text-decoration-color: #555;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}
+.btn-link:hover { text-decoration-color: var(--ink); }
+.btn-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--r-full);
+  background: none;
+  color: var(--ink-3);
+  cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease, transform 160ms var(--ease-out);
+}
+.btn-icon:hover { color: var(--ink); background: var(--raised-2); }
+.btn-icon:active { transform: scale(0.94); }
+.push-right { margin-left: auto; }
+
+/* ------------------------------------------------------------------ fields */
+.field { display: flex; flex-direction: column; gap: 8px; }
+.field + .field { margin-top: 20px; }
+.label { font-size: 14px; font-weight: 500; color: var(--ink); }
+.label .muted { font-weight: 400; }
+.muted { color: var(--ink-3); }
+.small { font-size: 13px; }
+.hint { font-size: 13px; color: var(--ink-3); }
+.input, .textarea, .select {
+  width: 100%;
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid var(--rule);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 15px;
+  transition: border-color 150ms ease, background-color 150ms ease;
+}
+.input::placeholder, .textarea::placeholder { color: var(--ink-3); }
+.input:hover, .textarea:hover, .select:hover { border-color: var(--raised-3); }
+.input:focus, .textarea:focus, .select:focus { outline: none; border-color: var(--ink); background: var(--raised); }
+.textarea { resize: vertical; line-height: 1.5; }
+select option { background: var(--raised); color: var(--ink); }
+
+/* ------------------------------------------------------------------ the bar
+   One top bar for every page: the mark on the left edge of the column, a few
+   plain links, and one action. Same ground as the page; a rule appears only
+   once content scrolls under it. */
+.bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  height: var(--bar);
+  display: flex;
+  align-items: center;
+  gap: 28px;
+  padding: 0 24px;
+  background: var(--bg);
+  border-bottom: 1px solid transparent; /* taste-skill-ignore: the sticky bar shows a rule only once content scrolls under it */
+  transition: border-color 200ms ease;
+}
+.bar.is-scrolled { border-bottom-color: var(--rule); }
+.bar-links { display: flex; align-items: center; gap: 4px; flex: 1; min-width: 0; }
+.bar-links a, .bar-link {
+  display: inline-flex;
+  align-items: center;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: var(--r-full);
+  color: var(--ink-2);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 150ms ease, background-color 150ms ease;
+}
+.bar-links a:hover, .bar-link:hover { color: var(--ink); }
+.bar-links a[aria-current="page"] { color: var(--ink); background: var(--raised); }
+.bar-actions { display: flex; align-items: center; gap: 8px; flex: none; }
+@media (max-width: 960px) {
+  .bar-links { display: none; }
+  .bar-actions { margin-left: auto; }
+}
+@media (max-width: 760px) {
+  .bar { gap: 12px; padding: 0 16px; }
+}
+
+/* ------------------------------------------------------------------ dialogs: they float, so they may cast a shadow (taste-skill-ignore) */
+dialog {
+  width: min(460px, calc(100vw - 32px));
+  padding: 0;
+  border: 0;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7); /* taste-skill-ignore: a dialog floats */
+  opacity: 0;
+  transform: translateY(6px) scale(0.985);
+  transition: opacity 140ms ease-out, transform 140ms ease-out, overlay 140ms allow-discrete, display 140ms allow-discrete;
+}
+dialog[open] { opacity: 1; transform: none; transition: opacity 200ms ease, transform 320ms var(--ease-out), overlay 140ms allow-discrete, display 140ms allow-discrete; }
+@starting-style { dialog[open] { opacity: 0; transform: translateY(8px) scale(0.98); } }
+dialog::backdrop { background: rgba(0, 0, 0, 0.78); opacity: 0; transition: opacity 180ms ease, overlay 180ms allow-discrete, display 180ms allow-discrete; }
+dialog[open]::backdrop { opacity: 1; }
+@starting-style { dialog[open]::backdrop { opacity: 0; } }
+.dialog-body { padding: 24px; }
+.dialog-body h3 { margin: 0 0 6px; font-size: 20px; font-weight: 500; letter-spacing: -0.015em; }
+.dialog-body p { margin: 0 0 20px; color: var(--ink-2); font-size: 14px; }
+.dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 20px; }
+.check-row { display: flex; align-items: center; gap: 10px; width: max-content; max-width: 100%; font-size: 14px; color: var(--ink-2); cursor: pointer; }
+.check-row input { width: 16px; height: 16px; margin: 0; accent-color: var(--ink); }
+
+/* ------------------------------------------------------------------ account: sign in and the user menu */
+.auth-dialog { width: min(420px, calc(100vw - 32px)); }
+.auth-dialog-body { position: relative; padding: 28px; }
+.auth-close-btn {
+  position: absolute; top: 14px; right: 14px;
+  display: grid; place-items: center; width: 32px; height: 32px;
+  border: 0; border-radius: var(--r-full); background: none; color: var(--ink-3); cursor: pointer;
+}
+.auth-close-btn:hover { background: var(--raised-2); color: var(--ink); }
+.auth-header { margin-bottom: 20px; padding-right: 32px; }
+.auth-header::before {
+  content: "";
+  display: block;
+  width: 32px;
+  height: 32px;
+  margin-bottom: 18px;
+  background: url("/static/brand/mark.svg") center / contain no-repeat;
+}
+.auth-header h3 { margin: 0 0 6px; font-family: var(--font-display); font-weight: 300; font-size: 30px; line-height: 1.05; letter-spacing: -0.022em; }
+.auth-header p { margin: 0; color: var(--ink-2); font-size: 15px; }
+.auth-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin-bottom: 18px; border-radius: var(--r-full); background: var(--bg); }
+.auth-tab-btn {
+  height: 36px; border: 0; border-radius: var(--r-full); background: none;
+  color: var(--ink-2); font-size: 14px; font-weight: 500; cursor: pointer;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.auth-tab-btn:hover { color: var(--ink); }
+.auth-tab-btn.active { background: var(--raised-2); color: var(--ink); }
+.auth-form { display: flex; flex-direction: column; gap: 14px; }
+.auth-field { display: flex; flex-direction: column; gap: 6px; }
+.auth-field label { font-size: 14px; font-weight: 500; }
+.auth-field input {
+  height: 44px; padding: 0 14px; border: 1px solid var(--rule); border-radius: var(--r);
+  background: var(--bg); color: var(--ink); font-size: 16px;
+  transition: border-color 150ms ease;
+}
+.auth-field input:focus { outline: none; border-color: var(--ink); }
+.auth-submit-btn {
+  height: 48px; margin-top: 6px; border: 0; border-radius: var(--r-full);
+  background: var(--paper); color: var(--paper-ink); font-size: 16px; font-weight: 500; cursor: pointer;
+  transition: background-color 150ms ease, transform 160ms var(--ease-out);
+}
+.auth-submit-btn:hover { background: #fff; }
+.auth-submit-btn:active { transform: scale(0.98); }
+.auth-submit-btn:disabled { opacity: 0.5; cursor: progress; }
+.auth-msg { margin-bottom: 14px; padding: 10px 14px; border-radius: var(--r); font-size: 14px; line-height: 1.45; }
+.auth-msg.error { background: var(--danger-soft); color: var(--danger); }
+.auth-msg.success { background: var(--success-soft); color: var(--ink); }
+
+.user-menu-wrap { position: relative; }
+.user-pill {
+  display: inline-flex; align-items: center; gap: 8px; height: 36px; max-width: 240px; padding: 0 14px 0 6px;
+  border: 0; border-radius: var(--r-full); background: var(--raised); color: var(--ink);
+  font-size: 14px; font-weight: 500; cursor: pointer;
+  transition: background-color 150ms ease, transform 160ms var(--ease-out);
+}
+.user-pill:hover { background: var(--raised-2); }
+.user-pill:active { transform: scale(0.97); }
+.user-pill i {
+  display: grid; place-items: center; width: 26px; height: 26px; border-radius: 50%;
+  background: var(--raised-3); color: var(--ink-2); font-size: 11px; flex: none;
+}
+.user-pill[data-authenticated="false"] { padding: 0 16px; }
+.user-pill[data-authenticated="false"] i { display: none; }
+.user-pill-email { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-pill-tag { padding: 0 7px; border-radius: var(--r-full); background: var(--raised-3); color: var(--ink-2); font-size: 12px; line-height: 20px; text-transform: capitalize; }
+.user-dropdown {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 60; width: 240px; padding: 6px;
+  border-radius: 12px; background: var(--raised); box-shadow: 0 18px 48px rgba(0, 0, 0, 0.6); /* taste-skill-ignore: a menu floats */
+}
+.user-dropdown-head { padding: 10px 10px 12px; }
+.user-dropdown-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; font-weight: 500; }
+.user-dropdown-meta { display: flex; justify-content: space-between; margin-top: 2px; color: var(--ink-3); font-size: 13px; text-transform: capitalize; }
+.user-dropdown-meta a { color: var(--ink) !important; text-decoration: underline !important; text-underline-offset: 3px; }
+.user-dropdown-item {
+  display: flex; align-items: center; gap: 10px; width: 100%; height: 38px; padding: 0 10px;
+  border: 0; border-radius: var(--r); background: none; color: var(--ink-2);
+  font-size: 14px; text-align: left; text-decoration: none; cursor: pointer;
+}
+.user-dropdown-item:hover { background: var(--raised-2); color: var(--ink); }
+.user-dropdown-item i { width: 16px; color: var(--ink-3); font-size: 13px; text-align: center; }
+.user-dropdown-item.danger:hover { color: var(--danger); }
+.user-dropdown-item.danger:hover i { color: var(--danger); }
+
+/* ------------------------------------------------------------------ what people asked for */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
+}
+@media (prefers-contrast: more) {
+  :root { --ink-2: #dcdcdc; --ink-3: #c4c4c4; --rule: #5a5a5a; }
+}

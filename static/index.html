@@ -6,25 +6,20 @@
   <title>Ad Studio</title>
   <meta name="description" content="Turn a brand link into a researched commercial campaign: cinema-grade 9:16 video ads and 4:5 image ads ready for Meta & TikTok.">
 
+  <link rel="icon" href="/static/brand/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:wght@300&family=Stack+Sans+Text:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="css/style.css?v=6.5.2">
-  <link rel="stylesheet" href="css/auth.css?v=1.0.0">
+  <link rel="stylesheet" href="/static/css/system.css?v=2.0.0">
+  <link rel="stylesheet" href="/static/css/style.css?v=7.0.0">
 </head>
-<body>
-  <div class="ambient" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
+<body class="app">
 
   <!-- Shell: one top bar (brand, studios, tools) over a full-width canvas -->
-  <header class="topbar">
-    <a href="/" class="brand" style="text-decoration: none; color: inherit;">
-      <svg class="brand-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6" stroke-opacity="0.35"/>
-        <circle cx="12" cy="12" r="3.2" fill="currentColor"/>
-        <path d="M12 2C15.5 5.5 16.5 8.5 15.2 12M22 12C18.5 15.5 15.5 16.5 12 15.2M12 22C8.5 18.5 7.5 15.5 8.8 12M2 12C5.5 8.5 8.5 7.5 12 8.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        <circle cx="12" cy="12" r="1.2" fill="#fff"/>
-      </svg>
+  <header class="bar topbar" id="bar">
+    <a href="/" class="logo brand" aria-label="Ad Studio home">
+      <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="f-video" fill-rule="evenodd" d="M3.75 1.5h6.75a2.25 2.25 0 0 1 2.25 2.25v16.5a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 20.25V3.75A2.25 2.25 0 0 1 3.75 1.5ZM5.4 8.7v6.6l5.2-3.3Z"/><rect class="f-image" x="14.5" y="12.5" width="8" height="10" rx="2"/></svg>
       <span>Ad Studio</span>
     </a>
     <nav class="nav" aria-label="Main">
@@ -32,7 +27,7 @@
       <button type="button" class="nav-btn" data-view="image" data-menu="menu_image">Image</button>
       <button type="button" class="nav-btn" data-view="video" data-menu="menu_video">Video</button>
       <button type="button" class="nav-btn" data-view="batch">Batch</button>
-      <button type="button" class="nav-btn" data-view="saved"><i class="fa-regular fa-bookmark" style="font-size: 11px; margin-right: 4px;"></i> Saved</button>
+      <button type="button" class="nav-btn" data-view="saved">Saved</button>
     </nav>
 
     <!-- Hover menus: what each studio can do, with real outputs. Each item opens the studio set up for it. -->
@@ -172,10 +167,10 @@
         </button>
         <div class="user-dropdown" id="user_dropdown" hidden>
           <div class="user-dropdown-head">
-            <div class="user-dropdown-name" id="dropdown_user_email">user@example.com</div>
+            <div class="user-dropdown-name" id="dropdown_user_email">–</div>
             <div class="user-dropdown-meta">
               <span id="dropdown_user_plan">FREE PLAN</span>
-              <a href="/pricing" style="color: var(--accent); text-decoration: none;">Change</a>
+              <a href="/pricing">Change</a>
             </div>
           </div>
           <a class="user-dropdown-item" href="/pricing"><i class="fa-solid fa-tag"></i> Plans & Pricing</a>
@@ -198,15 +193,16 @@
     </div>
 
     <!-- What a campaign looks like: real ads from one run, shown until a campaign starts -->
-    <section class="showcase" id="campaign_showcase" aria-label="Example campaign">
-      <div class="showcase-fan">
-        <figure class="fan-card fan-1"><img src="/static/showcase_images/hyphen_glow.jpg" width="928" height="1152" alt="Hyphen Skincare · Golden Hour Dewy Finish" loading="lazy"><figcaption>Beauty &amp; Glow</figcaption></figure>
-        <figure class="fan-card fan-2"><video src="/static/showcase_videos/commercial_hero_wide.mp4" poster="/static/landing/thumbs/cinema_hero.jpg" width="540" height="960" muted loop playsinline preload="none" aria-label="High-Impact Commercial Reel"></video><figcaption>Cinema Reel · 9:16</figcaption></figure>
-        <figure class="fan-card fan-3"><img src="/static/showcase_images/greensoul_posture.jpg" width="928" height="1152" alt="Green Soul Ergonomics · Spine Support Matrix"><figcaption>Ergonomic Studio</figcaption></figure>
-        <figure class="fan-card fan-4"><img src="/static/showcase_images/veda5_retreat.jpg" width="928" height="1152" alt="Veda5 Luxury Wellness Resort" loading="lazy"><figcaption>Luxury Hospitality</figcaption></figure>
-        <figure class="fan-card fan-5"><img src="/static/showcase_images/neemans_commute.jpg" width="928" height="1152" alt="Neeman's Commute Footwear" loading="lazy"><figcaption>Active DTC</figcaption></figure>
+    <section class="showcase" id="campaign_showcase" aria-label="Ads from one campaign run">
+      <div class="showcase-strip">
+        <figure class="frame r45"><img src="/static/demo/woodland/ad_s01.jpg" width="928" height="1152" alt="Woodland image ad: Sneakers Fail. Leather Boots Prevail." loading="lazy"><figcaption>Image 4:5</figcaption></figure>
+        <figure class="frame r916"><video src="/static/demo/woodland/video_1.mp4" poster="/static/demo/woodland/video_1_poster.jpg" width="540" height="960" muted loop playsinline preload="none" aria-label="Woodland video ad: Soaking trail shoes?"></video><figcaption>Video 9:16</figcaption></figure>
+        <figure class="frame r45"><img src="/static/demo/woodland/ad_s10.jpg" width="928" height="1152" alt="Woodland image ad: Conquer Muddy Trails Effortlessly" loading="lazy"><figcaption>Image 4:5</figcaption></figure>
+        <figure class="frame r45"><img src="/static/demo/woodland/ad_s18.jpg" width="928" height="1152" alt="Woodland image ad: Trusted by Explorers Since 1992" loading="lazy"><figcaption>Image 4:5</figcaption></figure>
+        <figure class="frame r916"><img src="/static/demo/woodland/video_2_poster.jpg" width="540" height="960" alt="Woodland video ad: Tired of wet sneakers?" loading="lazy"><figcaption>Video 9:16</figcaption></figure>
+        <figure class="frame r45"><img src="/static/demo/woodland/ad_s02.jpg" width="928" height="1152" alt="Woodland image ad: Built to Repel Tough Elements" loading="lazy"><figcaption>Image 4:5</figcaption></figure>
       </div>
-      <p class="showcase-note">From one brand link: enter any URL to generate 25 research-backed image ads and cinematic video reels. <a href="/upgrade/campaign">See sample campaign</a></p>
+      <p class="showcase-note">These came back from one link: Woodland's website. Paste yours below and get 25 image ads and 25 video ads like them. <a href="/upgrade/campaign">See the whole run</a></p>
     </section>
 
     <div class="steps">
@@ -361,7 +357,7 @@
   <!-- Image studio: the gallery is the canvas, the composer floats on it -->
   <!-- ================================================================== -->
   <main class="page page-studio" id="view_image" data-view-panel="image" hidden>
-    <h1 class="sr-only">Image studio</h1>
+    <div class="studio-head"><h1>Image studio</h1><p>Image ads from a prompt and your product photos, 1K to 4K. Newest first.</p></div>
     <section class="canvas" aria-label="Image results">
       <div class="stage-current" id="img_result"><div class="media-empty"><i class="fa-regular fa-image"></i><span>Your image appears here</span></div></div>
       <div class="gallery history" id="img_history" data-loading></div>
@@ -448,17 +444,20 @@
   <!-- Video studio: same canvas and composer                             -->
   <!-- ================================================================== -->
   <main class="page page-studio" id="view_video" data-view-panel="video" hidden>
-    <h1 class="sr-only">Video studio</h1>
+    <div class="studio-head"><h1>Video studio</h1><p>Video ads from 4 to 15 seconds, at 9:16, 16:9 or 1:1. Newest first.</p></div>
     <section class="canvas" aria-label="Video results">
       <div class="stage-current" id="vid_result"><div class="media-empty"><i class="fa-solid fa-film"></i><span>Your video appears here</span></div></div>
       <div class="gallery history" id="vid_history"></div>
       <div class="gallery-empty">
         <h2>Describe the shot you want to see</h2>
-        <p>Videos you make this session collect here. Start from one of these, or write your own below.</p>
-        <div class="example-chips">
-          <button type="button" class="example-chip" data-example="Close-up of the product on a rainy window sill, slow push-in, warm interior light">Slow product push-in</button>
-          <button type="button" class="example-chip" data-example="Handheld phone-style clip: a person unboxes the product at their kitchen table and smiles at the first use, natural daylight">Handheld unboxing</button>
-          <button type="button" class="example-chip" data-example="The product rotates slowly on a seamless coloured backdrop while light sweeps across it, smooth studio camera orbit">Studio orbit</button>
+        <p>Videos you make collect here. Start from one of these real ads, or write your own below.</p>
+        <div class="example-chips example-frames">
+          <button type="button" class="example-frame" data-example="Slow-motion macro: a mesh trainer sinks into a muddy forest stream, water closing over the laces, overcast light. On-screen question in the first second.">
+            <img src="/static/demo/woodland/video_1_poster.jpg" width="540" height="960" alt="" loading="lazy"><span>Problem hook in the first second</span></button>
+          <button type="button" class="example-frame" data-example="Handheld phone-style clip: a commuter at a station applies sunscreen to their hand and looks to camera, bright midday light, natural street sound">
+            <img src="/static/landing/thumbs/vert_sneaker.jpg" width="720" height="1280" alt="" loading="lazy"><span>Handheld, made-on-a-phone</span></button>
+          <button type="button" class="example-frame" data-example="A man on a footbridge holds the product up to camera and talks about it, soft daylight, slow push-in on the bottle">
+            <img src="/static/landing/thumbs/vert_beauty.jpg" width="720" height="1280" alt="" loading="lazy"><span>Product to camera, slow push-in</span></button>
         </div>
       </div>
     </section>
@@ -635,9 +634,15 @@
 
       <div class="result-stage">
         <div id="batch_stage_empty" class="result-main">
-          <div class="media-empty">
-            <i class="fa-solid fa-images"></i>
-            <span>Upload markdown prompts on the left and start the queue</span>
+          <div class="batch-sample">
+            <h2>One heading, one image</h2>
+            <p>Drop a Markdown or text file on the left. Each heading starts a new prompt; a size written in the prompt overrides the default.</p>
+            <pre><code>## Boot on wet granite
+Low angle, light rain, the boot planted on dark rock. 4:5
+
+## Hiker crossing a stream
+Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
+            <p>Results collect here as they render, with a ZIP of the whole batch at the end.</p>
           </div>
         </div>
 
@@ -675,20 +680,20 @@
     <div class="page-head saved-head">
       <div>
         <div class="saved-head-top">
-          <h1>Saved Creatives &amp; Prompts</h1>
+          <h1>Saved</h1>
           <span class="badge badge-accent" id="saved_count_badge">0 items</span>
         </div>
-        <p>Your cloud-persisted library of saved commercial ad generations, prompt formulas, and reference assets.</p>
+        <p>Ads and prompts you kept, from every studio. Bookmark any result to add it here.</p>
       </div>
     </div>
 
     <div class="saved-toolbar">
       <div class="input-with-icon saved-search-wrap">
         <i class="fa-solid fa-magnifying-glass"></i>
-        <input type="search" id="saved_search_input" class="input input-sm" placeholder="Search prompts, angles, or titles..." aria-label="Search saved creatives">
+        <input type="search" id="saved_search_input" class="input input-sm" placeholder="Search prompts, angles or titles" aria-label="Search saved creatives">
       </div>
       <div class="saved-filters" role="group" aria-label="Filter saved creatives">
-        <button type="button" class="saved-filter-pill active" data-filter="all">All Creatives</button>
+        <button type="button" class="saved-filter-pill active" data-filter="all">All</button>
         <button type="button" class="saved-filter-pill" data-filter="video"><i class="fa-solid fa-film"></i> Videos</button>
         <button type="button" class="saved-filter-pill" data-filter="image"><i class="fa-regular fa-image"></i> Images</button>
         <button type="button" class="saved-filter-pill" data-filter="favorites"><i class="fa-solid fa-star"></i> Favorites</button>
@@ -700,12 +705,11 @@
     </div>
 
     <div class="media-empty saved-empty-state" id="saved_empty" hidden>
-      <div class="saved-empty-icon"><i class="fa-regular fa-bookmark"></i></div>
-      <h3>No saved creatives found</h3>
-      <p>Save prompts and finished video or image ads by clicking the bookmark button on any generation card or in the full-screen viewer.</p>
+      <h3>Nothing saved yet</h3>
+      <p>Press the bookmark on any ad, in the gallery or the full-screen viewer, and it lands here with its prompt.</p>
       <div class="saved-empty-actions">
-        <button type="button" class="btn btn-primary btn-sm" onclick="document.querySelector('.nav-btn[data-view=\'campaign\']').click()">Build a Campaign</button>
-        <button type="button" class="btn btn-ghost btn-sm" onclick="document.querySelector('.nav-btn[data-view=\'video\']').click()">Generate Video</button>
+        <button type="button" class="btn btn-primary btn-sm" onclick="document.querySelector('.nav-btn[data-view=\'campaign\']').click()">Start a campaign</button>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="document.querySelector('.nav-btn[data-view=\'video\']').click()">Make a video</button>
       </div>
     </div>
   </main>
@@ -716,11 +720,11 @@
   <!-- Upgrade: opens when a plan without the campaign builder presses Continue -->
   <dialog id="upgrade_dialog" class="upgrade-dialog" aria-labelledby="upgrade_title">
     <div class="upgrade-media">
-      <video src="/static/showcase_videos/commercial_hero_wide.mp4" poster="/static/landing/thumbs/cinema_hero.jpg" muted loop playsinline autoplay preload="metadata" aria-hidden="true"></video>
+      <video src="/static/demo/woodland/video_2.mp4" poster="/static/demo/woodland/video_2_poster.jpg" muted loop playsinline autoplay preload="metadata" aria-hidden="true"></video>
       <div class="upgrade-media-strip" aria-hidden="true">
-        <img src="/static/showcase_images/hyphen_glow.jpg" width="928" height="1152" alt="" loading="lazy">
-        <img src="/static/showcase_images/greensoul_posture.jpg" width="928" height="1152" alt="" loading="lazy">
-        <img src="/static/showcase_images/neemans_commute.jpg" width="928" height="1152" alt="" loading="lazy">
+        <img src="/static/demo/woodland/ad_s01.jpg" width="928" height="1152" alt="" loading="lazy">
+        <img src="/static/demo/woodland/ad_s10.jpg" width="928" height="1152" alt="" loading="lazy">
+        <img src="/static/demo/woodland/ad_s22.jpg" width="928" height="1152" alt="" loading="lazy">
       </div>
     </div>
     <div class="upgrade-body">
@@ -735,7 +739,7 @@
       <div class="upgrade-plans" role="radiogroup" aria-label="Plan">
         <label class="upgrade-plan">
           <input type="radio" name="upgrade_plan" value="pro" checked>
-          <span class="upgrade-plan-name">Pro <em>Most popular</em></span>
+          <span class="upgrade-plan-name">Pro</span>
           <span class="upgrade-plan-price" data-price="pro">$49<small>/mo</small></span>
           <span class="upgrade-plan-credits" data-credits="pro">6,000 credits a month</span>
         </label>
@@ -746,7 +750,7 @@
           <span class="upgrade-plan-credits" data-credits="studio">20,000 credits a month</span>
         </label>
       </div>
-      <a class="btn btn-accent btn-lg upgrade-cta" id="upgrade_cta" href="/upgrade/checkout?plan=pro">Upgrade to Pro</a>
+      <a class="btn btn-primary btn-lg upgrade-cta" id="upgrade_cta" href="/upgrade/checkout?plan=pro">Upgrade to Pro</a>
       <p class="upgrade-more-row"><a class="upgrade-more" href="/upgrade/campaign">See a campaign it made</a><a class="upgrade-more" href="/pricing">Compare plans</a></p>
     </div>
   </dialog>
@@ -785,9 +789,8 @@
     <div class="preset-modal-content">
       <header class="preset-modal-head">
         <div class="preset-modal-title">
-          <div class="preset-modal-badge"><i class="fa-solid fa-wand-magic-sparkles"></i> Creative Reference Library</div>
-          <h3>Meta Ad Design Presets</h3>
-          <p>Curated design references sorted by industry from Pinterest. Select a preset to elevate creative quality, layout styling, typography, and lighting.</p>
+                    <h3>Creative presets</h3>
+          <p>Layouts, type and light from real ads in your industry. Pick one and every ad in the campaign follows it.</p>
         </div>
         <button type="button" class="btn btn-ghost btn-sm preset-modal-close" id="btn_close_presets" aria-label="Close dialog"><i class="fa-solid fa-xmark"></i></button>
       </header>
@@ -838,15 +841,15 @@
   <div class="toasts" id="toasts" aria-live="polite"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/auth.js?v=1.0.0"></script>
-  <script src="js/core.js?v=3.9.0"></script>
-  <script src="js/render_loader.js?v=3.1.0"></script>
-  <script src="js/campaign.js?v=3.3.1"></script>
-  <script src="js/studios.js?v=3.4.0"></script>
-  <script src="js/viewer.js?v=1.0.0"></script>
-  <script src="js/saved_creatives.js?v=1.0.0"></script>
-  <script src="js/composer.js?v=1.1.0"></script>
-  <script src="js/batch.js?v=1.2.0"></script>
-  <script src="js/navmenu.js?v=1.0.0"></script>
+  <script src="/static/js/auth.js?v=1.0.0"></script>
+  <script src="/static/js/core.js?v=3.9.0"></script>
+  <script src="/static/js/render_loader.js?v=3.1.0"></script>
+  <script src="/static/js/campaign.js?v=3.3.1"></script>
+  <script src="/static/js/studios.js?v=3.4.0"></script>
+  <script src="/static/js/viewer.js?v=1.0.0"></script>
+  <script src="/static/js/saved_creatives.js?v=1.0.0"></script>
+  <script src="/static/js/composer.js?v=1.1.0"></script>
+  <script src="/static/js/batch.js?v=1.2.0"></script>
+  <script src="/static/js/navmenu.js?v=1.0.0"></script>
 </body>
 </html>

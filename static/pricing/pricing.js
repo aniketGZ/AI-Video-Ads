@@ -2,26 +2,8 @@
 // the plan finder, and the visitor's current plan. The HTML already holds the same numbers, so the
 // page reads correctly without this script.
 (function () {
-  document.documentElement.classList.add("js");
 
-  // ------------------------------------------------------------ entrances, once per part
-  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const parts = document.querySelectorAll(".reveal");
-  parts.forEach((el) => {
-    const sibs = Array.from(el.parentElement.children).filter((c) => c.classList.contains("reveal"));
-    el.style.setProperty("--d", `${sibs.indexOf(el) * 80}ms`);
-  });
-  if ("IntersectionObserver" in window && !reduced) {
-    const io = new IntersectionObserver((entries) => entries.forEach((e) => {
-      if (!e.isIntersecting) return;
-      e.target.classList.add("is-in");
-      io.unobserve(e.target);
-    }), { rootMargin: "0px 0px -8% 0px" });
-    parts.forEach((el) => io.observe(el));
-  } else {
-    parts.forEach((el) => el.classList.add("is-in"));
-  }
-  if (reduced) document.querySelectorAll("video").forEach((v) => { v.removeAttribute("autoplay"); v.pause(); });
+  // Entrances, the bar and on-screen video playback come from /static/js/site.js.
 
   const nf = new Intl.NumberFormat("en-US");
   const ORDER = ["free", "starter", "pro", "studio"];

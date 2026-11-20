@@ -3,267 +3,160 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Autonomous Campaign Builder · Ad Studio</title>
-  <meta name="description" content="Turn any brand URL into a researched commercial Meta & TikTok campaign: 4:5 image ads, 9:16 vertical video reels, and angle-specific copywriting.">
+  <title>Campaign builder · Ad Studio</title>
+  <meta name="description" content="Paste one brand link. The campaign builder reads your site, studies competitors' live Meta ads, writes the angles and renders 4:5 image ads and 9:16 video ads.">
+  <link rel="icon" href="/static/brand/favicon.svg" type="image/svg+xml">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/static/upgrade/upgrade.css?v=2.0.0">
+  <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:wght@300&family=Stack+Sans+Text:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/system.css?v=2.0.0">
+  <link rel="stylesheet" href="/static/css/site.css?v=3.0.0">
+  <script>document.documentElement.classList.add("js");</script>
 </head>
-<body>
+<body class="site">
 
-  <!-- Ambient Cinematic Background -->
-  <div class="ambient" aria-hidden="true"><i></i><i></i><i></i><i></i></div>
-
-  <!-- Unified Top Navigation -->
-  <header class="bar">
-    <a class="bar-brand" href="/" aria-label="Ad Studio Home">
-      <svg class="brand-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6" stroke-opacity="0.35"/>
-        <circle cx="12" cy="12" r="3.2" fill="currentColor"/>
-        <path d="M12 2C15.5 5.5 16.5 8.5 15.2 12M22 12C18.5 15.5 15.5 16.5 12 15.2M12 22C8.5 18.5 7.5 15.5 8.8 12M2 12C5.5 8.5 8.5 7.5 12 8.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-        <circle cx="12" cy="12" r="1.2" fill="#fff"/>
-      </svg>
+  <header class="bar" id="bar">
+    <a href="/" class="logo" aria-label="Ad Studio home">
+      <svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="f-video" fill-rule="evenodd" d="M3.75 1.5h6.75a2.25 2.25 0 0 1 2.25 2.25v16.5a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 20.25V3.75A2.25 2.25 0 0 1 3.75 1.5ZM5.4 8.7v6.6l5.2-3.3Z"/><rect class="f-image" x="14.5" y="12.5" width="8" height="10" rx="2"/></svg>
       <span>Ad Studio</span>
     </a>
-    <nav class="bar-links" aria-label="Navigation">
-      <a href="/app">Studio</a>
-      <a href="/#showcase">Reel Showcase</a>
-      <a href="/upgrade/campaign" class="active">Campaign Builder</a>
+    <nav class="bar-links" aria-label="Main">
+      <a href="/#run">The ads</a>
+      <a href="/#how">How it works</a>
+      <a href="/upgrade/campaign" aria-current="page">Campaign builder</a>
       <a href="/pricing">Pricing</a>
     </nav>
     <div class="bar-actions">
-      <a class="btn btn-primary" href="/app">
-        <span>Launch Studio</span>
-        <i class="fa-solid fa-arrow-right"></i>
-      </a>
+      <a href="/app" class="btn btn-primary">Open the studio</a>
     </div>
   </header>
 
-  <main class="campaign-container">
-    <!-- Hero Showcase Section -->
-    <section class="campaign-hero">
-      <div class="reveal" style="display:inline-flex; align-items:center; gap:8px; padding:4px 14px; border-radius:var(--r-full); background:var(--surface-2); border:1px solid var(--border); font-size:13px; font-weight:500; color:var(--accent-text); margin-bottom:20px;">
-        <i class="fa-solid fa-wand-magic-sparkles"></i>
-        <span>Autonomous Meta &amp; TikTok Campaign Architecture</span>
-      </div>
-      <h1 class="reveal">One Link In.<br><span>A Complete Campaign Out.</span></h1>
-      <p class="reveal">Paste any brand or product link. The pipeline extracts visual brand identity, reverse-engineers competitors' live Meta ads, writes multi-angle copywriting, and renders finished 4:5 image ads and 9:16 vertical reels.</p>
-
-      <!-- Complete 10s Cinema Commercial Reel -->
-      <div class="campaign-cinema-wrap reveal">
-        <video src="/static/showcase_videos/commercial_hero_wide.mp4" poster="/static/landing/thumbs/cinema_hero.jpg" autoplay loop muted playsinline aria-label="Autonomous Commercial Reel"></video>
-      </div>
-
-      <!-- Specimen Metrics -->
-      <div class="specimen-grid reveal">
-        <div class="specimen-card">
-          <b>1 URL</b>
-          <span>Single Brand Link In</span>
+  <main>
+    <!-- ============================================================ title -->
+    <section class="board page-title" aria-labelledby="top_h">
+      <div class="tile title-main">
+        <h1 id="top_h" class="t-display">One link in, a campaign out</h1>
+        <div class="title-frames" aria-hidden="true">
+          <img src="/static/demo/woodland/ad_s01.jpg" width="928" height="1152" alt="">
+          <img src="/static/demo/woodland/ad_s10.jpg" width="928" height="1152" alt="">
+          <img src="/static/demo/woodland/ad_s12.jpg" width="928" height="1152" alt="">
+          <img src="/static/demo/woodland/ad_s18.jpg" width="928" height="1152" alt="">
+          <img src="/static/demo/woodland/ad_s22.jpg" width="928" height="1152" alt="">
         </div>
-        <div class="specimen-card">
-          <b>28 Ads</b>
-          <span>Multi-Format Creatives</span>
-        </div>
-        <div class="specimen-card">
-          <b>5 Angles</b>
-          <span>Researched Buyer Motivations</span>
-        </div>
-        <div class="specimen-card">
-          <b>&lt;60s</b>
-          <span>End-to-End Pipeline Speed</span>
+        <div class="title-foot">
+          <p>The campaign builder reads your site, studies competitors' live Meta ads, writes every angle and renders the ads. It's on Pro and Studio.</p>
+          <form class="link-form js-link-form" action="/app" novalidate>
+            <label class="sr-only" for="top_url">Your website or product page</label>
+            <input type="url" id="top_url" placeholder="yourbrand.com/product" autocomplete="url">
+            <button type="submit" class="btn">Keep my link</button>
+          </form>
+          <p class="link-note" aria-live="polite"></p>
         </div>
       </div>
+      <figure class="tile tile-flush title-side" style="margin:0">
+        <video src="/static/demo/woodland/video_2.mp4" poster="/static/demo/woodland/video_2_poster.jpg" width="540" height="960" autoplay muted loop playsinline preload="metadata" aria-label="Woodland video ad from the campaign builder: Tired of wet sneakers?"></video>
+      </figure>
     </section>
 
-    <!-- 4-Stage Autonomous Pipeline Walkthrough -->
-    <section class="stages-section" id="how">
-      <h2 class="reveal">The Autonomous Production Pipeline</h2>
-      <p class="section-subtitle reveal">How one address turns into a deployable, high-converting ad set.</p>
-
-      <div class="stages-list">
-        <!-- Stage 1 -->
-        <article class="stage-card reveal">
-          <div class="stage-info">
-            <span class="stage-num-badge"><i class="fa-solid fa-magnifying-glass"></i> Stage 01 · Identity</span>
-            <h3>Autonomous Brand Intelligence</h3>
-            <p>The agent reads your product page, about page, and store catalog. It extracts exact hex palettes, type systems, brand tone, and current promotional offers. Nothing is invented: all copy claims are tracked with strict citation integrity.</p>
-          </div>
-          <div class="stage-evidence">
-            <div class="swatches-row">
-              <span class="swatch-item" style="background:#0F522E; color:#fff;">#0F522E</span>
-              <span class="swatch-item" style="background:#D4A359; color:#000;">#D4A359</span>
-              <span class="swatch-item" style="background:#F4F6F4; color:#000;">#F4F6F4</span>
-              <span class="swatch-item" style="background:#1A251E; color:#fff;">#1A251E</span>
-            </div>
-            <table class="evidence-table">
-              <tr><td>Voice</td><td>Adventurous, direct, functional. Clear actionable claims.</td></tr>
-              <tr><td>Excluded</td><td>Generic hype, superficial buzzwords, unverified claims.</td></tr>
-              <tr><td>Active Proof</td><td>Direct-response social proof &bull; 10% first-order incentives.</td></tr>
-            </table>
+    <!-- ============================================================ the four steps, each with what it found -->
+    <section class="joined" aria-labelledby="steps_h">
+      <h2 id="steps_h" class="sr-only">What happens to your link</h2>
+      <div class="board step-board">
+        <article class="tile step-tile rv" style="background: var(--accent-1)">
+          <div class="step-text"><h3>Read the brand</h3><p>It reads your product page, about page and catalogue for the palette, type, voice and offers. Every claim in an ad traces back to your own site.</p></div>
+          <div class="step-proof">
+            <div class="swatch-row"><span style="background:#0F522E;color:#fff">#0F522E</span><span style="background:#D4A359;color:#0a0a0a">#D4A359</span><span style="background:#F4F6F4;color:#0a0a0a">#F4F6F4</span><span style="background:#1A251E;color:#fff">#1A251E</span></div>
+            <dl class="kv-board"><dt>Voice</dt><dd>Adventurous, direct, practical</dd><dt>Left out</dt><dd>Hype words and claims it can't prove</dd><dt>Offers</dt><dd>5% and 10% off the first order</dd></dl>
           </div>
         </article>
-
-        <!-- Stage 2 -->
-        <article class="stage-card reveal">
-          <div class="stage-info">
-            <span class="stage-num-badge"><i class="fa-brands fa-meta"></i> Stage 02 · Research</span>
-            <h3>Competitive Meta Ad Intelligence</h3>
-            <p>Our research crawler surveys the live Meta Ad Library for your industry competitors. It catalogs the top-performing creative layouts, visual compositions, and hook timings, keeping what drives conversions and filtering out the noise.</p>
-          </div>
-          <div class="stage-evidence">
-            <div class="angle-chips-list">
-              <div class="angle-chip-item">
-                <strong>Us vs. Them</strong>
-                <span>Direct product comparison &bull; Focus on durability</span>
-              </div>
-              <div class="angle-chip-item">
-                <strong>Problem &rarr; Fix</strong>
-                <span>Pain point agitation &bull; Clear instant relief</span>
-              </div>
-              <div class="angle-chip-item">
-                <strong>Social Proof</strong>
-                <span>Verified buyer quote &bull; Real candid setting</span>
-              </div>
-              <div class="angle-chip-item">
-                <strong>The Direct Offer</strong>
-                <span>Clear hook line &bull; High-converting action CTA</span>
-              </div>
-            </div>
+        <article class="tile step-tile rv" style="background: var(--accent-2)">
+          <div class="step-text"><h3>Study the competition</h3><p>It surveys the Meta Ad Library for your competitors and keeps the 50 ads that have run longest: the layouts, hooks and offers that are still paying for themselves.</p></div>
+          <div class="step-proof">
+            <ul class="angle-list">
+              <li>Us vs. them <span>Durability, side by side</span></li>
+              <li>Problem, then fix <span>The pain first, then the relief</span></li>
+              <li>Social proof <span>A buyer's words, a real setting</span></li>
+              <li>The offer <span>One hook line, one clear button</span></li>
+            </ul>
+            <p class="proof-note">Patterns kept from the 50 competitor ads that ran longest, then written in Woodland's own voice.</p>
           </div>
         </article>
-
-        <!-- Stage 3 -->
-        <article class="stage-card reveal">
-          <div class="stage-info">
-            <span class="stage-num-badge"><i class="fa-solid fa-pen-nib"></i> Stage 03 · Blueprint</span>
-            <h3>Multi-Angle Creative Blueprint</h3>
-            <p>Every generated ad is mapped to a specific buyer persona and awareness stage. The engine drafts the visual blueprint, on-screen headline, primary caption, and tailored call to action across all 5 psychological angles.</p>
-          </div>
-          <div class="stage-evidence">
-            <div class="evidence-frames-grid">
-              <img src="/static/showcase_images/hyphen_glow.jpg" alt="Blueprint: Golden Hour Dewy Glow" loading="lazy">
-              <img src="/static/showcase_images/greensoul_posture.jpg" alt="Blueprint: Ergonomic Spine Matrix" loading="lazy">
-              <img src="/static/showcase_images/neemans_commute.jpg" alt="Blueprint: Commuter Grip" loading="lazy">
-            </div>
+        <article class="tile step-tile rv" style="background: var(--accent-3)">
+          <div class="step-text"><h3>Write the angles</h3><p>Each ad is written for one buyer and one reason to buy: the picture brief, the headline on the image, the caption and the button.</p></div>
+          <div class="step-proof frames-3">
+            <img src="/static/demo/woodland/ad_s06.jpg" width="928" height="1152" alt="Woodland ad: Stop Hiking in Wet Sneakers" loading="lazy">
+            <img src="/static/demo/woodland/ad_s18.jpg" width="928" height="1152" alt="Woodland ad: Trusted by Explorers Since 1992" loading="lazy">
+            <img src="/static/demo/woodland/ad_s05.jpg" width="928" height="1152" alt="Woodland ad: Ordinary Shoes Slip. We Conquer." loading="lazy">
           </div>
         </article>
-
-        <!-- Stage 4 -->
-        <article class="stage-card reveal">
-          <div class="stage-info">
-            <span class="stage-num-badge"><i class="fa-solid fa-clapperboard"></i> Stage 04 · Production</span>
-            <h3>Cinema Motion &amp; 4K Creative Rendering</h3>
-            <p>Image ads are rendered at native 4:5 aspect ratio for maximum mobile feed CTR, and video reels render at 9:16 for Reels, TikTok, and Stories. Real reference photos ensure brand and product fidelity.</p>
-          </div>
-          <div class="stage-evidence">
-            <div class="evidence-dual-reel">
-              <video src="/static/showcase_videos/skincare_floating_orbit.mp4" autoplay loop muted playsinline preload="metadata"></video>
-              <img src="/static/showcase_images/veda5_retreat.jpg" alt="Finished 4:5 image creative" loading="lazy">
-            </div>
+        <article class="tile tile-red step-tile rv">
+          <div class="step-text"><h3>Render the ads</h3><p>Images at 4:5 for the feed, videos at 9:16 for Reels, TikTok and Stories. Your product photos keep the product true in every frame.</p></div>
+          <div class="step-proof frames-2">
+            <video src="/static/demo/woodland/video_1.mp4" poster="/static/demo/woodland/video_1_poster.jpg" width="540" height="960" muted loop playsinline autoplay preload="metadata" aria-label="Woodland video ad: Soaking trail shoes?"></video>
+            <img src="/static/demo/woodland/ad_s02.jpg" width="928" height="1152" alt="Woodland ad: Built to Repel Tough Elements" loading="lazy">
           </div>
         </article>
       </div>
     </section>
 
-    <!-- Wall of Multi-Brand Output Section -->
-    <section class="wall-section" id="made">
-      <h2 class="reveal">Real Campaign Creative Showcase</h2>
-      <p class="section-subtitle reveal">Commercial video reels and 4K image ads produced across beauty, tech, footwear, and hospitality.</p>
-
-      <div class="wall-grid reveal">
-        <figure class="wall-item">
-          <img src="/static/showcase_images/hyphen_glow.jpg" alt="Hyphen Skincare ad" loading="lazy">
-          <figcaption><span>Hyphen &bull; Dewy Glow</span><small>IMAGE 4:5</small></figcaption>
-        </figure>
-        <figure class="wall-item">
-          <video src="/static/showcase_videos/skincare_floating_orbit.mp4" autoplay loop muted playsinline preload="metadata"></video>
-          <figcaption><span>Cosmetics &bull; Floating Orbit</span><small>REEL 9:16</small></figcaption>
-        </figure>
-        <figure class="wall-item">
-          <img src="/static/showcase_images/greensoul_posture.jpg" alt="Green Soul Ergonomics" loading="lazy">
-          <figcaption><span>Green Soul &bull; Ergonomic</span><small>IMAGE 4:5</small></figcaption>
-        </figure>
-        <figure class="wall-item">
-          <video src="/static/showcase_videos/beverage_liquid_splash.mp4" autoplay loop muted playsinline preload="metadata"></video>
-          <figcaption><span>Beverage &bull; Dynamic Splash</span><small>REEL 9:16</small></figcaption>
-        </figure>
-        <figure class="wall-item">
-          <img src="/static/showcase_images/neemans_commute.jpg" alt="Neeman's Footwear" loading="lazy">
-          <figcaption><span>Neeman's &bull; Commute Grip</span><small>IMAGE 4:5</small></figcaption>
-        </figure>
-        <figure class="wall-item">
-          <video src="/static/showcase_videos/athletic_kinetic_sneaker.mp4" autoplay loop muted playsinline preload="metadata"></video>
-          <figcaption><span>Athletic &bull; Kinetic Motion</span><small>REEL 9:16</small></figcaption>
-        </figure>
-        <figure class="wall-item">
-          <img src="/static/showcase_images/veda5_retreat.jpg" alt="Veda5 Luxury Retreat" loading="lazy">
-          <figcaption><span>Veda5 &bull; Luxury Wellness</span><small>IMAGE 4:5</small></figcaption>
-        </figure>
-        <figure class="wall-item">
-          <img src="/static/showcase_images/woodland_heavy_duty.jpg" alt="Woodland Trail" loading="lazy">
-          <figcaption><span>Woodland &bull; Heavy Duty</span><small>IMAGE 4:5</small></figcaption>
-        </figure>
+    <!-- ============================================================ the wall: the whole Woodland run -->
+    <section aria-labelledby="wall_h">
+      <div class="board sec-head">
+        <h2 id="wall_h" class="t-head rv">The whole Woodland run</h2>
+        <p class="rv">One website link went in. Every ad below came back from that single run, with its copy, sized for the feed or for Reels.</p>
+      </div>
+      <div class="board wall">
+        <figure class="tile tile-flush rv"><img src="/static/demo/woodland/ad_s01.jpg" width="928" height="1152" alt="Sneakers Fail. Leather Boots Prevail." loading="lazy"></figure>
+        <figure class="tile tile-flush rv"><img src="/static/demo/woodland/ad_s02.jpg" width="928" height="1152" alt="Built to Repel Tough Elements" loading="lazy"></figure>
+        <figure class="tile tile-flush rv"><img src="/static/demo/woodland/ad_s10.jpg" width="928" height="1152" alt="Conquer Muddy Trails Effortlessly" loading="lazy"></figure>
+        <figure class="tile tile-flush rv"><img src="/static/demo/woodland/ad_s11.jpg" width="928" height="1152" alt="Wet Trails Require Real Boots" loading="lazy"></figure>
+        <figure class="tile tile-flush rv"><img src="/static/demo/woodland/ad_s12.jpg" width="928" height="1152" alt="Built for the Toughest Terrains" loading="lazy"></figure>
+        <figure class="tile tile-flush rv"><img src="/static/demo/woodland/ad_s15.jpg" width="928" height="1152" alt="Repel Mud. Master Trails." loading="lazy"></figure>
+        <figure class="tile tile-flush rv"><img src="/static/demo/woodland/ad_s16.jpg" width="928" height="1152" alt="Built for Real Trails" loading="lazy"></figure>
+        <figure class="tile tile-flush rv"><img src="/static/demo/woodland/ad_s17.jpg" width="928" height="1152" alt="Crafted for Heavy Duty Grip" loading="lazy"></figure>
       </div>
     </section>
 
-    <!-- Grand CTA Banner -->
-    <section class="cta-banner reveal">
-      <h2>Build Your Campaign in 60 Seconds</h2>
-      <p>The Autonomous Campaign Builder is available on the Pro and Studio plans. Paste your URL and deploy your next researched campaign today.</p>
-      <div class="cta-actions">
-        <a class="btn btn-accent btn-lg" href="/upgrade/checkout?plan=pro">
-          <span>Upgrade to Pro ($49/mo)</span>
-          <i class="fa-solid fa-arrow-right"></i>
-        </a>
-        <a class="btn btn-ghostline btn-lg" href="/app">
-          <span>Open Free Studio</span>
-        </a>
+    <!-- ============================================================ the close -->
+    <section class="wrap" aria-labelledby="cta_h">
+      <div class="close rv">
+        <h2 id="cta_h" class="t-head">Build yours next</h2>
+        <p>Paste your link and it waits in the Campaign tab. The builder is on Pro, $49 a month, and Studio, $149 a month.</p>
+        <form class="link-form js-link-form" action="/app" novalidate>
+          <label class="sr-only" for="close_url">Your website or product page</label>
+          <input type="url" id="close_url" placeholder="yourbrand.com/product" autocomplete="url">
+          <button type="submit" class="btn">Keep my link</button>
+        </form>
+        <p class="link-note" aria-live="polite"></p>
+      </div>
+      <div class="board cta-plans" style="padding-inline:0">
+        <a class="link-tile" href="/upgrade/checkout?plan=pro">Get Pro <span>$49 a month</span></a>
+        <a class="link-tile" href="/upgrade/checkout?plan=studio">Get Studio <span>$149 a month</span></a>
+        <a class="link-tile" href="/pricing">Compare plans <span>From $0</span></a>
       </div>
     </section>
   </main>
 
-  <!-- Unified Footer -->
-  <footer class="foot">
-    <div class="foot-inner">
-      <a href="/" class="foot-brand">
-        <svg class="brand-mark" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.6" stroke-opacity="0.35"/>
-          <circle cx="12" cy="12" r="3.2" fill="currentColor"/>
-          <path d="M12 2C15.5 5.5 16.5 8.5 15.2 12M22 12C18.5 15.5 15.5 16.5 12 15.2M12 22C8.5 18.5 7.5 15.5 8.8 12M2 12C5.5 8.5 8.5 7.5 12 8.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
-          <circle cx="12" cy="12" r="1.2" fill="#fff"/>
-        </svg>
-        <span>Ad Studio</span>
-      </a>
-      <div class="foot-links">
-        <a href="/app">Studio</a>
-        <a href="/#showcase">Reel Showcase</a>
-        <a href="/upgrade/campaign">Campaign Builder</a>
-        <a href="/pricing">Pricing</a>
-      </div>
-      <div class="foot-copy">&copy; 2026 Ad Studio. Autonomous Commercial Production.</div>
+  <footer class="site-foot">
+    <div class="foot-grid">
+      <nav class="foot-col" aria-label="Studios"><b>Studios</b><a href="/app">Campaign builder</a><a href="/app#image">Image studio</a><a href="/app#video">Video studio</a><a href="/app#batch">Batch studio</a></nav>
+      <nav class="foot-col" aria-label="Plans"><b>Plans</b><a href="/pricing">Pricing</a><a href="/#run">Ads from one run</a><a href="/pricing#faq">Questions</a></nav>
+      <div class="foot-contact"><p style="margin:0">Ad Studio turns one brand link into a researched set of image and video ads for Meta and TikTok.</p></div>
+    </div>
+    <div class="foot-last">
+      <a href="/" class="logo"><svg class="logo-mark" viewBox="0 0 24 24" aria-hidden="true"><path class="f-video" fill-rule="evenodd" d="M3.75 1.5h6.75a2.25 2.25 0 0 1 2.25 2.25v16.5a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 20.25V3.75A2.25 2.25 0 0 1 3.75 1.5ZM5.4 8.7v6.6l5.2-3.3Z"/><rect class="f-image" x="14.5" y="12.5" width="8" height="10" rx="2"/></svg><span>Ad Studio</span></a>
+      <span>&copy; 2026 Ad Studio</span>
     </div>
   </footer>
 
+  <script src="/static/js/site.js?v=2.0.0"></script>
+  <script src="/static/landing/landing.js?v=2.0.0"></script>
   <script>
-    // Smooth reveal animation
-    (function () {
-      const parts = document.querySelectorAll('.reveal');
-      if ('IntersectionObserver' in window) {
-        const io = new IntersectionObserver((entries) => {
-          entries.forEach((e) => {
-            if (e.isIntersecting) {
-              e.target.classList.add('is-in');
-              io.unobserve(e.target);
-            }
-          });
-        }, { threshold: 0.1 });
-        parts.forEach((p) => io.observe(p));
-      } else {
-        parts.forEach((p) => p.classList.add('is-in'));
-      }
-    })();
+    // Someone who already has the campaign builder goes straight to it.
+    fetch("/api/plan").then((r) => (r.ok ? r.json() : null)).then((mine) => {
+      if (!mine || !(mine.features || []).includes("campaign_manager")) return;
+      document.querySelectorAll(".js-link-form .btn").forEach((b) => { b.textContent = "Build it now"; });
+    }).catch(() => {});
   </script>
 </body>
 </html>
