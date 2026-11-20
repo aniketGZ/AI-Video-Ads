@@ -1,7 +1,7 @@
 """
 Backend Activity & Prompt Tracer
 Comprehensive engineering-grade telemetry and trace engine:
-- Logs exact prompt strings sent to Gemini, Qwen, Omni Flash, and MiniMax
+- Logs exact prompt strings sent to Gemini Flash, Nano Banana, and Omni Flash
 - Logs model generation configs, system instructions, and raw responses
 - Logs Playwright browser commands, accessibility tree captures, and screenshots
 - Logs ffmpeg scene detection, hook slicing (0-3s), and media telemetry
@@ -110,7 +110,7 @@ class BackendTracer:
         self.trace_llm(
             model="gemini-3.6-flash",
             task="A6_STATIC_PROMPT_WRITING",
-            system_instruction="You are an expert art director. Write native in-image layout prompts for Qwen-Image-2.1 / Nano Banana Pro. Bake the exact headline, CTA pill, and product lock into the image without post-composite overlays.",
+            system_instruction="You are an expert art director. Write native in-image layout prompts for Gemini Nano Banana Pro. Bake the exact headline, CTA pill, and product lock into the image without post-composite overlays.",
             prompt="StaticBrief: S01\nHeadline: 'Tired of Dull Morning Skin?'\nCTA: 'Shop Now'\nProductLock: Neon Chartreuse bottle (#D3E935) with dark navy lettering (#152B36).\nAspect: 4:5\nProduce raw image generation prompt.",
             response="A photorealistic high-end vertical 4:5 beauty advertisement. Split screen composition. On left: tired 22yo South Asian college student in harsh subway morning light. On right: glowing smiling woman holding neon chartreuse (#D3E935) bottle with dark navy text 'HYPHEN GOLDEN HOUR GLOW™ SERUM'. In-image typography top-center in bold modern sans-serif: 'Tired of Dull Morning Skin?'. Bottom right CTA pill in dark navy #152B36 with crisp white text 'Shop Now'. No floating overlays, native rendered in-image text.",
             duration_ms=1420,
@@ -136,7 +136,7 @@ class BackendTracer:
 
         # Trace 7: GPU Render Dispatch
         self.trace_render(
-            engine="Qwen-Image-2.1 (Self-Hosted GPU 35.239.44.254:8000)",
+            engine="Gemini Nano Banana 2.1 (Google GenAI)",
             prompt_blueprint={
                 "headline": "Tired of Dull Morning Skin?",
                 "cta": "Shop Now",
@@ -726,7 +726,7 @@ class BackendTracer:
         </div>
         <div>
             <div class="meta-label">Video / Image Renderers</div>
-            <div class="meta-val">Omni Flash / Qwen 2.1</div>
+            <div class="meta-val">Omni Flash / Nano Banana 2.1</div>
         </div>
     </div>
 </div>
@@ -744,7 +744,7 @@ class BackendTracer:
         <div class="arch-card-title">2. Prompt Writing & Grounding</div>
         <div class="arch-card-text">
             Prompt writers enforce 100% website grounding via Product Lock v2 contracts and proof banks. 
-            Static prompts generate native typography directly inside Qwen; Omni scripts use 15s beat-by-beat timelines.
+            Static prompts generate native typography directly inside Gemini Nano Banana; Omni scripts use 15s beat-by-beat timelines.
         </div>
     </div>
     <div class="arch-card">
