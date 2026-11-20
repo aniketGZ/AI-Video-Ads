@@ -6,6 +6,7 @@ custom commercial visuals by uploading their product, brand name, and custom edi
 
 import asyncio
 import json
+import logging
 import os
 import uuid
 from typing import Any, Dict, List, Optional
@@ -15,6 +16,8 @@ from google.genai import types
 
 from access import current_user
 import database
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/templates", tags=["Pinterest Templates"])
 
@@ -115,7 +118,14 @@ async def recreate_template_visual(
     folder_id: Optional[str] = Form(None),
     user: Optional[Dict[str, Any]] = Depends(current_user),
 ):
-    """Recreate a Pinterest ad template with the user's product, branding, and custom edits."""
+    """
+    Recreate a Pinterest ad template with the user's product, branding, and custom edits.
+    Flow:
+      1. Gemini Multimodal Analysis: Analyzes user-selected template visual & authentic product image.
+      2. Prompt Synthesis: Synthesizes a high-converting commercial prompt based on visual analysis & instructions.
+      3. Render via Nano Banana 2.1: Executes photorealistic rendering with nano-banana-2.1.
+      4. Auto-save to user library and project folder.
+    """
     from app import require_client, generate_gemini_image, read_upload, IMAGE_EXTS, MAX_IMAGE_BYTES
 
     # 1. Look up template
@@ -134,25 +144,38 @@ async def recreate_template_visual(
     with open(prod_path, "wb") as f:
         f.write(prod_bytes)
     prod_url = f"/static/generated/{prod_filename}"
-
-    parts = [types.Part.from_bytes(data=prod_bytes, mime_type=prod_mime)]
     saved_ref_urls = [prod_url]
 
-    # 3. Fetch template reference image to pass as visual reference
+    # 3. Fetch template visual reference (local file or remote URL)
+    tpl_bytes: Optional[bytes] = None
+    tpl_mime: Optional[str] = None
     tpl_img_url = template.get("image_url")
     if tpl_img_url:
-        try:
-            async with httpx.AsyncClient(timeout=8.0) as client_http:
-                resp = await client_http.get(tpl_img_url)
-                if resp.status_code == 200:
-                    tpl_bytes = resp.content
-                    tpl_mime = resp.headers.get("content-type", "image/jpeg")
-                    parts.append(types.Part.from_bytes(data=tpl_bytes, mime_type=tpl_mime))
+        if tpl_img_url.startswith("/static/"):
+            local_rel = tpl_img_url.lstrip("/")
+            local_path = os.path.join(os.path.dirname(__file__), local_rel)
+            if os.path.exists(local_path):
+                try:
+                    with open(local_path, "rb") as f_local:
+                        tpl_bytes = f_local.read()
+                    tpl_mime = "image/png" if local_path.endswith(".png") else "image/jpeg"
                     saved_ref_urls.append(tpl_img_url)
-        except Exception as e:
-            print("Could not fetch remote template image for Gemini:", e)
+                except Exception as e:
+                    logger.warning(f"Could not read local template visual {local_path}: {e}")
+        elif tpl_img_url.startswith("http://") or tpl_img_url.startswith("https://"):
+            try:
+                async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client_http:
+                    resp = await client_http.get(tpl_img_url)
+                    if resp.status_code == 200:
+                        tpl_bytes = resp.content
+                        tpl_mime = resp.headers.get("content-type", "image/jpeg").split(";")[0]
+                        saved_ref_urls.append(tpl_img_url)
+            except Exception as e:
+                logger.warning(f"Could not fetch remote template visual for Gemini analysis: {e}")
 
     # 4. Optional logo image
+    logo_bytes: Optional[bytes] = None
+    logo_mime: Optional[str] = None
     if logo_image and logo_image.filename:
         try:
             logo_bytes, logo_ext, logo_mime = await read_upload(logo_image, IMAGE_EXTS, ".png", MAX_IMAGE_BYTES)
@@ -161,43 +184,113 @@ async def recreate_template_visual(
             with open(logo_path, "wb") as f:
                 f.write(logo_bytes)
             saved_ref_urls.append(f"/static/generated/{logo_filename}")
-            parts.append(types.Part.from_bytes(data=logo_bytes, mime_type=logo_mime))
-        except Exception:
-            pass
+        except Exception as e:
+            logger.warning(f"Could not process logo image: {e}")
 
-    # 5. Build prompt
-    brand = brand_name.strip() if brand_name else "the featured brand"
-    prod = product_name.strip() if product_name else "the featured product"
-
-    ref_instructions = (
-        "IMAGE 1 is the user's authentic product. Reproduce its exact packaging geometry, label typography, materials, and colors with photorealistic fidelity.\n"
-        f"IMAGE 2 is the commercial advertising reference visual ({template.get('movement', 'High-end advertising aesthetic')}).\n\n"
-        f"Goal: Create a high-converting, award-winning commercial ad photograph for {brand}'s {prod}. "
-        "Place the exact product from IMAGE 1 into the center of the scene as the hero subject, completely recreating the composition, lighting, camera angle, and artistic aesthetic of the reference visual in IMAGE 2.\n"
-        f"Lighting & Atmosphere: {template.get('lighting', 'Clean commercial studio lighting with soft diffused shadows and crisp highlights')}.\n"
-    )
-
-    if user_edit and user_edit.strip():
-        ref_instructions += f"Artistic Edits & Custom Requests: {user_edit.strip()}.\n"
-
-    if brand_name and brand_name.strip():
-        ref_instructions += f"Typography & Branding: Integrate the brand name '{brand_name.strip()}' with elegant, immaculate typography.\n"
-
-    ref_instructions += (
-        "Composition: Clean commercial framing, balanced negative space, true-to-life shadows and physical contact on surfaces. "
-        "Hyper-detailed 4K commercial advertising photography."
-    )
-
-    # 6. Generate via Gemini Nano Banana Pro
+    # 5. STEP 1: Gemini Multimodal Analysis -> Synthesizes prompt based on images & instructions
     client = require_client()
-    contents = [*parts, ref_instructions]
+
+    analysis_parts = []
+    # Part 1: User's authentic product
+    analysis_parts.append(types.Part.from_bytes(data=prod_bytes, mime_type=prod_mime))
+
+    tpl_context = []
+    if tpl_bytes and tpl_mime:
+        # Part 2: Selected template visual reference
+        analysis_parts.append(types.Part.from_bytes(data=tpl_bytes, mime_type=tpl_mime))
+        tpl_context.append("IMAGE 2 is the reference commercial advertising visual selected by the user.")
+    else:
+        tpl_context.append("Template composition and lighting metadata is described below.")
+
+    if logo_bytes and logo_mime:
+        analysis_parts.append(types.Part.from_bytes(data=logo_bytes, mime_type=logo_mime))
+
+    brand = brand_name.strip() if brand_name else "the featured brand"
+    prod = product_name.strip() if product_name else "the authentic product"
+    edits = user_edit.strip() if user_edit else "None provided. Recreate the reference aesthetic faithfully with the user's authentic product."
+
+    analysis_prompt = (
+        "You are an elite commercial advertising art director and generative vision prompt engineer.\n\n"
+        "You are analyzing the provided reference images to synthesize an exact generation prompt for the Nano Banana 2.1 image model.\n"
+        "- IMAGE 1 is the user's authentic product photograph.\n"
+        f"- {' '.join(tpl_context)}\n\n"
+        "TEMPLATE CREATIVE ATTRIBUTES:\n"
+        f"- Title: {template.get('title', 'Advertising Template')}\n"
+        f"- Category: {template.get('category', 'Product shot')}\n"
+        f"- Industry: {template.get('industry_label', template.get('industry', 'Commercial'))}\n"
+        f"- Movement / Style: {template.get('movement', 'High-end commercial aesthetic')}\n"
+        f"- Studio Lighting: {template.get('lighting', 'Clean studio lighting with soft diffused shadows and crisp highlights')}\n"
+        f"- Color Palette: {', '.join(template.get('color_palette', []))}\n"
+        f"- Scene Atmosphere: {template.get('description', '')}\n\n"
+        "USER BRAND & DIRECTIVES:\n"
+        f"- Brand Name: {brand}\n"
+        f"- Product Name: {prod}\n"
+        f"- User Custom Edits / Instructions: {edits}\n\n"
+        "SYNTHESIS INSTRUCTIONS:\n"
+        "1. VISUAL AUDIT: Examine the packaging geometry, materials (glass, matte, gloss, brushed aluminum, textured paper), cap/closure design, typography, and palette of the product in IMAGE 1.\n"
+        "2. SCENE RECREATION: Examine the composition, camera angle, focal depth, surface materials (podium, water ripples, ice, natural stone, colored backdrop), and lighting directions in the reference template.\n"
+        "3. WRITE THE PROMPT: Write a photorealistic commercial advertising photograph prompt tailored specifically for Nano Banana 2.1.\n"
+        "   - The authentic product from IMAGE 1 must be the clear hero subject, faithfully preserving its real packaging, label, and form.\n"
+        "   - The composition, studio lighting, textures, reflections, and atmosphere of the reference visual must be recreated around the product.\n"
+        "   - Incorporate the user's custom instructions seamlessly.\n"
+        "   - Include details on true-to-life surface contact, soft cast shadows, realistic reflections, and commercial negative space.\n\n"
+        "Output ONLY the final synthesized prompt string. Do not include markdown quotes, preambles, or conversational commentary."
+    )
+    analysis_parts.append(analysis_prompt)
+
+    # Perform analysis with Gemini multimodal models
+    synthesized_prompt: Optional[str] = None
+    analysis_model_used: str = "algorithmic_fallback"
+    analysis_candidates = [
+        os.environ.get("GEMINI_ANALYSIS_MODEL", "gemini-2.5-flash"),
+        "gemini-1.5-flash",
+        "gemini-3.6-flash",
+    ]
+    seen_models = set()
+    candidate_list = [m for m in analysis_candidates if m and not (m in seen_models or seen_models.add(m))]
+
+    for model_name in candidate_list:
+        try:
+            resp = await asyncio.to_thread(
+                client.models.generate_content,
+                model=model_name,
+                contents=analysis_parts,
+            )
+            txt = (resp.text or "").strip()
+            if txt:
+                synthesized_prompt = txt
+                analysis_model_used = model_name
+                break
+        except Exception as e:
+            logger.warning(f"Gemini analysis on {model_name} failed: {e}")
+
+    # Algorithmic fallback if vision API call was unavailable
+    if not synthesized_prompt:
+        synthesized_prompt = (
+            f"Award-winning commercial advertising photograph for {brand}'s {prod}. "
+            f"The authentic product from Image 1 is featured as the hero subject with exact packaging geometry, materials, and label typography. "
+            f"Recreating the signature aesthetic of {template.get('title', 'Template')}: {template.get('movement', 'Commercial advertising')}. "
+            f"Studio Lighting: {template.get('lighting', 'clean diffused commercial lighting with crisp specular highlights and soft contact shadows')}. "
+            f"Environment and surfaces: {template.get('description', 'Balanced commercial set with authentic textures')}. "
+            f"User modifications: {edits}. "
+            "Pristine optical clarity, physical contact shadows on surfaces, hyper-detailed commercial ad photography."
+        )
+
+    # 6. STEP 2: Render using Nano Banana 2.1
+    render_contents = [
+        types.Part.from_bytes(data=prod_bytes, mime_type=prod_mime),
+    ]
+    if logo_bytes and logo_mime:
+        render_contents.append(types.Part.from_bytes(data=logo_bytes, mime_type=logo_mime))
+
+    render_contents.append(synthesized_prompt)
 
     res_clean = (resolution or "2K").strip().upper()
     if res_clean not in ["1K", "2K", "4K"]:
         res_clean = "2K"
 
     image_bytes = await asyncio.to_thread(
-        generate_gemini_image, client, contents, aspect_ratio, "nano-banana-pro", res_clean
+        generate_gemini_image, client, render_contents, aspect_ratio, "nano-banana-2.1", res_clean
     )
 
     out_filename = f"ad_recreate_{uuid.uuid4().hex}.png"
@@ -207,22 +300,25 @@ async def recreate_template_visual(
 
     out_url = f"/static/generated/{out_filename}"
 
-    # 7. Auto-save into user's library
+    # 7. STEP 3: Auto-save into user's creative library & project folder
     clean_title = f"{brand_name.strip() if brand_name else 'Commercial'} {product_name.strip() if product_name else 'Ad'} · {template.get('title', 'Template')}"
     creative_record = await database.save_creative(
         user,
         {
             "type": "image",
             "title": clean_title,
-            "prompt": ref_instructions,
+            "prompt": synthesized_prompt,
             "media_url": out_url,
             "aspect_ratio": aspect_ratio,
             "model_params": {
-                "model": "nano-banana-pro",
+                "model": "nano-banana-2.1",
                 "resolution": res_clean,
                 "recreated_from_template_id": template_id,
+                "template_title": template.get("title"),
+                "analysis_model": analysis_model_used,
+                "user_edit": user_edit,
             },
-            "tags": [template.get("category", "Ads"), template.get("industry", "general")],
+            "tags": [template.get("category", "Ads"), template.get("industry", "general"), "recreation"],
             "reference_images": saved_ref_urls,
             "folder_id": folder_id,
         },
@@ -233,9 +329,11 @@ async def recreate_template_visual(
         "image_url": out_url,
         "creative_id": creative_record.get("id"),
         "title": clean_title,
-        "prompt": ref_instructions,
+        "prompt": synthesized_prompt,
         "aspect_ratio": aspect_ratio,
         "resolution": res_clean,
+        "model": "nano-banana-2.1",
+        "analysis_model": analysis_model_used,
         "template": template,
         "reference_images": saved_ref_urls,
     }

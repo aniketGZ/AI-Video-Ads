@@ -143,7 +143,7 @@
               <h4 class="tpl-hover-title">${esc(title)}</h4>
               ${movement ? `<p class="tpl-hover-sub">${esc(movement)}</p>` : ""}
               <button type="button" class="btn-tpl-recreate-hover" data-open-recreate="${esc(tpl.id)}">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Recreate ✨
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Recreate Ad
               </button>
             </div>
           </div>
@@ -223,7 +223,7 @@
     const btnSubmit = $("btn_submit_recreate");
     if (btnSubmit) {
       btnSubmit.disabled = false;
-      btnSubmit.innerHTML = `<span>Recreate ✨ 1.5</span>`;
+      btnSubmit.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> <span>Recreate Ad</span> <span class="rec-btn-chip">Nano Banana 2.1</span>`;
     }
 
     if (!dlg.open) dlg.showModal();
@@ -307,7 +307,7 @@
         const btnSubmit = $("btn_submit_recreate");
         if (btnSubmit) {
           btnSubmit.disabled = false;
-          btnSubmit.innerHTML = `<span>Recreate ✨ 1.5</span>`;
+          btnSubmit.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> <span>Recreate Ad</span> <span class="rec-btn-chip">Nano Banana 2.1</span>`;
         }
       });
     }
@@ -371,11 +371,11 @@
 
     if (btnSubmit) {
       btnSubmit.disabled = true;
-      btnSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Rendering with AI...</span>`;
+      btnSubmit.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Analyzing &amp; Rendering...</span>`;
     }
     if (statusAlert) {
       statusAlert.hidden = false;
-      if (statusText) statusText.textContent = "Nano Banana Pro is matching composition & lighting with your product...";
+      if (statusText) statusText.textContent = "Gemini is analyzing visual composition & synthesizing prompt...";
     }
     if (resultBox) resultBox.hidden = true;
 
@@ -410,6 +410,12 @@
         if (resRatio) resRatio.textContent = data.aspect_ratio || "4:5";
         const dlBtn = $("rec_download_btn");
         if (dlBtn) dlBtn.href = data.image_url;
+
+        // Populate synthesized prompt
+        const promptEl = $("rec_result_prompt");
+        if (promptEl && data.prompt) {
+          promptEl.textContent = data.prompt;
+        }
       }
 
       if (btnSubmit) {
@@ -426,7 +432,7 @@
       if (statusAlert) statusAlert.hidden = true;
       if (btnSubmit) {
         btnSubmit.disabled = false;
-        btnSubmit.innerHTML = `<span>Recreate ✨ 1.5</span>`;
+        btnSubmit.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> <span>Recreate Ad</span> <span class="rec-btn-chip">Nano Banana 2.1</span>`;
       }
       if (typeof notify === "function") notify(err.message || "Could not recreate template", "error");
     }

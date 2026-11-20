@@ -1360,7 +1360,7 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
             <!-- Live Status Alert -->
             <div class="rec-status-alert" id="rec_status_alert" hidden>
               <i class="fa-solid fa-spinner fa-spin"></i>
-              <span id="rec_status_text">Recreating visual with Nano Banana Pro...</span>
+              <span id="rec_status_text">Gemini is analyzing visual composition &amp; synthesizing prompt...</span>
             </div>
 
             <!-- Generated Result Box (shown on complete) -->
@@ -1377,11 +1377,19 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
                 <button type="button" class="btn btn-sm btn-outline" id="rec_btn_studio"><i class="fa-solid fa-arrow-up-right-from-square"></i> Studio</button>
                 <button type="button" class="btn btn-sm btn-ghost" id="rec_btn_again"><i class="fa-solid fa-rotate-right"></i> Try Again</button>
               </div>
+
+              <!-- Gemini Synthesized Prompt Details -->
+              <details class="rec-prompt-details" id="rec_result_prompt_wrap" style="margin-top: 4px;">
+                <summary class="muted small" style="cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent);"></i> <span>Gemini synthesized prompt</span></summary>
+                <p id="rec_result_prompt" class="small muted" style="margin: 8px 0 0; padding: 10px; background: var(--bg); border: 1px solid var(--rule); border-radius: var(--r); font-family: monospace; font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;"></p>
+              </details>
             </div>
 
-            <!-- Submit Recreate Button matching Screenshot 2 -->
+            <!-- Submit Recreate Button -->
             <button type="submit" class="btn-recreate-cta" id="btn_submit_recreate">
-              <span>Recreate ✨ 1.5</span>
+              <i class="fa-solid fa-wand-magic-sparkles"></i>
+              <span>Recreate Ad</span>
+              <span class="rec-btn-chip">Nano Banana 2.1</span>
             </button>
           </form>
         </div>
