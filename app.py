@@ -229,6 +229,69 @@ async def get_creative_preset(preset_id: str):
     return {"status": "success", "preset": preset}
 
 
+@app.get("/api/campaign/presets/{preset_id}/template")
+async def get_preset_template_detail(preset_id: str):
+    """Returns prompt template, defaults, Pinterest reference pins, and sample preview for a preset."""
+    from creative_library_presets import get_preset_prompt_template
+    template_info = get_preset_prompt_template(preset_id)
+    if not template_info:
+        raise HTTPException(status_code=404, detail="Preset template not found")
+    return {"status": "success", "template": template_info}
+
+
+@app.get("/api/campaign/preset-templates")
+async def list_all_preset_templates(industry: Optional[str] = None):
+    """Returns all industry preset prompt templates from the Pinterest Design Atlas."""
+    from creative_library_presets import list_preset_templates
+    templates = list_preset_templates(industry)
+    return {"status": "success", "total": len(templates), "templates": templates}
+
+
+@app.post("/api/campaign/presets/render-template")
+async def render_preset_template_endpoint(
+    preset_id: str = Form(...),
+    brand_name: str = Form(""),
+    product_name: str = Form(""),
+    idea: str = Form(""),
+    headline: str = Form(""),
+    cta: str = Form(""),
+    aspect_ratio: str = Form("4:5"),
+    has_product_ref: bool = Form(False),
+    has_logo: bool = Form(False),
+    custom_directive: Optional[str] = Form(None),
+):
+    """Compiles an exact commercial visual prompt from an industry preset with user inputs and image locks."""
+    from creative_library_presets import get_preset_by_id, render_preset_prompt_template
+    preset = get_preset_by_id(preset_id)
+    if not preset:
+        raise HTTPException(status_code=404, detail=f"Preset '{preset_id}' not found")
+
+    prompt = render_preset_prompt_template(
+        preset_id,
+        brand_name=brand_name,
+        product_name=product_name,
+        idea=idea,
+        headline=headline,
+        cta=cta,
+        aspect_ratio=aspect_ratio,
+        has_product_ref=has_product_ref,
+        has_logo=has_logo,
+        custom_directive=custom_directive or "",
+    )
+    return {
+        "status": "success",
+        "preset_id": preset_id,
+        "rendered_prompt": prompt,
+        "preset": {
+            "id": preset["id"],
+            "name": preset["name"],
+            "industry_label": preset.get("industry_label"),
+            "movement": preset.get("movement"),
+            "reference_pins": preset.get("reference_pins", []),
+        },
+    }
+
+
 # ---------------------------------------------------------------------------
 # Campaign image ads (Nano Banana Pro)
 # ---------------------------------------------------------------------------

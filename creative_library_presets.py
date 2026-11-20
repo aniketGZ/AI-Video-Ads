@@ -1987,6 +1987,7 @@ def build_preset_creative_prompt(
     setting: str = "",
     talent: str = "",
     scene_hint: str = "",
+    idea: str = "",
     brand_kit: Optional[Dict[str, Any]] = None,
 ) -> str:
     """
@@ -2001,6 +2002,11 @@ def build_preset_creative_prompt(
     product = (product_name or "the featured product").strip()
     headline_clean = (headline or "Discover Excellence").strip()
     cta_clean = (cta or "Shop Now").strip()
+
+    # Consolidate user idea / creative concept into scene_hint
+    effective_idea = (idea or scene_hint or "").strip()
+    if effective_idea and not scene_hint:
+        scene_hint = effective_idea
 
     # Determine ratio framing & negative space rules
     ratio_instructions = {
@@ -2125,3 +2131,352 @@ Render EXACTLY THREE text elements in the pixels—no secondary subheadings, no 
 - STRICTLY FORBIDDEN: Levitating geometric cubes or spheres, generic purple/cyan cyber-glows, plastic airbrushed skin, extra fingers or deformed anatomy, duplicate products, muddy compositions, and illegible pseudo-text."""
 
     return prompt.strip()
+
+
+# ---------------------------------------------------------------------------
+# Industry Prompt Templates & Parameterized Generators
+# ---------------------------------------------------------------------------
+
+INDUSTRY_PRESET_DEFAULTS: Dict[str, Dict[str, str]] = {
+    "beauty_editorial_rhode": {
+        "brand_name": "Aura Botanicals",
+        "product_name": "Hydra-Barrier Glaze Serum",
+        "idea": "Warm beige travertine pedestal bathed in morning sun caustics, soft sheer linen curtain shadow, fresh dew droplet on stone",
+        "headline": "Dewy Radiance in One Drop",
+        "cta": "Shop The Glaze",
+        "aspect_ratio": "4:5",
+    },
+    "beauty_clinical_ordinary": {
+        "brand_name": "Formulate Labs",
+        "product_name": "Niacinamide 10% + Zinc 1% Active Serum",
+        "idea": "Pristine white clinical lab surface, frosted glass dropper bottle with precise measurement markings, crisp optical shadows",
+        "headline": "Pure Active Chemistry",
+        "cta": "Explore Formula",
+        "aspect_ratio": "4:5",
+    },
+    "beauty_glossier_dewy": {
+        "brand_name": "Blush & Bloom",
+        "product_name": "Cloud Dew Cheek Tint",
+        "idea": "Playful millennial pastel pink backdrop with soft diffused daylight, fresh ripe strawberry slice, dewy glass reflection",
+        "headline": "Flushed From Within",
+        "cta": "Get The Glow",
+        "aspect_ratio": "4:5",
+    },
+    "fintech_dark_glassmorphism": {
+        "brand_name": "Apex Finance",
+        "product_name": "Obsidian Titanium Card",
+        "idea": "Floating frosted glass credit card with holographic micro-chip, dark obsidian marble reflective ground, subtle cyan and violet laser rim glows",
+        "headline": "Zero Fees. Worldwide.",
+        "cta": "Claim Your Card",
+        "aspect_ratio": "4:5",
+    },
+    "fintech_swiss_trust": {
+        "brand_name": "Vanguard Trust",
+        "product_name": "Global High-Yield Wealth Account",
+        "idea": "Ultra-clean Swiss grid layout, dark navy and crisp white geometric contrast, minimalist line chart showing 5.2% APY upward trajectory",
+        "headline": "Wealth Without Borders",
+        "cta": "Open Free Account",
+        "aspect_ratio": "4:5",
+    },
+    "saas_bento_grid": {
+        "brand_name": "Pulse Flow",
+        "product_name": "AI Workflow Automation Suite",
+        "idea": "Dark graphite bento grid UI layout, glowing glassmorphic card edges, subtle keyboard shortcut badges, micro-dot matrix pattern background",
+        "headline": "Ship 10x Faster",
+        "cta": "Start Free Trial",
+        "aspect_ratio": "4:5",
+    },
+    "saas_dark_gradient_bloom": {
+        "brand_name": "Krypton Cloud",
+        "product_name": "Serverless Edge Infrastructure",
+        "idea": "Deep pitch-black canvas with luminous iridescent neon gradient bloom in the upper quadrant, ultra-sleek glass terminal window with glowing monospace code",
+        "headline": "Deploy at the Speed of Light",
+        "cta": "Deploy in 30s",
+        "aspect_ratio": "4:5",
+    },
+    "food_artisanal_table": {
+        "brand_name": "Osteria Rustica",
+        "product_name": "Single-Estate Cold-Pressed Olive Oil",
+        "idea": "Rustic dark walnut tabletop flat-lay, coarse sea salt flakes, fresh rosemary sprigs, crusty sourdough bread loaf, golden afternoon sun rays",
+        "headline": "Harvested by Hand",
+        "cta": "Taste The Harvest",
+        "aspect_ratio": "4:5",
+    },
+    "food_dynamic_splash": {
+        "brand_name": "Zest Spark",
+        "product_name": "Blood Orange Sparkling Botanical Water",
+        "idea": "High-speed 1/8000s frozen splash action, crystalline water droplets and effervescent bubbles exploding outward, fresh sliced blood orange in mid-air",
+        "headline": "Explosive Crisp Refreshment",
+        "cta": "Order 12-Pack",
+        "aspect_ratio": "4:5",
+    },
+    "fashion_editorial_lookbook": {
+        "brand_name": "Maison Forma",
+        "product_name": "Architectural Wool Trench Coat",
+        "idea": "Minimalist brutalist concrete terrace under stark geometric Mediterranean sunlight, sharp sculptural shadow lines, high-fashion neutral monochrome",
+        "headline": "Structure & Grace",
+        "cta": "Shop Collection",
+        "aspect_ratio": "4:5",
+    },
+    "fashion_streetwear_bold": {
+        "brand_name": "Subvert District",
+        "product_name": "Heavyweight Boxy Hoodie",
+        "idea": "Raw industrial warehouse setting, distressed steel grating, bold neon orange stencil typography, subtle grain and film halftones",
+        "headline": "Engineered for Chaos",
+        "cta": "Shop Limited Drop",
+        "aspect_ratio": "4:5",
+    },
+    "jewelry_chiaroscuro_macro": {
+        "brand_name": "Solène Fine Jewelry",
+        "product_name": "18K Gold Emerald Solitaire Ring",
+        "idea": "Deep midnight velvet and dark porous slate, single directional razor-sharp pin spotlight creating brilliant prismatic diamond facet refractions",
+        "headline": "Timeless Brilliance",
+        "cta": "Discover Solitaire",
+        "aspect_ratio": "1:1",
+    },
+    "fitness_high_contrast_motion": {
+        "brand_name": "Vigor Athletics",
+        "product_name": "Carbon-Plate Marathon Running Shoes",
+        "idea": "Dark moody stadium tunnel, dramatic blue rim light outlining runner in explosive mid-stride, atmospheric chalk dust hanging in air",
+        "headline": "Break Your Limit",
+        "cta": "Gear Up",
+        "aspect_ratio": "4:5",
+    },
+    "healthcare_trust_clinical": {
+        "brand_name": "EverCare Health",
+        "product_name": "Comprehensive Preventive Health Screen",
+        "idea": "Pristine, sunlit contemporary medical clinic with warm blonde wood accents, smiling physician in consultation, calming sage green and white tones",
+        "headline": "Healthcare That Listens",
+        "cta": "Book Consultation",
+        "aspect_ratio": "4:5",
+    },
+    "wellness_botanical_organic": {
+        "brand_name": "Verdant Alchemy",
+        "product_name": "Organic Ashwagandha & Reishi Elixir",
+        "idea": "Earthy ceramic vessel surrounded by dried botanical herbs, fresh eucalyptus leaves, soft morning light filtering through forest foliage",
+        "headline": "Ancient Balance, Modern Mind",
+        "cta": "Shop Elixirs",
+        "aspect_ratio": "4:5",
+    },
+    "realestate_luxury_architectural": {
+        "brand_name": "Sovereign Estates",
+        "product_name": "Pacific Modernist Oceanfront Villa",
+        "idea": "Twilight golden-hour architectural exterior, floor-to-ceiling glass walls with warm amber interior glow, infinity pool reflecting violet evening sky",
+        "headline": "Architectural Perfection",
+        "cta": "Schedule Private Tour",
+        "aspect_ratio": "16:9",
+    },
+    "construction_contractor_trust": {
+        "brand_name": "Apex Craft Builders",
+        "product_name": "Commercial Design-Build Services",
+        "idea": "Golden dawn job site, architectural blueprints laid over weathered cedar timber, structural steel beams rising in sharp focus, contractor tools",
+        "headline": "Built to Last Generations",
+        "cta": "Get Free Estimate",
+        "aspect_ratio": "4:5",
+    },
+    "ecommerce_d2c_studio_pedestal": {
+        "brand_name": "Kanso Sound",
+        "product_name": "Noise-Cancelling Wireless Headphones",
+        "idea": "Monochromatic sage green studio cyclorama, sleek cylindrical matte pedestal, soft studio overhead softbox illumination, crisp minimal floating badge",
+        "headline": "Silence the Noise",
+        "cta": "Claim 20% Off",
+        "aspect_ratio": "4:5",
+    },
+    "marketing_bold_statement": {
+        "brand_name": "Oat & Co.",
+        "product_name": "Barista Organic Oat Milk",
+        "idea": "Uncompromising stark color-blocked layout, electric yellow and pitch black, oversized bold Helvetica typography, witty irreverent poster aesthetic",
+        "headline": "Milk Made From Oats. Not Cows.",
+        "cta": "Taste The Future",
+        "aspect_ratio": "4:5",
+    },
+    "diverse": {
+        "brand_name": "Nova Studio",
+        "product_name": "Next-Gen Creative Ad Campaign",
+        "idea": "Multi-layered dynamic studio set with directional dramatic lighting, tactile textures, and balanced negative space",
+        "headline": "Elevate Your Brand",
+        "cta": "Explore Now",
+        "aspect_ratio": "4:5",
+    },
+}
+
+
+def generate_preset_template_string(preset: Dict[str, Any]) -> str:
+    """Constructs a parameterized master prompt template string for an industry preset."""
+    decor = ", ".join(preset.get("decorative_elements") or [])
+    preset_colors = preset.get("colors") or {}
+    bg_tone = preset_colors.get("background_tone", "#f8fafc")
+    prim_accent = preset_colors.get("primary_accent", "#2563eb")
+    sec_accent = preset_colors.get("secondary_accent", "#0f172a")
+    mood = preset_colors.get("mood", "Clean, modern, high-contrast commercial aesthetic")
+    palette_str = ", ".join(preset_colors.get("palette", [bg_tone, sec_accent, prim_accent]))
+    
+    typo = preset.get("typography") or {}
+    headline_style = typo.get("headline_font_style", "High-Contrast Modern Font")
+    rec_fonts = ", ".join(typo.get("recommended_headline_fonts", ["Inter", "Plus Jakarta Sans"])[:3])
+    rec_body_fonts = ", ".join(typo.get("recommended_body_fonts", ["Inter", "Plus Jakarta Sans"])[:2])
+    treatment = typo.get("treatment_effects", "Balanced kerning with high optical contrast")
+    hierarchy_order = typo.get("hierarchy_order", "Top Headline -> Hero Center -> Pill CTA")
+    
+    lighting = preset.get("lighting", "Studio directional lighting")
+    movement = preset.get("movement", "High-Contrast Commercial Aesthetic")
+    summary = preset.get("summary", "Commercial ad creative")
+    layout = preset.get("layout") or {}
+    composition = layout.get("composition", "Clean centered composition with hero subject commanding visual weight.")
+    layout_type = layout.get("layout_type", "Commercial Layout")
+    
+    return f"""[ROLE: Senior Executive Art Director & Master Commercial Graphic Designer]
+Design an award-winning Meta feed ad creative for {{brand_name}} ({preset.get('industry_label')}), adhering strictly to master graphic design principles (Visual Hierarchy, 60-30-10 Color Theory, Golden Ratio Spacing, and Typographic Precision).
+
+DESIGN DNA & INSPIRATION:
+- Movement / Aesthetic: {movement}
+- Curated Reference Source: {preset.get('inspiration_source')}
+- Design Essence: {summary}
+
+1. VISUAL HIERARCHY & COMPOSITIONAL ARCHITECTURE:
+- Canvas Format: Meta {{aspect_ratio}}
+- Focal Anchor: The hero subject commands 58-62% of visual weight as the primary optical entry point.
+- Optical Flow: Clear, intentional reading hierarchy ({hierarchy_order}).
+- Negative Space: Preserve 25-35% uncluttered, breathable negative space around the hero to ensure instant thumb-stopping clarity on mobile feeds.
+- Boundary Safety: Maintain a minimum 8% clean perimeter margin free of critical text or subject edges.
+
+2. HERO SUBJECT & FIDELITY LOCK:
+{{product_lock}}
+- Physical Grounding: Ground the subject firmly with realistic contact shadows and directional ambient occlusion. No floating or ungrounded objects.
+
+3. CREATIVE CONCEPT & SCENE ART DIRECTION:
+- Concept Idea: {{idea}}
+- Scene Framing: Architectural composition inspired by {layout_type}. {composition}
+- Tactile Materials & Props: Authentic finishes: {decor if decor else 'Grounded studio environment'}.
+
+4. TYPOGRAPHIC CRAFT & STRICT META 3-ELEMENT BUDGET:
+Render EXACTLY THREE text elements in the pixels—no secondary subheadings, no bullet points, no fake badges:
+  1. {{logo_lock}}
+  2. HEADLINE: "{{headline}}"
+     - Typographic Style: {headline_style} (inspired by {rec_fonts})
+     - Typographic Treatment: {treatment}. High optical contrast against background, perfect kerning and leading, zero word wrapping artifacts.
+  3. CALL TO ACTION (CTA): "{{cta}}"
+     - CTA Treatment: High-contrast tactile pill capsule button with clean rounded geometry, crisp centered lettering in {rec_body_fonts}.
+  * Strict Rule: Spell each quoted string exactly. Do not render any additional text, numbers, or ratings in the final artwork.
+
+5. LIGHTING & 60-30-10 CHROMATIC HARMONY:
+- Studio Lighting: {lighting}
+- 60% Dominant Canvas Foundation: {bg_tone} creating a calm, cohesive environmental backdrop.
+- 30% Structural Secondary Tones: {sec_accent} and tonal gradations supporting composition and depth.
+- 10% High-Contrast Accent Pop: {prim_accent} strictly focused on the CTA pill and brand mark for immediate conversion pull.
+- Color Mood: {mood} (Swatches: {palette_str}).
+
+6. ANTI-AI SLOP GUARDRAILS:
+- STRICTLY FORBIDDEN: Levitating geometric cubes or spheres, generic purple/cyan cyber-glows, plastic airbrushed skin, extra fingers or deformed anatomy, duplicate products, muddy compositions, and illegible pseudo-text."""
+
+
+def render_preset_prompt_template(
+    preset_id: str,
+    *,
+    brand_name: str = "",
+    product_name: str = "",
+    idea: str = "",
+    headline: str = "",
+    cta: str = "",
+    aspect_ratio: str = "4:5",
+    has_product_ref: bool = False,
+    has_logo: bool = False,
+    brand_kit: Optional[Dict[str, Any]] = None,
+    custom_directive: str = "",
+) -> str:
+    """Renders a fully compiled commercial image prompt from an industry preset with user inputs and image locks."""
+    preset = get_preset_by_id(preset_id) or CREATIVE_PRESETS.get("ecommerce_d2c_studio_pedestal") or CREATIVE_PRESETS["beauty_editorial_rhode"]
+    defaults = preset.get("template_defaults") or INDUSTRY_PRESET_DEFAULTS.get(preset["id"], {})
+    
+    b_name = (brand_name or defaults.get("brand_name") or "Brand").strip()
+    p_name = (product_name or defaults.get("product_name") or "Featured Product").strip()
+    i_text = (idea or defaults.get("idea") or "Authentic studio setting with pristine materials and balanced lighting").strip()
+    h_text = (headline or defaults.get("headline") or "Discover Excellence").strip()
+    c_text = (cta or defaults.get("cta") or "Shop Now").strip()
+    ar_text = (aspect_ratio or defaults.get("aspect_ratio") or "4:5").strip()
+    
+    return build_preset_creative_prompt(
+        preset["id"],
+        brand_name=b_name,
+        product_name=p_name,
+        headline=h_text,
+        cta=c_text,
+        aspect_ratio=ar_text,
+        has_product_ref=has_product_ref,
+        has_logo=has_logo,
+        scene_hint=i_text,
+        idea=i_text,
+        brand_kit=brand_kit,
+        custom_directive=custom_directive or None,
+    )
+
+
+def get_preset_prompt_template(preset_id: str) -> Optional[Dict[str, Any]]:
+    """Returns template metadata, defaults, pins, and rendered preview for an industry preset."""
+    preset = get_preset_by_id(preset_id)
+    if not preset:
+        return None
+    defaults = preset.get("template_defaults") or INDUSTRY_PRESET_DEFAULTS.get(preset["id"], {
+        "brand_name": "Brand",
+        "product_name": "Featured Product",
+        "idea": "Clean, premium commercial studio setup with directional lighting and crisp product focus",
+        "headline": "Discover Excellence",
+        "cta": "Shop Now",
+        "aspect_ratio": "4:5",
+    })
+    rendered_sample = render_preset_prompt_template(
+        preset["id"],
+        brand_name=defaults.get("brand_name", "Brand"),
+        product_name=defaults.get("product_name", "Featured Product"),
+        idea=defaults.get("idea", ""),
+        headline=defaults.get("headline", ""),
+        cta=defaults.get("cta", "Shop Now"),
+        aspect_ratio=defaults.get("aspect_ratio", "4:5"),
+        has_product_ref=True,
+        has_logo=True,
+    )
+    return {
+        "id": preset["id"],
+        "name": preset["name"],
+        "industry_slug": preset.get("industry_slug", "all"),
+        "industry_label": preset.get("industry_label", "All Industries"),
+        "movement": preset.get("movement", ""),
+        "summary": preset.get("summary", ""),
+        "reference_pins": preset.get("reference_pins", []),
+        "colors": preset.get("colors", {}),
+        "typography": preset.get("typography", {}),
+        "layout": preset.get("layout", {}),
+        "template_defaults": defaults,
+        "prompt_template": preset.get("prompt_template") or generate_preset_template_string(preset),
+        "rendered_sample": rendered_sample,
+    }
+
+
+def list_preset_templates(industry: Optional[str] = None) -> List[Dict[str, Any]]:
+    """Returns all available preset templates, optionally filtered by industry."""
+    presets = get_presets_for_industry(industry) if industry and industry != "all" else get_all_presets()
+    result = []
+    for p in presets:
+        tpl = get_preset_prompt_template(p["id"])
+        if tpl:
+            result.append(tpl)
+    return result
+
+
+# Attach template_defaults and prompt_template to all presets dynamically
+for _pid, _p in CREATIVE_PRESETS.items():
+    _defaults = INDUSTRY_PRESET_DEFAULTS.get(_pid) or {
+        "brand_name": "Brand",
+        "product_name": "Featured Product",
+        "idea": "Clean commercial studio setting with authentic lighting and materials",
+        "headline": "Discover Excellence",
+        "cta": "Shop Now",
+        "aspect_ratio": "4:5",
+    }
+    _p["template_defaults"] = _defaults
+    _p["prompt_template"] = generate_preset_template_string(_p)
+
+if DIVERSE_PRESET_ID in CREATIVE_PRESETS:
+    CREATIVE_PRESETS[DIVERSE_PRESET_ID]["template_defaults"] = INDUSTRY_PRESET_DEFAULTS.get("diverse", {})
+    CREATIVE_PRESETS[DIVERSE_PRESET_ID]["prompt_template"] = generate_preset_template_string(DIVERSE_PRESET)
+
