@@ -13,8 +13,9 @@ import uuid
 from typing import Any, Dict, Optional
 
 import httpx
+from urllib.parse import urlparse
 from fastapi import APIRouter, File, Form, Header, HTTPException, Request, UploadFile
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 from media_utils import (
     require_gemini_client as require_client,
@@ -37,7 +38,7 @@ async def _resolve_image_bytes(
     image_url: Optional[str] = None,
     image_file: Optional[UploadFile] = None,
 ) -> tuple[bytes, str]:
-    """Resolves raw image bytes and mime type from either an upload or a URL/path."""
+    """Resolves raw image bytes and mime type from either an upload, data URL, local file, or remote URL."""
     if image_file and image_file.filename:
         raw, _, mime = await read_upload(image_file, IMAGE_EXTS, ".png", MAX_IMAGE_BYTES)
         return raw, mime
@@ -47,37 +48,73 @@ async def _resolve_image_bytes(
 
     clean_url = image_url.strip()
 
-    # 1. Try local disk path if it points to /static/generated/
-    local_path = resolve_generated_path(clean_url)
+    # 1. Base64 data URL (e.g. from local file uploads or canvas transfers)
+    if clean_url.startswith("data:image/"):
+        try:
+            header, b64_part = clean_url.split(",", 1)
+            raw = base64.b64decode(b64_part)
+            mime = "image/png"
+            if "image/jpeg" in header or "image/jpg" in header:
+                mime = "image/jpeg"
+            elif "image/webp" in header:
+                mime = "image/webp"
+            return raw, mime
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Invalid data URL image: {e}")
+
+    # 2. Extract relative path from absolute URL if pointing to localhost or web server
+    parsed = urlparse(clean_url)
+    target_path = parsed.path if parsed.scheme in ("http", "https") else clean_url
+    target_path = target_path.replace("\\", "/").strip()
+
+    # 3. Try local disk path inside generated folder
+    local_path = resolve_generated_path(target_path)
     if local_path and os.path.exists(local_path):
         try:
             with open(local_path, "rb") as f:
                 data = f.read()
             ext = os.path.splitext(local_path)[1].lower()
-            mime = "image/png" if ext == ".png" else "image/jpeg"
+            mime = "image/png" if ext == ".png" else ("image/jpeg" if ext in (".jpg", ".jpeg") else "image/webp")
             return data, mime
         except Exception as e:
             logger.warning(f"Failed to read local generated file {local_path}: {e}")
 
-    # 2. Try fetching from remote URL or Supabase CDN
-    target_url = clean_url
-    if target_url.startswith("/static/generated/"):
+    # 4. Try local workspace static file (e.g. /static/demo/..., /static/showcase_videos/...)
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    static_root = os.path.realpath(os.path.join(base_dir, "static"))
+    rel_static = target_path.lstrip("/")
+    if rel_static.startswith("static/"):
+        rel_static = rel_static[len("static/"):]
+    cand_static = os.path.realpath(os.path.join(static_root, rel_static))
+    if cand_static.startswith(static_root) and os.path.isfile(cand_static):
+        try:
+            with open(cand_static, "rb") as f:
+                data = f.read()
+            ext = os.path.splitext(cand_static)[1].lower()
+            mime = "image/png" if ext == ".png" else ("image/jpeg" if ext in (".jpg", ".jpeg") else "image/webp")
+            return data, mime
+        except Exception as e:
+            logger.warning(f"Failed to read local static file {cand_static}: {e}")
+
+    # 5. Remote fetch from Supabase CDN or remote URL
+    fetch_url = clean_url
+    if target_path.startswith("/static/generated/"):
         sb_url = os.environ.get("SUPABASE_URL", "").rstrip("/")
         if sb_url:
-            fname = os.path.basename(target_url)
-            target_url = f"{sb_url}/storage/v1/object/public/generated/{fname}"
+            fname = os.path.basename(target_path)
+            fetch_url = f"{sb_url}/storage/v1/object/public/generated/{fname}"
 
-    if target_url.startswith("http://") or target_url.startswith("https://"):
+    if fetch_url.startswith("http://") or fetch_url.startswith("https://"):
         try:
-            async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as http_client:
-                res = await http_client.get(target_url)
+            async with httpx.AsyncClient(timeout=25.0, follow_redirects=True) as http_client:
+                res = await http_client.get(fetch_url)
                 if res.status_code == 200:
                     mime = res.headers.get("content-type", "image/png").split(";")[0]
                     return res.content, mime
                 else:
                     raise HTTPException(
                         status_code=400,
-                        detail=f"Could not fetch image from {target_url} (HTTP {res.status_code})",
+                        detail=f"Could not fetch image from {fetch_url} (HTTP {res.status_code})",
                     )
         except HTTPException:
             raise
@@ -87,16 +124,15 @@ async def _resolve_image_bytes(
     raise HTTPException(status_code=400, detail="Invalid image path or URL.")
 
 
-def _decode_mask_bytes(mask_data: str, target_size: tuple[int, int]) -> bytes:
+def _decode_mask_img(mask_data: str, target_size: tuple[int, int]) -> tuple[Image.Image, bytes]:
     """
-    Decodes base64 data URL mask into binary black-and-white PNG bytes.
-    White pixels = region to edit. Black pixels = untouched.
+    Decodes base64 data URL mask into binary black-and-white PIL Image and PNG bytes.
+    White pixels (255) = region to edit. Black pixels (0) = untouched.
     """
     if not mask_data or not mask_data.strip():
         raise HTTPException(status_code=400, detail="Mask drawing is required.")
 
     try:
-        # Strip data URL prefix if present
         payload = mask_data
         if "base64," in payload:
             payload = payload.split("base64,")[1]
@@ -104,24 +140,30 @@ def _decode_mask_bytes(mask_data: str, target_size: tuple[int, int]) -> bytes:
         raw = base64.b64decode(payload)
         mask_img = Image.open(io.BytesIO(raw))
 
-        # Resize mask to match base image dimensions exactly if needed
         if mask_img.size != target_size:
             mask_img = mask_img.resize(target_size, Image.Resampling.NEAREST)
 
-        # Convert to RGBA
         mask_rgba = mask_img.convert("RGBA")
-
-        # Create binary L mask (255 where brush painted, 0 elsewhere)
-        bw_mask = Image.new("L", target_size, 0)
-        # Check alpha channel or color intensity
         r, g, b, a = mask_rgba.split()
-        
-        # Pixels with alpha > 20 or brightness > 30 are considered painted mask
-        bw_mask = a.point(lambda p: 255 if p > 20 else 0)
+        a_extrema = a.getextrema()
+
+        # If alpha has transparency (not solid opaque everywhere):
+        if a_extrema[0] < 250:
+            bw_mask = a.point(lambda p: 255 if p > 30 else 0)
+        else:
+            # Solid opaque canvas (black background #000000 with white/colored strokes)
+            gray = mask_img.convert("L")
+            bw_mask = gray.point(lambda p: 255 if p > 40 else 0)
+
+        extrema = bw_mask.getextrema()
+        if extrema[1] == 0:
+            raise HTTPException(status_code=400, detail="Mask is empty. Please paint over the area you wish to modify.")
 
         out_buf = io.BytesIO()
         bw_mask.save(out_buf, format="PNG")
-        return out_buf.getvalue()
+        return bw_mask, out_buf.getvalue()
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Failed to decode mask drawing: {e}", exc_info=True)
         raise HTTPException(status_code=400, detail=f"Invalid mask data: {e}")
@@ -156,8 +198,8 @@ async def inpaint_creative(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Base image cannot be read: {e}")
 
-    # 2. Decode mask into matching binary PNG bytes
-    mask_bytes = _decode_mask_bytes(mask_data, target_size)
+    # 2. Decode mask into matching binary PNG bytes & PIL Image
+    bw_mask, mask_bytes = _decode_mask_img(mask_data, target_size)
 
     # 3. Model resolution
     chosen_meta = image_model(model)
@@ -187,18 +229,57 @@ async def inpaint_creative(
         )
 
         out_bytes: Optional[bytes] = None
-        if resp.candidates and resp.candidates[0].content and resp.candidates[0].content.parts:
-            for part in resp.candidates[0].content.parts:
-                if getattr(part, "inline_data", None) and part.inline_data.data:
-                    out_bytes = part.inline_data.data
-                    break
+        cand = resp.candidates[0] if (resp.candidates and len(resp.candidates) > 0) else None
+        if cand:
+            if cand.finish_reason and str(cand.finish_reason) not in ("STOP", "FinishReason.STOP"):
+                logger.warning(f"Inpaint finish reason: {cand.finish_reason}")
+                if "SAFETY" in str(cand.finish_reason).upper():
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Inpainting was blocked by safety filters. Please adjust the prompt or region.",
+                    )
+
+            if cand.content and cand.content.parts:
+                for part in cand.content.parts:
+                    if getattr(part, "inline_data", None) and part.inline_data.data:
+                        raw_data = part.inline_data.data
+                        if isinstance(raw_data, str):
+                            try:
+                                out_bytes = base64.b64decode(raw_data)
+                            except Exception:
+                                out_bytes = raw_data.encode("latin1")
+                        else:
+                            out_bytes = raw_data
+                        break
 
         if not out_bytes:
-            raise RuntimeError("Gemini inpainting completed without returning an image.")
+            explanation = ""
+            if cand and cand.content and cand.content.parts:
+                text_parts = [p.text for p in cand.content.parts if getattr(p, "text", None)]
+                explanation = " ".join(filter(None, text_parts)).strip()
+            detail = f"Gemini inpainting completed without returning an image. {explanation}".strip()
+            raise RuntimeError(detail)
+
+        # 5. Composite: Guarantee pixels outside the brush mask are 100% preserved
+        gen_img = Image.open(io.BytesIO(out_bytes)).convert("RGBA")
+        if gen_img.size != target_size:
+            gen_img = gen_img.resize(target_size, Image.Resampling.LANCZOS)
+
+        base_rgba = base_pil.convert("RGBA")
+        feathered_mask = bw_mask.filter(ImageFilter.GaussianBlur(radius=3))
+        composite = Image.composite(gen_img, base_rgba, feathered_mask)
+
+        # Preserve alpha channel if base creative had transparency, otherwise RGB
+        final_mode = "RGBA" if ("A" in base_pil.getbands() or base_mime == "image/png") else "RGB"
+        final_img = composite.convert(final_mode)
+
+        final_buf = io.BytesIO()
+        final_img.save(final_buf, format="PNG")
+        final_bytes = final_buf.getvalue()
 
         # Save to permanent Supabase Storage & local /tmp
         filename = f"edited_inpaint_{uuid.uuid4().hex}.png"
-        saved_url = save_generated_media(filename, out_bytes, "image/png")
+        saved_url = save_generated_media(filename, final_bytes, "image/png")
 
         return {
             "status": "success",
@@ -274,14 +355,36 @@ async def remove_background(
         )
 
         out_bytes: Optional[bytes] = None
-        if resp.candidates and resp.candidates[0].content and resp.candidates[0].content.parts:
-            for part in resp.candidates[0].content.parts:
-                if getattr(part, "inline_data", None) and part.inline_data.data:
-                    out_bytes = part.inline_data.data
-                    break
+        cand = resp.candidates[0] if (resp.candidates and len(resp.candidates) > 0) else None
+        if cand:
+            if cand.finish_reason and str(cand.finish_reason) not in ("STOP", "FinishReason.STOP"):
+                logger.warning(f"Background removal finish reason: {cand.finish_reason}")
+                if "SAFETY" in str(cand.finish_reason).upper():
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Background removal was blocked by safety filters.",
+                    )
+
+            if cand.content and cand.content.parts:
+                for part in cand.content.parts:
+                    if getattr(part, "inline_data", None) and part.inline_data.data:
+                        raw_data = part.inline_data.data
+                        if isinstance(raw_data, str):
+                            try:
+                                out_bytes = base64.b64decode(raw_data)
+                            except Exception:
+                                out_bytes = raw_data.encode("latin1")
+                        else:
+                            out_bytes = raw_data
+                        break
 
         if not out_bytes:
-            raise RuntimeError("Gemini background removal completed without returning an image.")
+            explanation = ""
+            if cand and cand.content and cand.content.parts:
+                text_parts = [p.text for p in cand.content.parts if getattr(p, "text", None)]
+                explanation = " ".join(filter(None, text_parts)).strip()
+            detail = f"Gemini background removal completed without returning an image. {explanation}".strip()
+            raise RuntimeError(detail)
 
         # If transparent background is requested, apply precision corner flood-fill alpha transparency
         if style_clean == "transparent":

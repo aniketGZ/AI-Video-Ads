@@ -126,8 +126,7 @@
     }
 
     cursorRing.hidden = false;
-    const screenRadius = brushRadius * (rect.width / canvas.width);
-    const size = Math.max(8, screenRadius * 2);
+    const size = Math.max(8, brushRadius * 2);
     cursorRing.style.width = `${size}px`;
     cursorRing.style.height = `${size}px`;
     cursorRing.style.left = `${e.clientX}px`;
@@ -182,8 +181,10 @@
       canvas.setPointerCapture(e.pointerId);
       isDrawing = true;
       const coords = getCanvasCoords(e);
+      const rect = canvas.getBoundingClientRect();
+      const scale = rect.width ? (canvas.width / rect.width) : 1;
       currentStroke = {
-        radius: brushRadius,
+        radius: brushRadius * scale,
         points: [coords],
       };
       strokes.push(currentStroke);
@@ -536,17 +537,21 @@
 
     // Load Image into stage
     if (stageImg) {
-      stageImg.onload = () => {
-        if (canvas) {
-          canvas.width = stageImg.naturalWidth || 1024;
-          canvas.height = stageImg.naturalHeight || 1024;
+      const initStage = () => {
+        if (canvas && stageImg.naturalWidth && stageImg.naturalHeight) {
+          canvas.width = stageImg.naturalWidth;
+          canvas.height = stageImg.naturalHeight;
           redrawAllStrokes();
         }
-        if (dimBadge) {
+        if (dimBadge && stageImg.naturalWidth) {
           dimBadge.textContent = `${stageImg.naturalWidth}×${stageImg.naturalHeight}`;
         }
       };
+      stageImg.onload = initStage;
       stageImg.src = url;
+      if (stageImg.complete && stageImg.naturalWidth) {
+        initStage();
+      }
     }
 
     const targetTab = options.tab === "remove_bg" ? "remove_bg" : "inpaint";
