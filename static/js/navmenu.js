@@ -86,9 +86,12 @@
       openUpgradeDialog();
       return;
     }
-    const item = e.target.closest(".mega [data-go]");
+    // Same items work in the menus and in the first-run "What will you make?" dialog
+    const item = e.target.closest(".mega [data-go], .onboard [data-go]");
     if (!item) return;
     close({ now: true });
+    const dlg = item.closest("dialog");
+    if (dlg && dlg.open) dlg.close();
     showView(item.dataset.go, { push: true });
     const pick = item.dataset.pick && document.querySelector(item.dataset.pick);
     if (pick && !pick.classList.contains("active")) pick.click();

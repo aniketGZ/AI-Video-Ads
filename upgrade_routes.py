@@ -59,7 +59,17 @@ async def list_plans():
 
 
 @router.get("/upgrade/checkout", include_in_schema=False)
-async def upgrade_checkout(plan: str = "pro", billing: str = "monthly"):
+async def upgrade_checkout(plan: str = "pro", billing: str = "monthly", topup: int = 0):
+    # A credit pack: /upgrade/checkout?topup=1000 goes to UPGRADE_URL_TOPUP_1000 when it is set
+    pack = next((t for t in TOP_UPS if t["credits"] == topup), None)
+    if pack:
+        url = (os.environ.get(f"UPGRADE_URL_TOPUP_{pack['credits']}") or "").strip()
+        if url.startswith("https://"):
+            return RedirectResponse(url, status_code=303)
+        label = f"{pack['credits']:,} credits"
+        summary = f"${pack['price_usd']}, once. Adds to the credits on your plan."
+        return _checkout_page(label, summary, "Top-ups open by invite")
+
     plan = plan if plan in CHECKOUT_ENV else "pro"
     env = CHECKOUT_ENV[plan]
     url = ""
@@ -68,19 +78,24 @@ async def upgrade_checkout(plan: str = "pro", billing: str = "monthly"):
     url = url or (os.environ.get(env) or "").strip()
     if url.startswith("https://"):
         return RedirectResponse(url, status_code=303)
-    label = escape(PLANS[plan]["label"])
+    label = PLANS[plan]["label"]
     price = PLANS[plan]["price_usd_month"]
     credits = f'{PLANS[plan]["credits"]:,}'
+    return _checkout_page(f"{label} plan", f"${price} a month, {credits} credits", "Checkout opens by invite")
+
+
+def _checkout_page(label: str, summary: str, heading: str) -> HTMLResponse:
+    label, summary, heading = escape(label), escape(summary), escape(heading)
     # Same design system as every other page: system.css + site.css, one board of tiles.
     return HTMLResponse(
         status_code=200,
         content=f"""<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>{label} plan · Ad Studio</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"><title>{label} · Ad Studio</title>
 <link rel="icon" href="/static/brand/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:wght@300&family=Stack+Sans+Text:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/static/css/system.css?v=2.0.0">
+<link rel="stylesheet" href="/static/css/system.css?v=2.1.0">
 <link rel="stylesheet" href="/static/css/site.css?v=3.0.0">
 <style>
 .checkout {{ min-height: calc(100svh - var(--bar) - 8px); grid-template-rows: 1fr; }}
@@ -100,11 +115,11 @@ async def upgrade_checkout(plan: str = "pro", billing: str = "monthly"):
 </header>
 <main class="board page-title checkout">
   <div class="tile title-main">
-    <h1 class="t-display">Checkout opens by invite</h1>
+    <h1 class="t-display">{heading}</h1>
     <p>Paid plans are opening a few accounts at a time while billing is finished. Your free credits work in every studio today.</p>
   </div>
   <div class="tile tile-red side">
-    <div><p class="plan">{label}</p><p>${price} a month, {credits} credits</p></div>
+    <div><p class="plan">{label}</p><p>{summary}</p></div>
     <div class="actions">
       <a href="/app" class="btn btn-primary">Open the studio</a>
       <a href="/pricing" class="btn">Back to pricing</a>

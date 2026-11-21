@@ -35,7 +35,39 @@ def load_templates() -> List[Dict[str, Any]]:
                 _TEMPLATES_CACHE = json.load(f)
         else:
             _TEMPLATES_CACHE = []
+        _normalise_industry_labels(_TEMPLATES_CACHE)
     return _TEMPLATES_CACHE
+
+
+# The dataset spells some industries two ways ("Fintech & Finance" / "Fintech Finance").
+# Every template in an industry gets that industry's most used label, so the filter row
+# shows one chip per industry.
+OTHER_INDUSTRY = "uncategorized"
+
+
+def _normalise_industry_labels(tpls: List[Dict[str, Any]]) -> None:
+    counts: Dict[str, Dict[str, int]] = {}
+    for t in tpls:
+        slug = (t.get("industry") or OTHER_INDUSTRY).lower()
+        label = t.get("industry_label") or ""
+        counts.setdefault(slug, {})
+        counts[slug][label] = counts[slug].get(label, 0) + 1
+    best = {slug: max(labels, key=labels.get) for slug, labels in counts.items()}
+    best[OTHER_INDUSTRY] = "Lifestyle & other"
+    for t in tpls:
+        slug = (t.get("industry") or OTHER_INDUSTRY).lower()
+        t["industry"] = slug
+        t["industry_label"] = best.get(slug) or slug.replace("-", " ").title()
+
+
+def _industry_facets(tpls: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Industries present in `tpls`, most templates first, with 'other' last."""
+    seen: Dict[str, Dict[str, Any]] = {}
+    for t in tpls:
+        slug = t.get("industry") or OTHER_INDUSTRY
+        f = seen.setdefault(slug, {"id": slug, "label": t.get("industry_label") or slug, "count": 0})
+        f["count"] += 1
+    return sorted(seen.values(), key=lambda f: (f["id"] == OTHER_INDUSTRY, -f["count"], f["label"]))
 
 
 @router.get("/explore")
@@ -53,10 +85,6 @@ async def get_explore_templates(
         cat_lower = category.lower()
         filtered = [t for t in filtered if t.get("category", "").lower() == cat_lower]
 
-    if industry and industry.lower() != "all":
-        ind_lower = industry.lower()
-        filtered = [t for t in filtered if t.get("industry", "").lower() == ind_lower]
-
     if media_type and media_type.lower() != "all":
         med_lower = media_type.lower()
         filtered = [t for t in filtered if t.get("media_type", "image").lower() == med_lower]
@@ -72,6 +100,14 @@ async def get_explore_templates(
             or query in t.get("category", "").lower()
             or query in t.get("description", "").lower()
         ]
+
+    # Two filter rows, like a format row over a genre row: the industry chips are counted
+    # against the other filters, so each chip says how many templates it would show.
+    industries = _industry_facets(filtered)
+
+    if industry and industry.lower() != "all":
+        ind_lower = industry.lower()
+        filtered = [t for t in filtered if t.get("industry", "").lower() == ind_lower]
 
     categories = [
         "All",
@@ -90,6 +126,7 @@ async def get_explore_templates(
         "count": len(filtered),
         "total_templates": len(all_tpls),
         "categories": categories,
+        "industries": industries,
     }
 
 

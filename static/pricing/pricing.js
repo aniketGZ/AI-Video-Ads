@@ -95,8 +95,12 @@
       const v = kind === "image" ? (img[a] || {})[b2] : (vid[a] || 0) * Number(b2);
       if (v) el.textContent = nf.format(v);
     });
+    // Each pack is its own checkout link. Packs top up a plan, so a free account is pointed at the plans first.
     document.getElementById("topup_row").innerHTML = data.top_ups.map((t2) =>
-      `<p class="topup"><b>${nf.format(t2.credits)}</b> credits <span>${usd(t2.price_usd)}</span></p>`).join("");
+      `<a class="topup" href="/upgrade/checkout?topup=${t2.credits}"><b>${nf.format(t2.credits)}</b> credits <span>${usd(t2.price_usd)}</span></a>`).join("") +
+      (!mine || mine.plan === "free"
+        ? `<p class="topup-lock">Top-ups unlock after you pick a plan. <a href="#plans">See plans</a></p>`
+        : "");
   }
 
   // ------------------------------------------------------------ plan finder

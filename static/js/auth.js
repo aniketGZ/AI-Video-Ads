@@ -59,15 +59,19 @@
         },
       });
 
+      showGoogleIfEnabled(config);
+
       // Get initial session
       const { data } = await supabaseClient.auth.getSession();
       currentSession = data.session;
       updateUIForSession(currentSession);
+      maybeOnboard(currentSession); // back from Google: the session arrives with the page
 
       // Listen for auth events
       supabaseClient.auth.onAuthStateChange(async (event, session) => {
         currentSession = session;
         updateUIForSession(session);
+        if (event === "SIGNED_IN") maybeOnboard(session);
         if (typeof window.loadPlan === "function") {
           await window.loadPlan();
           if (typeof window.applyPlanLocks === "function") {
@@ -256,6 +260,80 @@
     }
   }
 
+  // The Google button only shows once Google is switched on in Supabase, so it never leads to an error
+  async function showGoogleIfEnabled(config) {
+    const btn = document.getElementById("auth_google_btn");
+    const or = btn && btn.nextElementSibling && btn.nextElementSibling.classList.contains("auth-or") ? btn.nextElementSibling : null;
+    const set = (on) => { if (btn) btn.hidden = !on; if (or) or.hidden = !on; };
+    if (!btn) return;
+    set(false);
+    try {
+      const res = await origFetch(`${config.supabase_url}/auth/v1/settings`, { headers: { apikey: config.supabase_anon_key } });
+      const s = res.ok ? await res.json() : null;
+      set(!!(s && s.external && s.external.google));
+    } catch (_) { /* can't tell: keep it hidden */ }
+  }
+
+  // First run: a new account is asked what it came to make, once, and that studio opens.
+  // Only accounts made in the last day see it, so existing users on a new device don't.
+  function maybeOnboard(session) {
+    const dlg = document.getElementById("onboard_dialog");
+    const user = session && session.user;
+    if (!dlg || !user || dlg.open) return;
+    const key = `ad_studio_onboarded:${user.id}`;
+    try {
+      if (localStorage.getItem(key)) return;
+      const ageMs = Date.now() - new Date(user.created_at || 0).getTime();
+      if (!(ageMs >= 0 && ageMs < 24 * 3600 * 1000)) {
+        localStorage.setItem(key, "existing");
+        return;
+      }
+      if (/[?&]template=/.test(window.location.search)) return; // came for a template: let them use it
+      localStorage.setItem(key, "shown");
+    } catch (_) {
+      return; // no storage: we couldn't remember it was shown, so don't show it every time
+    }
+    if (!dlg.dataset.wired) {
+      dlg.dataset.wired = "1";
+      dlg.addEventListener("click", (e) => {
+        const card = e.target.closest("[data-intent]");
+        if (card) {
+          try { localStorage.setItem("ad_studio_intent", card.dataset.intent); } catch (_) {}
+        }
+        if (e.target === dlg || e.target.closest("#onboard_skip")) dlg.close();
+      });
+    }
+    closeAuthDialog();
+    dlg.showModal();
+  }
+
+  // Continue with Google (Supabase OAuth). Needs the Google provider switched on in Supabase
+  // (Authentication > Providers > Google) and this site's /app URL in its redirect allow-list.
+  async function handleGoogle() {
+    if (!supabaseClient && initAuthPromise) await initAuthPromise;
+    if (!supabaseClient) {
+      showMsg("Sign-in isn't set up on this server yet.");
+      return;
+    }
+    const btn = document.getElementById("auth_google_btn");
+    if (btn) btn.disabled = true;
+    clearMsg();
+    // Come back to the same place in the studio; from the landing page, go into the studio
+    const onLanding = !window.location.pathname.startsWith("/app") && !window.location.pathname.startsWith("/studio");
+    const back = onLanding ? "/app" : window.location.pathname + window.location.search + window.location.hash;
+    try {
+      const { error } = await supabaseClient.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin + back },
+      });
+      if (error) throw error;
+      // The browser now leaves for Google
+    } catch (err) {
+      showMsg(err.message || "Couldn't open Google sign-in.");
+      if (btn) btn.disabled = false;
+    }
+  }
+
   async function handleSignOut() {
     if (supabaseClient) {
       try {
@@ -345,6 +423,8 @@
     if (tabSignin) tabSignin.addEventListener("click", () => setTab("signin"));
     if (tabSignup) tabSignup.addEventListener("click", () => setTab("signup"));
     if (form) form.addEventListener("submit", handleSubmit);
+    const googleBtn = document.getElementById("auth_google_btn");
+    if (googleBtn) googleBtn.addEventListener("click", handleGoogle);
     if (signOutBtn) signOutBtn.addEventListener("click", handleSignOut);
     if (profSignOutBtn) {
       profSignOutBtn.addEventListener("click", () => {

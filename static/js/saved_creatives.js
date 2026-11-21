@@ -22,6 +22,7 @@
   // Templates State
   let currentViewMode = "templates"; // 'templates' | 'generations'
   let activeCategory = "all";
+  let activeIndustry = "all";
   let templateSearchQuery = "";
   let templateMediaType = "all";
   let recreateAspect = "4:5";
@@ -82,6 +83,7 @@
     try {
       const params = new URLSearchParams();
       if (activeCategory && activeCategory !== "all") params.set("category", activeCategory);
+      if (activeIndustry && activeIndustry !== "all") params.set("industry", activeIndustry);
       if (templateMediaType && templateMediaType !== "all") params.set("media_type", templateMediaType);
       if (templateSearchQuery) params.set("q", templateSearchQuery);
 
@@ -89,12 +91,70 @@
       if (!res.ok) throw new Error("Failed to load templates");
       const data = await res.json();
       exploreTemplates = data.templates || [];
+      renderIndustryBar(data.industries || []);
+      syncFilterUrl();
       renderTemplatesGrid();
     } catch (err) {
       if (grid) {
         grid.innerHTML = `<div class="media-empty error" style="grid-column: 1 / -1;"><i class="fa-solid fa-triangle-exclamation"></i><span>Could not load templates: ${esc(err.message)}</span></div>`;
       }
     }
+  }
+
+  // Second filter row: one chip per industry, counted against the format/search filters
+  function renderIndustryBar(industries) {
+    const bar = $("explore_ind_bar");
+    if (!bar) return;
+    const total = industries.reduce((n, f) => n + f.count, 0);
+    // A picked industry stays on the row even when the format filter leaves it empty
+    if (activeIndustry !== "all" && !industries.some((f) => f.id === activeIndustry)) {
+      industries = industries.concat([{ id: activeIndustry, label: activeIndustry.replace(/-/g, " "), count: 0 }]);
+    }
+    const chip = (id, label, count) =>
+      `<button type="button" class="tpl-cat-btn${id === activeIndustry ? " active" : ""}" data-ind="${esc(id)}" aria-pressed="${id === activeIndustry}">${esc(label)} <span class="muted">${count.toLocaleString()}</span></button>`;
+    bar.innerHTML = chip("all", "All industries", total) + industries.map((f) => chip(f.id, f.label, f.count)).join("");
+  }
+
+  // Filters and the open template live in the address, so a view can be shared or reopened:
+  // /app?cat=UGC&ind=beauty-cosmetics#library, and ?template=<id> opens that template.
+  function setUrlParams(changes) {
+    try {
+      const url = new URL(location.href);
+      Object.entries(changes).forEach(([k, v]) => {
+        if (v && v !== "all") url.searchParams.set(k, v);
+        else url.searchParams.delete(k);
+      });
+      if (url.href !== location.href) history.replaceState(history.state, "", url.pathname + url.search + url.hash);
+    } catch (_) { /* old browser: filters just aren't kept in the address */ }
+  }
+
+  function syncFilterUrl() {
+    if (currentViewMode !== "templates" || (location.hash && location.hash !== "#library" && location.hash !== "#saved")) return;
+    setUrlParams({ cat: activeCategory, ind: activeIndustry, q: templateSearchQuery });
+  }
+
+  // Read ?cat / ?ind / ?q / ?template once on load (and open the template if one is named)
+  function applyUrlParams() {
+    let p;
+    try { p = new URLSearchParams(location.search); } catch (_) { return false; }
+    const cat = p.get("cat");
+    const ind = p.get("ind");
+    const q = p.get("q");
+    const tpl = p.get("template");
+    if (!cat && !ind && !q && !tpl) return false;
+    if (cat) {
+      activeCategory = cat;
+      document.querySelectorAll("#explore_cat_bar .tpl-cat-btn").forEach((b) => b.classList.toggle("active", b.dataset.cat === cat));
+    }
+    if (ind) activeIndustry = ind;
+    if (q) {
+      templateSearchQuery = q;
+      if ($("tpl_search_input")) $("tpl_search_input").value = q;
+    }
+    if (typeof window.showView === "function") window.showView("library");
+    setViewMode("templates");
+    if (tpl) openRecreateModal(tpl);
+    return true;
   }
 
   let tplRenderLimit = 48;
@@ -121,8 +181,9 @@
       if (resetBtn) {
         resetBtn.addEventListener("click", () => {
           activeCategory = "all";
+          activeIndustry = "all";
           templateSearchQuery = "";
-          const catBtns = document.querySelectorAll(".tpl-cat-btn");
+          const catBtns = document.querySelectorAll("#explore_cat_bar .tpl-cat-btn");
           catBtns.forEach((b) => b.classList.toggle("active", b.dataset.cat === "all"));
           if ($("tpl_search_input")) $("tpl_search_input").value = "";
           loadExploreTemplates();
@@ -271,6 +332,12 @@
     }
 
     if (!dlg.open) dlg.showModal();
+    // Each template has its own address (like a template page), so it can be shared or reopened
+    setUrlParams({ template: String(tpl.id) });
+    if (!dlg.dataset.urlWired) {
+      dlg.dataset.urlWired = "1";
+      dlg.addEventListener("close", () => setUrlParams({ template: null })); // Esc, X or backdrop
+    }
   }
 
   function closeRecreateModal() {
@@ -1199,12 +1266,18 @@
       return;
     }
 
-    // 11. Explore Templates: Category filter pills matching Screenshot 1
-    const catBtn = e.target.closest(".tpl-cat-btn");
+    // 11. Explore Templates: format row (data-cat) and industry row (data-ind) filter together
+    const catBtn = e.target.closest("#explore_cat_bar .tpl-cat-btn");
     if (catBtn) {
-      document.querySelectorAll(".tpl-cat-btn").forEach((b) => b.classList.remove("active"));
+      document.querySelectorAll("#explore_cat_bar .tpl-cat-btn").forEach((b) => b.classList.remove("active"));
       catBtn.classList.add("active");
       activeCategory = catBtn.dataset.cat || "all";
+      loadExploreTemplates();
+      return;
+    }
+    const indBtn = e.target.closest("#explore_ind_bar .tpl-cat-btn");
+    if (indBtn) {
+      activeIndustry = indBtn.dataset.ind || "all";
       loadExploreTemplates();
       return;
     }
@@ -1464,7 +1537,11 @@
   // View Change & Global Listeners
   // -------------------------------------------------------------------------
   window.addEventListener("viewchange", (e) => {
-    const v = e.detail?.view;
+    // core.js sends the view name as the detail itself
+    const v = typeof e.detail === "string" ? e.detail : e.detail?.view;
+    if (v !== "library" && v !== "saved") {
+      setUrlParams({ cat: null, ind: null, q: null, template: null }); // other studios keep a clean address
+    }
     if (v === "library" || v === "saved") {
       loadProjects();
       if (currentViewMode === "templates") {
@@ -1483,8 +1560,13 @@
   document.addEventListener("DOMContentLoaded", () => {
     setupLibraryEvents();
     loadProjects();
+    // A shared link (?template=, ?cat=, ?ind=) opens the library on it; core.js reads the hash
+    // after this, so point it at the library too.
+    if (/[?&](template|cat|ind|q)=/.test(location.search) && location.hash !== "#library") {
+      history.replaceState(history.state, "", location.pathname + location.search + "#library");
+    }
     // Default to explore templates
-    loadExploreTemplates();
+    if (!applyUrlParams()) loadExploreTemplates();
   });
 
   // Global exports
