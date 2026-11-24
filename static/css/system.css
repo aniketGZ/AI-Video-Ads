@@ -4,48 +4,62 @@
    page, checkout and the studio app.
 
    The idea: Ad Studio renders ads in fixed frames (4:5, 9:16, 1:1), so the
-   whole product is built from frames. Everything is a flat tile on black,
-   8px apart, one 8px radius. Controls are pills. The one colour is record
-   red, the light on a camera: it marks what is live, selected or being made,
-   and never decorates. Elevation is a step in lightness, never a shadow,
-   except on what truly floats (menus, dialogs, toasts).
+   whole product is built from frames. Everything is a flat tile on near-black,
+   8px apart, one 8px radius. Controls are pills. Colour is the spectrum: one
+   ribbon of electric blue, cyan, lavender and coral that partly breaks into
+   square pixels, like a frame mid-render. It moves in a few large surfaces
+   (spectrum.js) and marks what is live, selected or being made; tiles that
+   hold words or people's ads stay flat. Elevation is a step in lightness,
+   never a shadow, except on what truly floats (menus, dialogs, toasts).
    ========================================================================== */
 
 :root {
-  /* ground and surfaces: one lightness step each */
-  --bg: #0a0a0a;
-  --surface: #141414;
-  --raised: #1d1d1d;
-  --raised-2: #272727;
-  --raised-3: #333333;
-  --rule: #232323;           /* the only line: tables, form fields, app dividers */
+  /* ground and surfaces: one lightness step each, all leaning violet */
+  --bg: #040108;
+  --surface: #0e0c16;
+  --raised: #171521;
+  --raised-2: #211f2d;
+  --raised-3: #2e2b3d;
+  --rule: #201e2b;           /* the only line: tables, form fields, app dividers */
 
   /* ink */
-  --ink: #efefef;
-  --ink-2: #b4b4b4;          /* secondary text */
-  --ink-3: #949494;          /* meta; still 4.5:1 on --raised-2 */
+  --ink: #eef0fb;
+  --ink-2: #b4b6c8;          /* secondary text */
+  --ink-3: #9294a9;          /* meta; still 4.5:1 on --raised-2 */
 
-  /* paper: the light field and the primary control */
-  --paper: #efefef;
-  --paper-ink: #0a0a0a;
-  --paper-2: #d9d9d9;
+  /* paper: the light field and the quiet primary control */
+  --paper: #eef0fb;
+  --paper-ink: #040108;
+  --paper-2: #d5d8ea;
 
-  /* record red */
-  --accent: #b11226;
-  --accent-hover: #c5172d;
+  /* electric blue: live, selected, the one action */
+  --accent: #1453fa;
+  --accent-hover: #2b66ff;
   --accent-ink: #ffffff;
-  --accent-1: #2b070d;       /* the ramp, darkest to full */
-  --accent-2: #4a0a15;
-  --accent-3: #730e1e;
-  --accent-soft: rgba(177, 18, 38, 0.18);
+  --accent-bright: #5b93ff;  /* the accent as text or a small mark on the ground */
+  --accent-1: #070d36;       /* the ramp, darkest to full */
+  --accent-2: #0a1c6b;
+  --accent-3: #0e36b8;
+  --accent-soft: rgba(20, 83, 250, 0.22);
+
+  /* the spectrum */
+  --sp-indigo: #051366;
+  --sp-azure: #1baefe;
+  --sp-cyan: #33d6ff;
+  --sp-ice: #d0d1ec;
+  --sp-violet: #824bc2;
+  --sp-coral: #f5544a;
+  --sp-amber: #fdb086;
+  --spectrum: linear-gradient(90deg, #1453fa, #1baefe 28%, #b9c4fb 50%, #f5544a 78%, #fdb086);
+  --spectrum-loop: linear-gradient(90deg, #1453fa, #1baefe 22%, #b9c4fb 40%, #f5544a 62%, #824bc2 80%, #1453fa);
 
   /* status */
   --warning: #e8a53a;
   --warning-soft: rgba(232, 165, 58, 0.14);
   --danger: #ff6170;
   --danger-soft: rgba(255, 97, 112, 0.13);
-  --success: #efefef;        /* done reads as full ink */
-  --success-soft: rgba(239, 239, 239, 0.12);
+  --success: #eef0fb;        /* done reads as full ink */
+  --success-soft: rgba(238, 240, 251, 0.12);
 
   /* type */
   --font-display: "Stack Sans Headline", "Stack Sans Text", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -64,6 +78,9 @@
   /* motion */
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+
+  /* the mosaic: 8px squares, thin on the left, solid on the right */
+  --px-mask: url("data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='160'%20height='64'%20shape-rendering='crispEdges'%3E%3Cpath%20d='M16%2040h8v8h-8zM24%2016h8v8h-8zM40%2024h8v8h-8zM48%2016h8v8h-8zM56%200h8v8h-8zM56%2032h8v8h-8zM64%200h8v8h-8zM64%208h8v8h-8zM64%2016h8v8h-8zM64%2024h8v8h-8zM64%2040h8v8h-8zM72%200h8v8h-8zM72%2016h8v8h-8zM72%2032h8v8h-8zM72%2048h8v8h-8zM72%2056h8v8h-8zM80%2016h8v8h-8zM80%2032h8v8h-8zM88%200h8v8h-8zM88%2016h8v8h-8zM88%2024h8v8h-8zM88%2040h8v8h-8zM88%2048h8v8h-8zM88%2056h8v8h-8zM96%200h8v8h-8zM96%2016h8v8h-8zM96%2032h8v8h-8zM96%2040h8v8h-8zM104%2016h8v8h-8zM104%2024h8v8h-8zM104%2048h8v8h-8zM104%2056h8v8h-8zM112%2016h8v8h-8zM112%2048h8v8h-8zM112%2056h8v8h-8zM120%200h8v8h-8zM120%2016h8v8h-8zM120%2032h8v8h-8zM120%2048h8v8h-8zM120%2056h8v8h-8zM128%200h8v8h-8zM128%208h8v8h-8zM128%2016h8v8h-8zM128%2024h8v8h-8zM128%2032h8v8h-8zM128%2048h8v8h-8zM128%2056h8v8h-8zM136%208h8v8h-8zM136%2016h8v8h-8zM136%2024h8v8h-8zM136%2032h8v8h-8zM136%2040h8v8h-8zM136%2048h8v8h-8zM136%2056h8v8h-8zM144%200h8v8h-8zM144%208h8v8h-8zM144%2016h8v8h-8zM144%2040h8v8h-8zM144%2048h8v8h-8zM144%2056h8v8h-8zM152%200h8v8h-8zM152%208h8v8h-8zM152%2016h8v8h-8zM152%2024h8v8h-8zM152%2032h8v8h-8zM152%2048h8v8h-8zM152%2056h8v8h-8z'/%3E%3C/svg%3E");
 }
 
 /* ------------------------------------------------------------------ base */
@@ -112,8 +129,8 @@ button, a, summary, label, select { -webkit-tap-highlight-color: transparent; to
 .logo-mark .f-image { fill: var(--accent); }
 
 /* ------------------------------------------------------------------ buttons
-   Pills. Primary is paper on black; accent is record red, used for the one
-   action on a marketing page. */
+   Pills. Primary is paper on black; accent is electric blue, used for the one
+   action on a page. */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -140,7 +157,6 @@ button, a, summary, label, select { -webkit-tap-highlight-color: transparent; to
 .btn i { font-size: 0.9em; }
 .btn-primary { background: var(--paper); color: var(--paper-ink); }
 .btn-primary:hover:not(:disabled):not([aria-disabled="true"]) { background: #ffffff; }
-.btn-accent { background: var(--accent); color: var(--accent-ink); }
 .btn-accent:hover:not(:disabled):not([aria-disabled="true"]) { background: var(--accent-hover); }
 .btn-ghost { background: transparent; color: var(--ink-2); }
 .btn-ghost:hover:not(:disabled) { background: var(--raised-2); color: var(--ink); }
@@ -158,7 +174,7 @@ button, a, summary, label, select { -webkit-tap-highlight-color: transparent; to
   color: var(--ink);
   font-size: 14px;
   text-decoration: underline;
-  text-decoration-color: #555;
+  text-decoration-color: #55536a;
   text-underline-offset: 3px;
   cursor: pointer;
 }
@@ -179,6 +195,55 @@ button, a, summary, label, select { -webkit-tap-highlight-color: transparent; to
 .btn-icon:hover { color: var(--ink); background: var(--raised-2); }
 .btn-icon:active { transform: scale(0.94); }
 .push-right { margin-left: auto; }
+
+/* ------------------------------------------------------------------ the spectrum
+   .spectrum fills its positioned parent; spectrum.js paints it. The gradient
+   here is what shows before the script runs, or without WebGL. */
+.spectrum { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; }
+.spectrum canvas { display: block; width: 100%; height: 100%; }
+.spectrum:not(.is-live)[data-spectrum="valley"] { background: radial-gradient(120% 100% at 50% -20%, var(--bg) 62%, #1453fa 84%, #33d6ff); }
+.spectrum:not(.is-live)[data-spectrum="corner"] { background: radial-gradient(90% 110% at 0 100%, #33d6ff, #b1b0f6 38%, #824bc2 54%, var(--sp-indigo) 68%, transparent); }
+.spectrum:not(.is-live)[data-spectrum="corner"][data-flip="xy"] { transform: rotate(180deg); }
+.spectrum:not(.is-live)[data-spectrum="band"] { background: linear-gradient(90deg, var(--sp-indigo), #1453fa 34%, #1baefe 52%, #d0d1ec 74%, #fdb086); }
+.has-spectrum { position: relative; isolation: isolate; overflow: hidden; }
+.has-spectrum > :not(.spectrum) { position: relative; z-index: 1; }
+
+/* the action: blue, with a mosaic at its right end that sweeps across on hover */
+.btn-accent, .btn-generate, .upgrade-pill, .link-form .btn {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+.btn-accent::after, .btn-generate::after, .upgrade-pill::after, .link-form .btn::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(90deg, #0a2fae, #2360f5 58%, #5a45c8 84%, #e0483f 97%);
+  -webkit-mask: var(--px-mask) right 0 / auto 64px repeat-y;
+  mask: var(--px-mask) right 0 / auto 64px repeat-y;
+  clip-path: inset(0 0 0 91%); /* clear of the label until hover */
+  transition: clip-path 480ms steps(9, end);
+  pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn-accent:hover::after, .btn-generate:hover:not(:disabled)::after, .upgrade-pill:hover::after, .link-form .btn:hover::after {
+    clip-path: inset(0);
+    animation: px-drift 1.6s steps(16) infinite;
+  }
+}
+@keyframes px-drift { to { -webkit-mask-position: right 64px; mask-position: right 64px; } }
+/* while it works, the whole spectrum runs through it */
+.btn-generate:disabled::after { clip-path: inset(0); animation: px-drift 1s steps(8) infinite; }
+
+/* progress is the spectrum passing through */
+.meter > div, .meter-track i, .stage.active::before {
+  background: var(--spectrum-loop) 0 0 / 300px 100%;
+  animation: sp-flow 3.2s linear infinite;
+}
+@keyframes sp-flow { to { background-position: 300px 0; } }
 
 /* ------------------------------------------------------------------ fields */
 .field { display: flex; flex-direction: column; gap: 8px; }
@@ -201,7 +266,7 @@ button, a, summary, label, select { -webkit-tap-highlight-color: transparent; to
 }
 .input::placeholder, .textarea::placeholder { color: var(--ink-3); }
 .input:hover, .textarea:hover, .select:hover { border-color: var(--raised-3); }
-.input:focus, .textarea:focus, .select:focus { outline: none; border-color: var(--ink); background: var(--raised); }
+.input:focus, .textarea:focus, .select:focus { outline: none; border-color: var(--accent-bright); background: var(--raised); }
 .textarea { resize: vertical; line-height: 1.5; }
 select option { background: var(--raised); color: var(--ink); }
 
@@ -279,9 +344,11 @@ dialog[open]::backdrop { opacity: 1; }
 .auth-close-btn {
   position: absolute; top: 14px; right: 14px;
   display: grid; place-items: center; width: 32px; height: 32px;
-  border: 0; border-radius: var(--r-full); background: none; color: var(--ink-3); cursor: pointer;
+  border: 0; border-radius: var(--r-full); background: rgba(4, 1, 8, 0.6); color: var(--ink); cursor: pointer;
 }
 .auth-close-btn:hover { background: var(--raised-2); color: var(--ink); }
+.auth-dialog .spectrum { inset: 0 0 auto 34%; height: 150px; border-radius: 12px 12px 0 0; -webkit-mask: linear-gradient(#000 35%, transparent); mask: linear-gradient(#000 35%, transparent); opacity: 0.9; } /* the words stay on the dark side */
+.auth-dialog-body { z-index: 1; }
 .auth-header { margin-bottom: 20px; padding-right: 32px; }
 .auth-header::before {
   content: "";
@@ -309,7 +376,7 @@ dialog[open]::backdrop { opacity: 1; }
   background: var(--bg); color: var(--ink); font-size: 16px;
   transition: border-color 150ms ease;
 }
-.auth-field input:focus { outline: none; border-color: var(--ink); }
+.auth-field input:focus { outline: none; border-color: var(--accent-bright); }
 .auth-submit-btn {
   height: 48px; margin-top: 6px; border: 0; border-radius: var(--r-full);
   background: var(--paper); color: var(--paper-ink); font-size: 16px; font-weight: 500; cursor: pointer;
@@ -364,6 +431,7 @@ dialog[open]::backdrop { opacity: 1; }
 
 /* ------------------------------------------------------------------ what people asked for */
 @media (prefers-reduced-motion: reduce) {
+  .meter > div, .meter-track i, .stage.active::before, .btn-accent::after, .btn-generate::after, .upgrade-pill::after, .link-form .btn::after { animation: none !important; }
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; scroll-behavior: auto !important; }
 }
 @media (prefers-contrast: more) {

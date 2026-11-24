@@ -55,6 +55,9 @@
       e.stopPropagation();
       container.classList.remove("dragover");
       if (targetTextarea) targetTextarea.classList.remove("dragover");
+      const composerMain = container.closest(".composer-main");
+      if (composerMain) composerMain.classList.remove("drag-active");
+      document.querySelectorAll(".dragover, .drag-active").forEach((el) => el.classList.remove("dragover", "drag-active"));
 
       // Ingest dropped images as reference images
       const imageFiles = files.filter((f) => f.type.startsWith("image/"));
@@ -113,7 +116,7 @@
     container.addEventListener("dragleave", (e) => {
       const ta = e.target.closest("textarea");
       if (ta) ta.classList.remove("dragover");
-      if (!e.relatedTarget || !container.contains(e.relatedTarget)) {
+      if (e.relatedTarget && !container.contains(e.relatedTarget)) {
         container.classList.remove("dragover");
       }
     });
@@ -814,13 +817,14 @@
     });
     zone.addEventListener("dragleave", (e) => {
       modalDragCount--;
-      if (modalDragCount <= 0 || !e.relatedTarget || !zone.contains(e.relatedTarget)) {
+      if (modalDragCount <= 0 || (e.relatedTarget && !zone.contains(e.relatedTarget))) {
         modalDragCount = 0;
         zone.classList.remove("dragover");
       }
     });
     zone.addEventListener("drop", (e) => {
       e.preventDefault();
+      e.stopPropagation();
       modalDragCount = 0;
       zone.classList.remove("dragover");
       const f = Array.from(e.dataTransfer?.files || []).find((x) => x.type.startsWith("image/"));

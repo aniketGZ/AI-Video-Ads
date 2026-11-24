@@ -294,7 +294,7 @@
       })
       .then((res) => res.json())
       .then((data) => {
-        saveBtn.innerHTML = '<i class="fa-solid fa-bookmark" style="color:var(--accent);"></i><span>Saved</span>';
+        saveBtn.innerHTML = '<i class="fa-solid fa-bookmark" style="color:var(--accent-bright);"></i><span>Saved</span>';
         if (typeof notify === "function") notify("Creative & prompt saved to library!", "success");
         window.dispatchEvent(new CustomEvent("saved-creatives-updated"));
       })

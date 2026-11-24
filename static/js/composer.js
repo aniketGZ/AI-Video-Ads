@@ -105,6 +105,15 @@
     const dropzoneId = isImage ? "img_drop" : "vid_drop";
 
     let mainDragCounter = 0;
+    const resetMainDrag = () => {
+      mainDragCounter = 0;
+      main.classList.remove("drag-active");
+    };
+
+    // Reset whenever drop or dragend occurs anywhere (capture phase ensures this runs even if children call stopPropagation)
+    window.addEventListener("drop", resetMainDrag, true);
+    window.addEventListener("dragend", resetMainDrag, true);
+
     main.addEventListener("dragenter", (e) => {
       if (e.dataTransfer?.types?.includes("Files")) {
         e.preventDefault();
@@ -123,15 +132,13 @@
 
     main.addEventListener("dragleave", (e) => {
       mainDragCounter--;
-      if (mainDragCounter <= 0 || !e.relatedTarget || !main.contains(e.relatedTarget)) {
-        mainDragCounter = 0;
-        main.classList.remove("drag-active");
+      if (mainDragCounter <= 0 || (e.relatedTarget && !main.contains(e.relatedTarget))) {
+        resetMainDrag();
       }
     });
 
     main.addEventListener("drop", async (e) => {
-      mainDragCounter = 0;
-      main.classList.remove("drag-active");
+      resetMainDrag();
       const files = Array.from(e.dataTransfer?.files || []);
       if (!files.length) return;
 

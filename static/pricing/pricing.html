@@ -9,9 +9,9 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:wght@300&family=Stack+Sans+Text:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/system.css?v=2.1.0">
-  <link rel="stylesheet" href="/static/css/site.css?v=3.0.0">
-  <link rel="stylesheet" href="/static/pricing/pricing.css?v=3.1.0">
+  <link rel="stylesheet" href="/static/css/system.css?v=3.0.0">
+  <link rel="stylesheet" href="/static/css/site.css?v=4.0.0">
+  <link rel="stylesheet" href="/static/pricing/pricing.css?v=3.2.0">
   <script>document.documentElement.classList.add("js");</script>
 </head>
 <body class="site">
@@ -36,6 +36,7 @@
     <!-- ============================================================ title -->
     <section class="board page-title" aria-labelledby="top_h">
       <div class="tile title-main">
+        <div class="spectrum" data-spectrum="horizon" data-cell="18" aria-hidden="true"></div>
         <h1 id="top_h" class="t-display">Plans and credits</h1>
         <p>Every plan makes finished image and video ads. Pro and Studio add the campaign builder: one link in, a researched set of ads out.</p>
       </div>
@@ -87,7 +88,7 @@
             <li class="no">No campaign builder</li>
           </ul>
         </article>
-        <article class="tile tile-red p4 p4-pro rv" data-plan="pro">
+        <article class="tile tile-accent p4 p4-pro rv" data-plan="pro">
           <div class="p4-frames f3">
             <video src="/static/showcase_videos/skincare_floating_orbit.mp4" poster="/static/landing/thumbs/vert_beauty.jpg" width="720" height="1280" muted loop playsinline autoplay preload="metadata" aria-label="Skincare video ad"></video>
             <img src="/static/demo/woodland/ad_s01.jpg" width="928" height="1152" alt="Woodland image ad: Sneakers Fail. Leather Boots Prevail." loading="lazy">
@@ -163,7 +164,7 @@
             <p class="hint">Images counted at 2K, videos at 8 seconds and 1080p. A campaign adds research for every 20 ads.</p>
           </div>
         </div>
-        <div class="tile tile-red finder-answer rv" aria-live="polite">
+        <div class="tile tile-accent finder-answer rv" aria-live="polite">
           <p class="finder-plan t-display" id="finder_plan">Starter</p>
           <p class="finder-line">fits. You need about <b id="finder_need" class="num">1,000</b> credits a month.</p>
           <div class="meter-track" aria-hidden="true"><i id="finder_meter" style="width: 50%"></i></div>
@@ -293,6 +294,7 @@
     </div>
   </footer>
 
+  <script src="/static/js/spectrum.js?v=1.0.0"></script>
   <script src="/static/js/site.js?v=2.0.0"></script>
   <script src="/static/pricing/pricing.js?v=3.1.0"></script>
   <script src="/static/landing/landing.js?v=2.0.0"></script>

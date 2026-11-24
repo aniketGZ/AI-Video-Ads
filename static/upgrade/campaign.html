@@ -9,8 +9,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:wght@300&family=Stack+Sans+Text:wght@400;500&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/css/system.css?v=2.1.0">
-  <link rel="stylesheet" href="/static/css/site.css?v=3.0.0">
+  <link rel="stylesheet" href="/static/css/system.css?v=3.0.0">
+  <link rel="stylesheet" href="/static/css/site.css?v=4.0.0">
   <script>document.documentElement.classList.add("js");</script>
 </head>
 <body class="site">
@@ -35,6 +35,7 @@
     <!-- ============================================================ title -->
     <section class="board page-title" aria-labelledby="top_h">
       <div class="tile title-main">
+        <div class="spectrum" data-spectrum="horizon" data-cell="18" aria-hidden="true"></div>
         <h1 id="top_h" class="t-display">One link in, a campaign out</h1>
         <div class="title-frames" aria-hidden="true">
           <img src="/static/demo/woodland/ad_s01.jpg" width="928" height="1152" alt="">
@@ -89,7 +90,7 @@
             <img src="/static/demo/woodland/ad_s05.jpg" width="928" height="1152" alt="Woodland ad: Ordinary Shoes Slip. We Conquer." loading="lazy">
           </div>
         </article>
-        <article class="tile tile-red step-tile rv">
+        <article class="tile tile-accent step-tile rv">
           <div class="step-text"><h3>Render the ads</h3><p>Images at 4:5 for the feed, videos at 9:16 for Reels, TikTok and Stories. Your product photos keep the product true in every frame.</p></div>
           <div class="step-proof frames-2">
             <video src="/static/demo/woodland/video_1.mp4" poster="/static/demo/woodland/video_1_poster.jpg" width="540" height="960" muted loop playsinline autoplay preload="metadata" aria-label="Woodland video ad: Soaking trail shoes?"></video>
@@ -120,6 +121,7 @@
     <!-- ============================================================ the close -->
     <section class="wrap" aria-labelledby="cta_h">
       <div class="close rv">
+        <div class="spectrum" data-spectrum="valley" aria-hidden="true"></div>
         <h2 id="cta_h" class="t-head">Build yours next</h2>
         <p>Paste your link and it waits in the Campaign tab. The builder is on Pro, $49 a month, and Studio, $149 a month.</p>
         <form class="link-form js-link-form" action="/app" novalidate>
@@ -149,6 +151,7 @@
     </div>
   </footer>
 
+  <script src="/static/js/spectrum.js?v=1.0.0"></script>
   <script src="/static/js/site.js?v=2.0.0"></script>
   <script src="/static/landing/landing.js?v=2.0.0"></script>
   <script>

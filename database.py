@@ -184,12 +184,22 @@ async def list_projects(user: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
     user_id = _clean_uuid(raw_uid) or ""
     user_email = (user.get("email") or "").strip().lower() if user else ""
 
+    # Fail closed: an unidentified (guest) caller owns no projects — never scan the whole table.
+    if not user_id and not user_email:
+        return []
+
     projects_map: Dict[str, Dict[str, Any]] = {}
 
     # 1. Try fetching from Supabase if available
     if _is_supabase_ready():
         try:
-            url = f"{_get_supabase_url()}/rest/v1/projects?select=*&order=updated_at.desc"
+            if user_id and user_email:
+                _scope = f"&or=(user_id.eq.{user_id},user_email.eq.{user_email})"
+            elif user_id:
+                _scope = f"&user_id=eq.{user_id}"
+            else:
+                _scope = f"&user_email=eq.{user_email}"
+            url = f"{_get_supabase_url()}/rest/v1/projects?select=*{_scope}&order=updated_at.desc"
             headers = {
                 "apikey": _get_supabase_key(),
                 "Authorization": f"Bearer {_get_supabase_key()}",
@@ -242,13 +252,13 @@ async def list_projects(user: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """
     params = []
     if user_id and user_email:
-        query += " WHERE (p.user_id = ? OR LOWER(p.user_email) = ? OR p.user_id = '' OR p.user_id IS NULL)"
+        query += " WHERE (p.user_id = ? OR LOWER(p.user_email) = ?)"
         params.extend([user_id, user_email])
     elif user_id:
-        query += " WHERE (p.user_id = ? OR p.user_id = '' OR p.user_id IS NULL)"
+        query += " WHERE p.user_id = ?"
         params.append(user_id)
-    elif user_email:
-        query += " WHERE (LOWER(p.user_email) = ? OR p.user_id = '' OR p.user_id IS NULL)"
+    else:
+        query += " WHERE LOWER(p.user_email) = ?"
         params.append(user_email)
 
     query += " GROUP BY p.id ORDER BY p.updated_at DESC"
@@ -276,8 +286,13 @@ async def list_projects(user: Optional[Dict[str, Any]]) -> List[Dict[str, Any]]:
 
 
 async def get_project(user: Optional[Dict[str, Any]], project_id: str) -> Optional[Dict[str, Any]]:
-    """Fetch project details by ID."""
+    """Fetch project details by ID, scoped to the owner."""
     init_db()
+    raw_uid = (user.get("id") or "") if user else ""
+    user_id = _clean_uuid(raw_uid) or ""
+    user_email = (user.get("email") or "").strip().lower() if user else ""
+    if not user_id and not user_email:
+        return None  # guests own no projects
     with sqlite3.connect(DB_PATH) as conn:
         conn.row_factory = sqlite3.Row
         cursor = conn.cursor()
@@ -285,9 +300,9 @@ async def get_project(user: Optional[Dict[str, Any]], project_id: str) -> Option
             SELECT p.*, COUNT(c.id) as item_count
             FROM projects p
             LEFT JOIN saved_creatives c ON c.folder_id = p.id
-            WHERE p.id = ?
+            WHERE p.id = ? AND (p.user_id = ? OR LOWER(p.user_email) = ?)
             GROUP BY p.id
-        """, (project_id,))
+        """, (project_id, user_id, user_email))
         r = cursor.fetchone()
         if not r:
             return None
@@ -306,8 +321,10 @@ async def get_project(user: Optional[Dict[str, Any]], project_id: str) -> Option
 
 
 async def update_project(user: Optional[Dict[str, Any]], project_id: str, data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Update project name, description, color, or icon."""
+    """Update project name, description, color, or icon (owner only)."""
     init_db()
+    if not await get_project(user, project_id):
+        return None  # not found or not owned by this user
     now_iso = datetime.now(timezone.utc).isoformat()
     fields = []
     params = []
@@ -345,8 +362,10 @@ async def update_project(user: Optional[Dict[str, Any]], project_id: str, data: 
 
 
 async def delete_project(user: Optional[Dict[str, Any]], project_id: str) -> bool:
-    """Delete a project and unassign its items."""
+    """Delete a project and unassign its items (owner only)."""
     init_db()
+    if not await get_project(user, project_id):
+        return False  # not found or not owned by this user
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute("UPDATE saved_creatives SET folder_id = '' WHERE folder_id = ?", (project_id,))
@@ -372,9 +391,51 @@ async def delete_project(user: Optional[Dict[str, Any]], project_id: str) -> boo
     return True
 
 
-async def move_creative_to_project(user: Optional[Dict[str, Any]], creative_id: str, project_id: Optional[str]) -> bool:
-    """Move a creative to a project folder (or unassign if empty)."""
+async def _user_owns_creative(user: Optional[Dict[str, Any]], creative_id: str) -> bool:
+    """True only if this creative belongs to the given signed-in user. Guests own nothing."""
+    raw_uid = (user.get("id") or "") if user else ""
+    user_id = _clean_uuid(raw_uid) or ""
+    user_email = (user.get("email") or "").strip().lower() if user else ""
+    if not user_id and not user_email:
+        return False
+
+    # Local cache first (list_saved_creatives syncs rows here before the UI offers any action).
     init_db()
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.row_factory = sqlite3.Row
+        cur = conn.cursor()
+        cur.execute("SELECT user_id, user_email FROM saved_creatives WHERE id = ?", (creative_id,))
+        r = cur.fetchone()
+    if r is not None:
+        row_uid = (r["user_id"] or "")
+        row_email = (r["user_email"] or "").strip().lower()
+        return (bool(user_id) and row_uid == user_id) or (bool(user_email) and row_email == user_email)
+
+    # Not cached locally — ask Supabase, scoped to this user.
+    if _is_supabase_ready():
+        try:
+            if user_id and user_email:
+                flt = f"id=eq.{creative_id}&or=(user_id.eq.{user_id},user_email.eq.{user_email})"
+            elif user_id:
+                flt = f"id=eq.{creative_id}&user_id=eq.{user_id}"
+            else:
+                flt = f"id=eq.{creative_id}&user_email=eq.{user_email}"
+            url = f"{_get_supabase_url()}/rest/v1/saved_creatives?select=id&{flt}"
+            headers = {"apikey": _get_supabase_key(), "Authorization": f"Bearer {_get_supabase_key()}"}
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                res = await client.get(url, headers=headers)
+                if res.status_code == 200:
+                    return bool(res.json())
+        except Exception as e:
+            logger.warning(f"Supabase ownership check error: {e}")
+    return False
+
+
+async def move_creative_to_project(user: Optional[Dict[str, Any]], creative_id: str, project_id: Optional[str]) -> bool:
+    """Move a creative to a project folder (or unassign if empty) — owner only."""
+    init_db()
+    if not await _user_owns_creative(user, creative_id):
+        return False
     p_id = (project_id or "").strip()
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
@@ -416,16 +477,24 @@ async def get_user_stats(user: Optional[Dict[str, Any]]) -> Dict[str, Any]:
     user_id = _clean_uuid(raw_uid) or ""
     user_email = (user.get("email") or "").strip().lower() if user else ""
 
+    # Guests have no stats of their own — never aggregate across the whole table.
+    if not user_id and not user_email:
+        return {
+            "total_generations": 0, "total_creatives": 0, "total_images": 0,
+            "total_videos": 0, "total_favorites": 0, "favorites_count": 0,
+            "unassigned_count": 0, "total_projects": 0,
+        }
+
     params = []
     user_clause = ""
     if user_id and user_email:
-        user_clause = " WHERE (user_id = ? OR LOWER(user_email) = ? OR user_id = '' OR user_id IS NULL)"
+        user_clause = " WHERE (user_id = ? OR LOWER(user_email) = ?)"
         params.extend([user_id, user_email])
     elif user_id:
-        user_clause = " WHERE (user_id = ? OR user_id = '' OR user_id IS NULL)"
+        user_clause = " WHERE user_id = ?"
         params.append(user_id)
-    elif user_email:
-        user_clause = " WHERE (LOWER(user_email) = ? OR user_id = '' OR user_id IS NULL)"
+    else:
+        user_clause = " WHERE LOWER(user_email) = ?"
         params.append(user_email)
 
     with sqlite3.connect(DB_PATH) as conn:
@@ -591,6 +660,10 @@ async def list_saved_creatives(
     clean_uid = _clean_uuid(raw_uid)
     user_email = (user.get("email") or "").strip().lower() if user else ""
 
+    # Fail closed: an unidentified (guest) caller owns no creatives — never scan the whole table.
+    if not clean_uid and not user_email:
+        return []
+
     # 1. Fetch from Supabase PostgreSQL if configured
     if _is_supabase_ready():
         try:
@@ -694,13 +767,13 @@ async def list_saved_creatives(
     params = []
 
     if clean_uid and user_email:
-        query += " AND (user_id = ? OR LOWER(user_email) = ? OR user_id = '' OR user_id IS NULL)"
+        query += " AND (user_id = ? OR LOWER(user_email) = ?)"
         params.extend([clean_uid, user_email])
     elif clean_uid:
-        query += " AND (user_id = ? OR user_id = '' OR user_id IS NULL)"
+        query += " AND user_id = ?"
         params.append(clean_uid)
-    elif user_email:
-        query += " AND (LOWER(user_email) = ? OR user_id = '' OR user_id IS NULL)"
+    else:
+        query += " AND LOWER(user_email) = ?"
         params.append(user_email)
 
     if media_type:
@@ -767,8 +840,10 @@ async def list_saved_creatives(
         return results
 
 
-async def toggle_favorite(cid: str, is_fav: bool) -> bool:
-    """Toggle favorite status of a creative."""
+async def toggle_favorite(user: Optional[Dict[str, Any]], cid: str, is_fav: bool) -> bool:
+    """Toggle favorite status of a creative (owner only)."""
+    if not await _user_owns_creative(user, cid):
+        return False
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute("UPDATE saved_creatives SET is_favorite = ? WHERE id = ?", (1 if is_fav else 0, cid))
@@ -790,8 +865,10 @@ async def toggle_favorite(cid: str, is_fav: bool) -> bool:
     return True
 
 
-async def delete_creative(cid: str) -> bool:
-    """Delete a saved creative."""
+async def delete_creative(user: Optional[Dict[str, Any]], cid: str) -> bool:
+    """Delete a saved creative (owner only)."""
+    if not await _user_owns_creative(user, cid):
+        return False
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM saved_creatives WHERE id = ?", (cid,))

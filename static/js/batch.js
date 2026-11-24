@@ -77,13 +77,14 @@
     });
     drop.addEventListener("dragleave", (e) => {
       refDragCount--;
-      if (refDragCount <= 0 || !e.relatedTarget || !drop.contains(e.relatedTarget)) {
+      if (refDragCount <= 0 || (e.relatedTarget && !drop.contains(e.relatedTarget))) {
         refDragCount = 0;
         drop.classList.remove("dragover");
       }
     });
     drop.addEventListener("drop", (e) => {
       e.preventDefault();
+      e.stopPropagation();
       refDragCount = 0;
       drop.classList.remove("dragover");
       const files = Array.from(e.dataTransfer?.files || []).filter((f) => f.type.startsWith("image/"));
@@ -178,13 +179,14 @@
     });
     drop.addEventListener("dragleave", (e) => {
       refDragCount--;
-      if (refDragCount <= 0 || !e.relatedTarget || !drop.contains(e.relatedTarget)) {
+      if (refDragCount <= 0 || (e.relatedTarget && !drop.contains(e.relatedTarget))) {
         refDragCount = 0;
         drop.classList.remove("dragover");
       }
     });
     drop.addEventListener("drop", (e) => {
       e.preventDefault();
+      e.stopPropagation();
       refDragCount = 0;
       drop.classList.remove("dragover");
       if (e.dataTransfer?.files?.length) {

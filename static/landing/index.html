@@ -10,8 +10,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:wght@300&family=Stack+Sans+Text:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="stylesheet" href="/static/css/system.css?v=2.1.0">
-  <link rel="stylesheet" href="/static/css/site.css?v=3.0.0">
+  <link rel="stylesheet" href="/static/css/system.css?v=3.0.0">
+  <link rel="stylesheet" href="/static/css/site.css?v=4.0.0">
   <script>document.documentElement.classList.add("js");</script>
 </head>
 <body class="site">
@@ -36,6 +36,7 @@
   <main>
     <!-- ============================================================ hero: the claim, the field, the ads -->
     <section class="hero" aria-labelledby="hero_h">
+      <div class="spectrum" data-spectrum="valley" aria-hidden="true"></div>
       <div class="wrap hero-copy">
         <h1 id="hero_h" class="t-hero">One brand link in.<br>A whole campaign out.</h1>
         <p class="lead">Ad Studio reads your site, studies your competitors' live Meta ads and renders 25 image ads and 25 video ads.</p>
@@ -87,6 +88,7 @@
       </div>
       <div class="board">
         <div class="stages-row" id="stages_row">
+          <div class="spectrum" data-spectrum="band" aria-hidden="true"></div>
           <div class="stage-panel is-open">
             <button type="button" class="stage-toggle" aria-expanded="true" aria-controls="stage_1"><span class="stage-sliver">Read the brand</span></button>
             <div class="stage-open" id="stage_1">
@@ -121,10 +123,13 @@
     </section>
 
     <!-- ============================================================ one statement -->
-    <section class="wrap statement-screen" aria-labelledby="st_h">
+    <section class="statement-band" aria-labelledby="st_h">
+      <div class="spectrum" data-spectrum="horizon" aria-hidden="true"></div>
+      <div class="wrap statement-screen">
       <div class="statement-frames rv" aria-hidden="true"><i class="p"></i><i class="v"></i><i class="p on"></i><i class="v"></i><i class="p"></i></div>
       <h2 id="st_h" class="t-hero rv">Fifty ads.<br>One link.</h2>
       <p class="rv">Your brand, your competitors' best ads and the angles between them, turned into a full set for Meta and TikTok.</p>
+      </div>
     </section>
 
     <!-- ============================================================ three things -->
@@ -134,7 +139,7 @@
         <p class="rv">The studio keeps the choices few and the cost in plain sight.</p>
       </div>
       <div class="board three">
-        <article class="rv"><div class="tile tile-red cu"><div class="cu-ui" data-ui style="font-size:28px"><span class="ui-gen">Generate <small>360 credits</small></span></div></div><h3>The price is on the button</h3><p>Every render shows its credit cost before you press it.</p></article>
+        <article class="rv"><div class="tile tile-accent cu"><div class="cu-ui" data-ui style="font-size:28px"><span class="ui-gen">Generate <small>360 credits</small></span></div></div><h3>The price is on the button</h3><p>Every render shows its credit cost before you press it.</p></article>
         <article class="rv"><div class="tile cu"><div class="cu-ui" data-ui style="font-size:24px"><span class="ui-seg"><span>1:1</span><span class="on">4:5</span><span>9:16</span><span>16:9</span></span></div></div><h3>Every feed size</h3><p>Feed, Reels, Stories, square and widescreen, up to 4K.</p></article>
         <article class="rv"><div class="tile cu"><div class="cu-ui" data-ui style="font-size:32px"><span class="ui-dots" aria-hidden="true"><i style="--d:5"></i><i style="--d:4"></i><i style="--d:3"></i><i style="--d:3"></i><i style="--d:4"></i><i style="--d:5"></i><i style="--d:4"></i><i style="--d:2"></i><i style="--d:1"></i><i style="--d:1"></i><i style="--d:2"></i><i style="--d:4"></i><i style="--d:3"></i><i style="--d:1"></i><i style="--d:0"></i><i style="--d:0"></i><i style="--d:1"></i><i style="--d:3"></i><i style="--d:4"></i><i style="--d:2"></i><i style="--d:1"></i><i style="--d:1"></i><i style="--d:2"></i><i style="--d:4"></i></span></div></div><h3>Watch each ad render</h3><p>Every ad builds in its own frame while you keep working.</p></article>
       </div>
@@ -149,7 +154,7 @@
       <div class="board plan-tiles">
         <div class="tile plan-tile rv"><h3>Free</h3><p class="plan-price">$0, to start</p><p>300 credits once. About 12 image ads at 2K.</p><button type="button" class="btn" data-auth-modal="signup">Start free</button></div>
         <div class="tile plan-tile rv"><h3>Starter</h3><p class="plan-price">$19 a month</p><p>2,000 credits. Images up to 4K, video at 1080p.</p><a class="btn" href="/upgrade/checkout?plan=starter">Get Starter</a></div>
-        <div class="tile tile-red plan-tile rv"><h3>Pro</h3><p class="plan-price">$49 a month</p><p>6,000 credits. The campaign builder and 4K video.</p><a class="btn btn-primary" href="/upgrade/checkout?plan=pro">Get Pro</a></div>
+        <div class="tile tile-accent plan-tile rv"><h3>Pro</h3><p class="plan-price">$49 a month</p><p>6,000 credits. The campaign builder and 4K video.</p><a class="btn btn-primary" href="/upgrade/checkout?plan=pro">Get Pro</a></div>
         <div class="tile plan-tile rv"><h3>Studio</h3><p class="plan-price">$149 a month</p><p>20,000 credits. Everything in Pro.</p><a class="btn" href="/upgrade/checkout?plan=studio">Get Studio</a></div>
         <p class="plans-note">Yearly billing takes 20% off. Every rate is on the <a href="/pricing">pricing page</a>.</p>
       </div>
@@ -176,6 +181,7 @@
     <!-- ============================================================ the close -->
     <section class="wrap" aria-labelledby="cta_h">
       <div class="close rv">
+        <div class="spectrum" data-spectrum="valley" aria-hidden="true"></div>
         <h2 id="cta_h" class="t-head">Paste your brand link</h2>
         <p>It waits for you in the studio. The image and video studios are free to try.</p>
         <form class="link-form js-link-form" action="/app" novalidate>
@@ -190,7 +196,7 @@
 
   <footer class="site-foot">
     <div class="foot-mark" aria-hidden="true">
-      <svg viewBox="1.5 1.5 21 21"><path fill="#efefef" fill-rule="evenodd" d="M3.75 1.5h6.75a2.25 2.25 0 0 1 2.25 2.25v16.5a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 20.25V3.75A2.25 2.25 0 0 1 3.75 1.5ZM5.4 8.7v6.6l5.2-3.3Z"/><rect x="14.5" y="12.5" width="8" height="10" rx="2" fill="#b11226"/></svg>
+      <svg viewBox="1.5 1.5 21 21"><path fill="#eef0fb" fill-rule="evenodd" d="M3.75 1.5h6.75a2.25 2.25 0 0 1 2.25 2.25v16.5a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 20.25V3.75A2.25 2.25 0 0 1 3.75 1.5ZM5.4 8.7v6.6l5.2-3.3Z"/><rect x="14.5" y="12.5" width="8" height="10" rx="2" fill="#1453fa"/></svg>
       <p class="t-display">Ad Studio</p>
     </div>
     <div class="foot-grid">
@@ -203,6 +209,7 @@
   </footer>
 
   <dialog id="auth_dialog" class="auth-dialog" aria-labelledby="auth_title">
+    <div class="spectrum" data-spectrum="corner" data-flip="xy" data-cell="14" aria-hidden="true"></div>
     <div class="auth-dialog-body">
       <button type="button" class="auth-close-btn" id="auth_close" aria-label="Close">&times;</button>
       <div class="auth-header">
@@ -232,6 +239,7 @@
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/static/js/auth.js?v=2.1.0"></script>
+  <script src="/static/js/spectrum.js?v=1.0.0"></script>
   <script src="/static/js/site.js?v=2.0.0"></script>
   <script src="/static/landing/landing.js?v=2.0.0"></script>
 </body>

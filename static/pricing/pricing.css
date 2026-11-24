@@ -47,7 +47,7 @@
 .buys { grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: end; }
 .buy { position: relative; margin: 0; aspect-ratio: 4 / 5; }
 .buy.buy-tall { aspect-ratio: 9 / 16; }
-.buy figcaption { position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 8px 12px; border-radius: 6px; background: rgba(10, 10, 10, 0.86); font-size: var(--step-small); }
+.buy figcaption { position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 8px 12px; border-radius: 6px; background: rgba(4, 1, 8, 0.86); font-size: var(--step-small); }
 .buy figcaption b { font-weight: 500; }
 
 /* the finder */

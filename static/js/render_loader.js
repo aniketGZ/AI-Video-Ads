@@ -1,10 +1,23 @@
-// Render loader: a dot matrix in the ad's aspect ratio with a ripple that loops outwards from the centre.
-// The ripple is pure CSS (each dot's delay is its distance from the centre), so it stays smooth while the
-// page is busy. When the output lands, revealRendered() grows the same dots into the real image or video,
-// centre first, until they merge into the full picture.
+// Render loader: a pixel matrix in the ad's aspect ratio, coloured by the spectrum, with a ripple that loops
+// outwards from the centre. The ripple is pure CSS (each pixel's delay is its distance from the centre), so it
+// stays smooth while the page is busy. When the output lands, revealRendered() turns the same pixels into a
+// mosaic of the real image or video, centre first, and then sharpens each tile into the full picture.
 (function () {
   const reduceMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const easeOut = (k) => 1 - Math.pow(1 - k, 3);
+
+  // The spectrum left to right, a touch of the next hue further down, so the matrix reads as one gradient
+  const STOPS = [[0, [20, 83, 250]], [0.3, [27, 174, 254]], [0.52, [190, 198, 250]], [0.78, [245, 84, 74]], [1, [253, 176, 134]]];
+  function spectrumAt(k) {
+    const x = Math.min(1, Math.max(0, k));
+    let i = 1;
+    while (i < STOPS.length - 1 && x > STOPS[i][0]) i++;
+    const [p0, c0] = STOPS[i - 1];
+    const [p1, c1] = STOPS[i];
+    const f = (x - p0) / (p1 - p0);
+    return `rgb(${c0.map((v, n) => Math.round(v + (c1[n] - v) * f)).join(",")})`;
+  }
+  const hueOf = (c, r, cols, rows) => spectrumAt((c / Math.max(1, cols - 1)) * 0.8 + (r / Math.max(1, rows - 1)) * 0.2);
 
   // Columns per orientation; rows follow the ratio so the dots stay on a square pitch
   function grid(w, h, portraitCols, landscapeCols) {
@@ -30,7 +43,7 @@
     const far = Math.hypot(cx, cy);
     let dots = "";
     for (let r = 0; r < rows; r++) {
-      for (let c = 0; c < cols; c++) dots += `<i style="--d:${(Math.hypot(c - cx, r - cy) / far).toFixed(3)}"></i>`;
+      for (let c = 0; c < cols; c++) dots += `<i style="--d:${(Math.hypot(c - cx, r - cy) / far).toFixed(3)};--c:${hueOf(c, r, cols, rows)}"></i>`;
     }
     // The frame's height is capped, so its width follows the ratio
     const size = fill ? "" : `width: min(100%, ${Math.round((340 * w) / h)}px);`;
@@ -100,20 +113,29 @@
     const { cols, rows } = grid(vw, vh, 16, 22);
     const cw = vw / cols;
     const ch = vh / rows;
-    const startR = Math.max(1, Math.min(cw, ch) * 0.12); // the size of a resting loader dot
-    const fullR = Math.hypot(cw, ch) / 2 + 1; // big enough that neighbours merge with no gaps
+    const startR = Math.max(1, Math.min(cw, ch) * 0.1); // half the side of a resting loader pixel
     const cx = (cols - 1) / 2;
     const cy = (rows - 1) / 2;
     const far = Math.hypot(cx, cy) || 1;
     const SPREAD = 460; // centre-to-corner delay
-    const GROW = 560;
+    const TILE = 240;   // a pixel closes into a solid mosaic tile
+    const HOLD = 160;   // the mosaic stands
+    const GROW = 420;   // the tile opens into the real picture
     const cells = [];
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        cells.push({ x: vx + (c + 0.5) * cw, y: vy + (r + 0.5) * ch, delay: (Math.hypot(c - cx, r - cy) / far) * SPREAD });
+        cells.push({ x: vx + (c + 0.5) * cw, y: vy + (r + 0.5) * ch, delay: (Math.hypot(c - cx, r - cy) / far) * SPREAD, hue: hueOf(c, r, cols, rows) });
       }
     }
-    const end = SPREAD + GROW;
+    const end = SPREAD + TILE + HOLD + GROW;
+    // the picture at one pixel per cell, stretched back up without smoothing: the mosaic
+    const tiny = document.createElement("canvas");
+    tiny.width = cols;
+    tiny.height = rows;
+    const tctx = tiny.getContext("2d");
+    tctx.imageSmoothingQuality = "high";
+    tctx.drawImage(el, (vx - dx) * (nw / dw), (vy - dy) * (nh / dh), vw * (nw / dw), vh * (nh / dh), 0, 0, cols, rows);
+    const square = (cell, kx, ky) => ctx.rect(cell.x - kx, cell.y - ky, kx * 2, ky * 2);
     const start = performance.now();
 
     function frame(now) {
@@ -127,27 +149,35 @@
       ctx.fillStyle = "#000";
       ctx.fillRect(vx, vy, vw, vh);
 
-      // dots still waiting for the wave stay small and grey, like the loader they replace
-      ctx.fillStyle = "rgba(255, 255, 255, 0.28)";
-      ctx.beginPath();
+      // pixels still waiting for the wave keep the loader's colours
       for (const cell of cells) {
-        if (t >= cell.delay) continue;
-        ctx.moveTo(cell.x + startR, cell.y);
-        ctx.arc(cell.x, cell.y, startR, 0, Math.PI * 2);
+        if (t >= cell.delay + TILE) continue;
+        ctx.fillStyle = cell.hue;
+        ctx.globalAlpha = t < cell.delay ? 0.4 : 1;
+        ctx.fillRect(cell.x - startR, cell.y - startR, startR * 2, startR * 2);
       }
-      ctx.fill();
+      ctx.globalAlpha = 1;
 
-      // dots the wave has reached grow into windows onto the real picture
-      ctx.save();
-      ctx.beginPath();
-      for (const cell of cells) {
-        if (t < cell.delay) continue;
-        const k = easeOut(Math.min(1, (t - cell.delay) / GROW));
-        const radius = startR + (fullR - startR) * k;
-        ctx.moveTo(cell.x + radius, cell.y);
-        ctx.arc(cell.x, cell.y, radius, 0, Math.PI * 2);
-      }
-      ctx.clip();
+      // pixels the wave has reached close into flat tiles of the picture
+      const open = (from, dur) => {
+        ctx.save();
+        ctx.beginPath();
+        for (const cell of cells) {
+          const at = t - cell.delay - from;
+          if (at < 0) continue;
+          const k = easeOut(Math.min(1, at / dur));
+          square(cell, (startR + (cw / 2 + 0.5 - startR) * k), (startR + (ch / 2 + 0.5 - startR) * k));
+        }
+        ctx.clip();
+      };
+      open(0, TILE);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(tiny, vx, vy, vw, vh);
+      ctx.restore();
+
+      // then each tile opens into the real picture
+      open(TILE + HOLD, GROW);
+      ctx.imageSmoothingEnabled = true;
       ctx.drawImage(el, dx, dy, dw, dh);
       ctx.restore();
 

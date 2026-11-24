@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
-  <!-- Ad Studio mark: the two frames it renders. A 9:16 video frame with a play cut-out, and a 4:5 image frame in record red. -->
-  <path fill="#efefef" fill-rule="evenodd" d="M3.75 1.5h6.75a2.25 2.25 0 0 1 2.25 2.25v16.5a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 20.25V3.75A2.25 2.25 0 0 1 3.75 1.5ZM5.4 8.7v6.6l5.2-3.3Z"/>
-  <rect x="14.5" y="12.5" width="8" height="10" rx="2" fill="#b11226"/>
+  <!-- Ad Studio mark: the two frames it renders. A 9:16 video frame with a play cut-out, and a 4:5 image frame in electric blue. -->
+  <path fill="#eef0fb" fill-rule="evenodd" d="M3.75 1.5h6.75a2.25 2.25 0 0 1 2.25 2.25v16.5a2.25 2.25 0 0 1-2.25 2.25H3.75A2.25 2.25 0 0 1 1.5 20.25V3.75A2.25 2.25 0 0 1 3.75 1.5ZM5.4 8.7v6.6l5.2-3.3Z"/>
+  <rect x="14.5" y="12.5" width="8" height="10" rx="2" fill="#1453fa"/>
 </svg>

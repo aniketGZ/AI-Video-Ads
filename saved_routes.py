@@ -134,14 +134,14 @@ async def move_creative_folder(
 @router.post("/api/saved/favorite")
 async def set_favorite(payload: FavoritePayload, user: Optional[Dict[str, Any]] = Depends(current_user)):
     """Toggle favorite on a saved creative."""
-    success = await database.toggle_favorite(payload.id, payload.is_favorite)
+    success = await database.toggle_favorite(user, payload.id, payload.is_favorite)
     return {"status": "ok" if success else "error"}
 
 
 @router.delete("/api/saved/{cid}")
 async def remove_saved_item(cid: str, user: Optional[Dict[str, Any]] = Depends(current_user)):
     """Delete a saved creative from the user's collection."""
-    success = await database.delete_creative(cid)
+    success = await database.delete_creative(user, cid)
     return {"status": "ok" if success else "error"}
 
 

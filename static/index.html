@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Stack+Sans+Headline:wght@300&family=Stack+Sans+Text:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <link rel="stylesheet" href="/static/css/system.css?v=2.1.0">
-  <link rel="stylesheet" href="/static/css/style.css?v=7.1.0">
+  <link rel="stylesheet" href="/static/css/system.css?v=3.0.0">
+  <link rel="stylesheet" href="/static/css/style.css?v=8.0.0">
 </head>
 <body class="app">
 
@@ -203,6 +203,7 @@
   <!-- Campaign: one guided page                                          -->
   <!-- ================================================================== -->
   <main class="page" id="view_campaign" data-view-panel="campaign">
+    <div class="spectrum" data-spectrum="corner" data-flip="xy" aria-hidden="true"></div>
     <div class="page-head">
       <div>
         <h1>Campaign</h1>
@@ -344,7 +345,7 @@
             </div>
             <div class="toolbar-group" id="image_tools">
               <button type="button" class="btn btn-sm btn-ghost preset-toolbar-pill" id="btn_active_preset" title="Active Creative Reference Preset">
-                <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent);"></i>
+                <i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-bright);"></i>
                 <span id="active_preset_name">Diverse Creative Mix</span>
               </button>
               <div class="segmented" id="aspect_group" aria-label="Image size">
@@ -376,6 +377,7 @@
   <!-- Image studio: the gallery is the canvas, the composer floats on it -->
   <!-- ================================================================== -->
   <main class="page page-studio" id="view_image" data-view-panel="image" hidden>
+    <div class="spectrum" data-spectrum="horizon" aria-hidden="true"></div>
     <div class="studio-head"><h1>Image studio</h1><p>Image ads from a prompt and your product photos, 1K to 4K. Newest first.</p></div>
     <section class="canvas" aria-label="Image results">
       <div class="stage-current" id="img_result"><div class="media-empty"><i class="fa-regular fa-image"></i><span>Your image appears here</span></div></div>
@@ -500,6 +502,7 @@
   <!-- Video studio: same canvas and composer                             -->
   <!-- ================================================================== -->
   <main class="page page-studio" id="view_video" data-view-panel="video" hidden>
+    <div class="spectrum" data-spectrum="horizon" aria-hidden="true"></div>
     <div class="studio-head"><h1>Video studio</h1><p>Video ads from 4 to 15 seconds, at 9:16, 16:9 or 1:1. Newest first.</p></div>
     <section class="canvas" aria-label="Video results">
       <div class="stage-current" id="vid_result"><div class="media-empty"><i class="fa-solid fa-film"></i><span>Your video appears here</span></div></div>
@@ -748,7 +751,7 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
       <aside class="library-sidebar">
         <div class="library-sidebar-head">
           <div class="library-sidebar-title">
-            <i class="fa-solid fa-shapes" style="color: var(--accent);"></i>
+            <i class="fa-solid fa-shapes" style="color: var(--accent-bright);"></i>
             <span>Library &amp; Presets</span>
           </div>
           <button type="button" class="btn btn-xs btn-primary" id="btn_new_project_modal" title="Create new project folder">
@@ -759,7 +762,7 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
         <!-- Primary Mode Toggles: Explore Templates vs My Generations -->
         <div class="library-nav-filters" style="margin-bottom: 12px;">
           <button type="button" class="lib-filter-btn active" id="lib_nav_templates" data-section="templates">
-            <i class="fa-solid fa-compass" style="color: var(--accent);"></i>
+            <i class="fa-solid fa-compass" style="color: var(--accent-bright);"></i>
             <span>Explore Templates</span>
             <span class="lib-badge" style="background: var(--accent); color: #fff;">1,540+</span>
           </button>
@@ -955,6 +958,7 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
 
   <!-- Supabase Authentication Dialog -->
   <dialog id="auth_dialog" class="auth-dialog" aria-labelledby="auth_title">
+    <div class="spectrum" data-spectrum="corner" data-flip="xy" data-cell="14" aria-hidden="true"></div>
     <div class="auth-dialog-body">
       <button type="button" class="auth-close-btn" id="auth_close" aria-label="Close"><i class="fa-solid fa-xmark"></i></button>
       <div class="auth-header">
@@ -1449,7 +1453,7 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
 
               <!-- Gemini Synthesized Prompt Details -->
               <details class="rec-prompt-details" id="rec_result_prompt_wrap" style="margin-top: 4px;">
-                <summary class="muted small" style="cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent);"></i> <span>Gemini synthesized prompt</span></summary>
+                <summary class="muted small" style="cursor: pointer; user-select: none; display: inline-flex; align-items: center; gap: 6px;"><i class="fa-solid fa-wand-magic-sparkles" style="color: var(--accent-bright);"></i> <span>Gemini synthesized prompt</span></summary>
                 <p id="rec_result_prompt" class="small muted" style="margin: 8px 0 0; padding: 10px; background: var(--bg); border: 1px solid var(--rule); border-radius: var(--r); font-family: monospace; font-size: 11px; line-height: 1.5; white-space: pre-wrap; word-break: break-word;"></p>
               </details>
             </div>
@@ -1683,14 +1687,15 @@ Morning mist, soft side light, the brand mark top left. 9:16</code></pre>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="/static/js/auth.js?v=2.1.0"></script>
-  <script src="/static/js/core.js?v=4.1.0"></script>
-  <script src="/static/js/render_loader.js?v=3.1.0"></script>
+  <script src="/static/js/spectrum.js?v=1.0.0"></script>
+  <script src="/static/js/core.js?v=4.1.1"></script>
+  <script src="/static/js/render_loader.js?v=4.0.0"></script>
   <script src="/static/js/campaign.js?v=3.4.0"></script>
-  <script src="/static/js/studios.js?v=3.6.0"></script>
-  <script src="/static/js/viewer.js?v=1.0.0"></script>
-  <script src="/static/js/saved_creatives.js?v=1.2.0"></script>
+  <script src="/static/js/studios.js?v=3.6.1"></script>
+  <script src="/static/js/viewer.js?v=1.0.1"></script>
+  <script src="/static/js/saved_creatives.js?v=1.2.1"></script>
   <script src="/static/js/editor.js?v=1.0.0"></script>
-  <script src="/static/js/composer.js?v=1.2.0"></script>
+  <script src="/static/js/composer.js?v=1.2.1"></script>
   <script src="/static/js/batch.js?v=1.3.0"></script>
   <script src="/static/js/navmenu.js?v=1.1.0"></script>
 </body>

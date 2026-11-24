@@ -1,11 +1,12 @@
 /* ==========================================================================
    Ad Studio — the studio app
    Built on system.css (tokens, buttons, fields, the bar, dialogs, account).
-   True black and flat: surfaces are lightness steps (#0a0a0a page, #141414
-   card, #1d1d1d nested, #272727 control), no shadows at rest, no glass.
-   Record red is data and liveness only: a meter's fill, the stage being
-   worked on, a render's peak, a selected preset. The primary control is
-   paper on black. Every result sits in its true frame: 4:5, 9:16, 1:1.
+   Near-black and flat: surfaces are the lightness steps in system.css, no
+   shadows at rest, no glass. The spectrum lights the campaign page's head and
+   the floor of the empty studios, and it is data and liveness: a meter's fill,
+   the stage being worked on, a render in progress, a selected preset. The
+   primary control is electric blue with the mosaic. Every result sits in its
+   true frame: 4:5, 9:16, 1:1.
    ========================================================================== */
 
 body.app { --gap: 12px; font-size: 14px; line-height: 1.55; }
@@ -33,7 +34,7 @@ body.app { --gap: 12px; font-size: 14px; line-height: 1.55; }
   transition: color 150ms ease, background-color 150ms ease, transform 160ms var(--ease-out);
 }
 .nav-btn:hover { color: var(--ink); }
-.nav-btn.active { color: var(--ink); background: var(--raised); }
+.nav-btn.active { color: var(--ink); background: var(--accent-soft); }
 .nav-btn:active { transform: scale(0.97); }
 .nav-btn[data-menu][aria-expanded="true"] { color: var(--ink); }
 .nav-plan-tag {
@@ -66,15 +67,15 @@ body.app { --gap: 12px; font-size: 14px; line-height: 1.55; }
 .plan-pill { background: none; color: var(--ink-2); }
 .plan-pill:hover { background: var(--raised); color: var(--ink); }
 .plan-pill i { display: none; }
-.upgrade-pill { background: var(--paper); color: var(--paper-ink); font-family: inherit; }
-.upgrade-pill:hover { background: #fff; }
+.upgrade-pill { font-family: inherit; }
+.upgrade-pill:hover { background: var(--accent-hover); }
 .upgrade-pill i { font-size: 12px; }
 .plan-pill:active, .upgrade-pill:active { transform: scale(0.97); }
 
 /* the sliding selection core.js draws under the active tab or option */
 .seg-thumb { position: absolute; top: 0; left: 0; border-radius: var(--r-full); background: var(--raised-3); pointer-events: none; }
 .seg-thumb.is-live { transition: transform 380ms var(--ease-out), width 380ms var(--ease-out), height 380ms var(--ease-out); }
-.nav .seg-thumb { background: var(--raised); }
+.nav .seg-thumb { background: var(--accent-soft); box-shadow: inset 0 0 0 1px rgba(91, 147, 255, 0.35); }
 .nav.has-thumb > .nav-btn.active, .segmented.has-thumb > button.active { background: none; }
 
 /* hover menus under the tabs: they float, so they cast a shadow */
@@ -164,7 +165,7 @@ body.app { --gap: 12px; font-size: 14px; line-height: 1.55; }
 .frame img, .frame video { width: 100%; height: 100%; object-fit: cover; }
 .frame figcaption {
   position: absolute; left: 8px; bottom: 8px; padding: 2px 9px; border-radius: var(--r-full);
-  background: rgba(10, 10, 10, 0.82); color: var(--ink); font-size: 12px; line-height: 20px;
+  background: rgba(4, 1, 8, 0.82); color: var(--ink); font-size: 12px; line-height: 20px;
 }
 .showcase-note { margin: 12px 0 0; color: var(--ink-2); font-size: 14px; }
 .showcase-note a { color: var(--ink); text-underline-offset: 3px; }
@@ -229,7 +230,7 @@ input[type="file"].input::file-selector-button {
 }
 .badge .spinner { width: 12px; height: 12px; border-width: 2px; }
 .badge.running, .badge-accent { background: var(--raised-2); color: var(--ink); }
-.badge.running::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); animation: live 1.4s ease-in-out infinite; }
+.badge.running::before { content: ""; width: 7px; height: 7px; border-radius: 2px; background: var(--sp-cyan); animation: live 1.4s ease-in-out infinite; }
 .badge.done { background: var(--success-soft); color: var(--ink); }
 .badge.error { background: var(--danger-soft); color: var(--danger); }
 .badge-warning { background: var(--warning-soft); color: var(--warning); }
@@ -238,7 +239,7 @@ input[type="file"].input::file-selector-button {
 
 .spinner {
   display: inline-block; flex: none; width: 16px; height: 16px; border-radius: 50%;
-  border: 2px solid rgba(239, 239, 239, 0.18); border-top-color: var(--ink);
+  border: 2px solid rgba(238, 240, 251, 0.18); border-top-color: var(--ink);
   animation: spin 0.8s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -249,7 +250,7 @@ input[type="file"].input::file-selector-button {
   border: 1px dashed var(--raised-3); border-radius: var(--r); background: var(--bg); cursor: pointer;
   transition: border-color 150ms ease, background-color 150ms ease, transform 160ms var(--ease-out);
 }
-.dropzone:hover { border-color: #555; }
+.dropzone:hover { border-color: #55536a; }
 .dropzone.dragover { border-style: solid; border-color: var(--ink); background: var(--raised); }
 .dropzone:not(.pill):active:not(:has(.thumb:active)) { transform: scale(0.995); }
 .dropzone-cta { display: flex; align-items: center; gap: 12px; color: var(--ink-2); font-size: 14px; }
@@ -262,7 +263,7 @@ input[type="file"].input::file-selector-button {
 .thumb img { width: 100%; height: 100%; object-fit: cover; }
 .thumb button {
   position: absolute; top: 4px; right: 4px; display: grid; place-items: center; width: 20px; height: 20px;
-  border: 0; border-radius: 50%; background: rgba(10, 10, 10, 0.82); color: var(--ink); font-size: 11px; cursor: pointer;
+  border: 0; border-radius: 50%; background: rgba(4, 1, 8, 0.82); color: var(--ink); font-size: 11px; cursor: pointer;
 }
 .thumb button::after { content: ""; position: absolute; inset: -8px; }
 .thumb.is-new { transition: opacity 200ms ease, transform 320ms var(--ease-out); }
@@ -279,7 +280,7 @@ input[type="file"].input::file-selector-button {
   flex: none; display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%;
   background: var(--raised-2); color: var(--ink-3); font-size: 14px; font-weight: 500;
 }
-.step[data-state="active"] .step-num { background: var(--paper); color: var(--paper-ink); }
+.step[data-state="active"] .step-num { background: var(--accent); color: var(--accent-ink); }
 .step[data-state="done"] .step-num { background: var(--raised-3); color: var(--ink); font-size: 0; }
 .step[data-state="done"] .step-num::before { content: "\f00c"; font-family: "Font Awesome 6 Free"; font-weight: 900; font-size: 13px; }
 .step-title { flex: 1; min-width: 0; }
@@ -325,17 +326,17 @@ input[type="file"].input::file-selector-button {
 .progress-card { display: flex; flex-direction: column; gap: 18px; padding: 20px; border-radius: var(--r); background: var(--raised); }
 .meter-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
 .meter-label { color: var(--ink-2); font-size: 13px; }
-.meter-value { font-family: var(--font-display); font-weight: 300; font-size: 32px; line-height: 1; letter-spacing: -0.02em; }
+.meter-value { color: var(--accent-bright); font-family: var(--font-display); font-weight: 300; font-size: 32px; line-height: 1; letter-spacing: -0.02em; }
 .meter-value small { font-family: var(--font); font-size: 13px; color: var(--ink-3); letter-spacing: 0; }
 .meter { height: 6px; overflow: hidden; border-radius: var(--r-full); background: var(--raised-3); }
-.meter > div { height: 100%; border-radius: inherit; background: var(--accent); transition: width 0.4s ease; }
+.meter > div { height: 100%; border-radius: inherit; transition: width 0.4s ease; }
 .stages { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin: 0; padding: 0; list-style: none; }
 .stage { display: flex; flex-direction: column; gap: 8px; color: var(--ink-3); font-size: 12px; }
 .stage::before { content: ""; height: 3px; border-radius: 2px; background: var(--raised-3); }
 .stage.done { color: var(--ink-2); }
 .stage.done::before { background: var(--ink-2); }
 .stage.active { color: var(--ink); font-weight: 500; }
-.stage.active::before { background: var(--accent); animation: live 1.4s ease-in-out infinite; }
+.stage.active::before { background: var(--spectrum-loop) 0 0 / 300px 100%; }
 .log-line { overflow: hidden; color: var(--ink-3); font-size: 13px; white-space: nowrap; text-overflow: ellipsis; }
 
 .intel { display: flex; flex-direction: column; gap: var(--gap); }
@@ -372,7 +373,7 @@ input[type="file"].input::file-selector-button {
 .chip-avoid { background: none; box-shadow: inset 0 0 0 1px var(--raised-3); color: var(--ink-3); text-decoration: line-through; }
 .quote { margin: 2px 0 0; padding-left: 10px; border-left: 2px solid var(--raised-3); color: var(--ink-2); font-style: italic; }
 
-/* presets: the one chosen is marked in record red */
+/* presets: the one chosen is marked in electric blue */
 .preset-intel-card {
   grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; gap: 20px;
   margin-bottom: 8px; padding: 18px 20px; border-radius: var(--r); background: var(--raised); box-shadow: inset 3px 0 0 var(--accent);
@@ -385,14 +386,14 @@ input[type="file"].input::file-selector-button {
 .preset-intel-ref-thumb { width: 44px; height: 55px; border-radius: 4px; object-fit: cover; }
 .preset-chip { align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 0 9px; border-radius: var(--r-full); background: var(--accent-soft); color: var(--ink); font-size: 12px; line-height: 22px; }
 .preset-toolbar-pill { height: 32px; padding: 0 13px; background: var(--raised-2); }
-.preset-toolbar-pill i { color: var(--accent) !important; }
+.preset-toolbar-pill i { color: var(--accent-bright) !important; }
 
 /* ==========================================================================
    Ads: every card is its frame, then its words, then what you can do
    ========================================================================== */
 .ads-sticky {
   position: sticky; top: calc(var(--bar) + 8px); z-index: 5; margin: 0 -10px 16px; padding: 8px 10px;
-  border-radius: var(--r); background: rgba(20, 20, 20, 0.96);
+  border-radius: var(--r); background: rgba(14, 12, 22, 0.96);
 }
 .ads-sticky .toolbar { margin-bottom: 0; }
 .ads-sticky .status-line { margin: 8px 2px 0; font-size: 13px; }
@@ -444,9 +445,9 @@ input[type="file"].input::file-selector-button {
 .vcard-res { display: inline-block; padding: 0 7px; border-radius: var(--r-full); background: var(--raised-3); color: var(--ink); font-size: 11px; font-weight: 500; line-height: 18px; }
 
 /* ==========================================================================
-   The render loader: a dot matrix in the ad's own frame. A ripple runs out
-   from the centre with a record-red peak; render_loader.js then grows the
-   same dots into the finished image.
+   The render loader: a pixel matrix in the ad's own frame, coloured by the
+   spectrum. A ripple runs out from the centre and its crest closes into solid
+   mosaic; render_loader.js then turns the same pixels into the finished image.
    ========================================================================== */
 .render-loader { display: flex; flex-direction: column; align-items: center; gap: 14px; width: 100%; padding: 24px 16px; animation: rl-in 240ms var(--ease-out); }
 .rl-frame { position: relative; width: 100%; max-width: 100%; overflow: hidden; border-radius: 6px; background: var(--bg); }
@@ -457,20 +458,20 @@ input[type="file"].input::file-selector-button {
 .render-loader.is-fill .rl-frame { position: absolute; inset: 0; border-radius: 0; }
 .render-loader.is-fill .rl-meta {
   position: absolute; left: 12px; right: 12px; bottom: 12px; width: max-content; max-width: calc(100% - 24px); margin: 0 auto;
-  padding: 4px 12px; border-radius: var(--r-full); background: rgba(10, 10, 10, 0.86); font-size: 12px;
+  padding: 4px 12px; border-radius: var(--r-full); background: rgba(4, 1, 8, 0.86); font-size: 12px;
 }
 .result-tile .render-loader { padding: 0; }
 .rl-dots { position: absolute; inset: 5%; display: grid; }
 .rl-dots i {
-  align-self: center; justify-self: center; width: 24%; min-width: 2px; aspect-ratio: 1; border-radius: 50%;
-  background: var(--ink); opacity: 0.2; transform: scale(0.55);
+  align-self: center; justify-self: center; width: 34%; min-width: 2px; aspect-ratio: 1;
+  background: var(--c, var(--accent)); opacity: 0.3; transform: scale(0.55);
   animation: rl-ripple 2.4s cubic-bezier(0.37, 0, 0.63, 1) infinite;
   animation-delay: calc(var(--d) * 1.1s - 2.4s);
 }
 @keyframes rl-ripple {
-  0%, 50%, 100% { opacity: 0.2; transform: scale(0.55); background: var(--ink); }
-  14% { opacity: 1; transform: scale(1.15); background: var(--accent); }
-  28% { opacity: 0.5; transform: scale(0.8); background: var(--ink); }
+  0%, 50%, 100% { opacity: 0.3; transform: scale(0.55); }
+  14% { opacity: 1; transform: scale(2.3); }
+  28% { opacity: 0.55; transform: scale(1); }
 }
 .rl-reveal { position: absolute; z-index: 2; pointer-events: none; }
 @keyframes rl-in { from { opacity: 0; transform: scale(0.97); } }
@@ -528,7 +529,7 @@ input[type="file"].input::file-selector-button {
 }
 .vid-hist-badge {
   position: absolute; right: 6px; bottom: 6px; padding: 0 6px; border-radius: 4px;
-  background: rgba(10, 10, 10, 0.86); color: var(--ink); font-size: 11px; font-weight: 500; line-height: 18px; pointer-events: none;
+  background: rgba(4, 1, 8, 0.86); color: var(--ink); font-size: 11px; font-weight: 500; line-height: 18px; pointer-events: none;
 }
 
 /* empty gallery: a title, one sentence, three starting points */
@@ -552,7 +553,7 @@ input[type="file"].input::file-selector-button {
   border: 1px solid var(--raised-3); border-radius: 14px; background: var(--raised);
   transform: translateX(-50%);
 }
-.composer:focus-within { border-color: #4a4a4a; }
+.composer:focus-within { border-color: var(--accent-bright); }
 .composer-main { position: relative; display: flex; flex: 1; flex-direction: column; gap: 8px; min-width: 0; }
 .composer-thumbs .thumb { width: 48px; height: 48px; }
 .prompt-list { display: grid; gap: 10px; }
@@ -582,7 +583,7 @@ input[type="file"].input::file-selector-button {
 .composer-main.drag-active::after {
   content: "Drop a picture or a prompt file"; position: absolute; inset: 0; z-index: 20;
   display: flex; align-items: center; justify-content: center; border-radius: var(--r);
-  background: rgba(10, 10, 10, 0.92); box-shadow: inset 0 0 0 1px var(--accent);
+  background: rgba(4, 1, 8, 0.92); box-shadow: inset 0 0 0 1px var(--accent);
   color: var(--ink); font-size: 14px; font-weight: 500; pointer-events: none;
 }
 .prompt-list.dragover, .textarea.dragover { border-color: var(--accent) !important; background: var(--accent-soft) !important; }
@@ -618,19 +619,19 @@ input[type="file"].input::file-selector-button {
 .segmented.seg-list button.active { background: var(--raised-3); color: var(--ink); }
 .segmented.seg-list button.active::after { content: ""; width: 8px; height: 8px; margin-left: auto; border-radius: 2px; background: var(--accent); }
 
-/* Generate: the primary control, paper on black; its cost sits on it */
+/* Generate: the primary control, blue with the mosaic (system.css); its cost sits on it */
 .btn-generate {
   position: relative; flex: none; align-self: stretch; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 6px; width: 168px; min-height: 64px; border: 0; border-radius: var(--r);
-  background: var(--paper); color: var(--paper-ink); font-size: 15px; font-weight: 500; cursor: pointer;
+  background: var(--accent); color: var(--accent-ink); font-size: 15px; font-weight: 500; cursor: pointer;
   transition: background-color 150ms ease, opacity 150ms ease, transform 160ms var(--ease-out);
 }
 .btn-generate i { font-size: 16px; }
-.btn-generate:hover:not(:disabled) { background: #fff; }
+.btn-generate:hover:not(:disabled) { background: var(--accent-hover); }
 .btn-generate:active:not(:disabled) { transform: scale(0.97); transition-duration: 150ms, 150ms, 80ms; }
 .btn-generate:disabled { opacity: 0.8; cursor: progress; }
-.btn-generate .spinner { width: 18px; height: 18px; border-color: rgba(10, 10, 10, 0.2); border-top-color: var(--paper-ink); }
-.btn-generate kbd { font: inherit; font-size: 11px; font-weight: 500; line-height: 1; opacity: 0.6; }
+.btn-generate .spinner { width: 18px; height: 18px; border-color: rgba(255, 255, 255, 0.3); border-top-color: #fff; }
+.btn-generate kbd { font: inherit; font-size: 11px; font-weight: 500; line-height: 1; opacity: 0.8; }
 
 /* ==========================================================================
    Batch studio: settings beside the queue
@@ -680,7 +681,7 @@ input[type="file"].input::file-selector-button {
 .batch-res-card.processing { box-shadow: inset 0 0 0 1px var(--accent); }
 .batch-res-thumb { position: relative; aspect-ratio: 1; overflow: hidden; background: #000; }
 .batch-res-thumb img { width: 100%; height: 100%; object-fit: cover; cursor: zoom-in; }
-.batch-res-tag { position: absolute; top: 8px; left: 8px; background: rgba(10, 10, 10, 0.86); }
+.batch-res-tag { position: absolute; top: 8px; left: 8px; background: rgba(4, 1, 8, 0.86); }
 .batch-res-placeholder { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; aspect-ratio: 1; background: var(--bg); color: var(--ink-3); font-size: 13px; }
 .batch-res-placeholder.error { color: var(--danger); }
 .batch-res-placeholder i { font-size: 18px; opacity: 0.8; }
@@ -725,16 +726,16 @@ input[type="file"].input::file-selector-button {
 .saved-card:hover .saved-card-media img, .saved-card:hover .saved-card-media video { transform: scale(1.02); }
 .saved-play-badge {
   position: absolute; top: 50%; left: 50%; display: flex; align-items: center; justify-content: center; width: 44px; height: 44px;
-  border-radius: 50%; background: rgba(10, 10, 10, 0.72); color: var(--ink); font-size: 14px; pointer-events: none;
+  border-radius: 50%; background: rgba(4, 1, 8, 0.72); color: var(--ink); font-size: 14px; pointer-events: none;
   transform: translate(-50%, -50%); transition: opacity 200ms ease, transform 200ms ease;
 }
 .saved-card:hover .saved-play-badge { opacity: 0.2; transform: translate(-50%, -50%) scale(0.9); }
 .saved-card-overlay-top { position: absolute; top: 10px; left: 10px; right: 10px; z-index: 2; display: flex; align-items: center; justify-content: space-between; }
-.saved-badge { padding: 0 8px; border-radius: var(--r-full); background: rgba(10, 10, 10, 0.86); color: var(--ink); font-size: 11px; font-weight: 500; line-height: 22px; }
+.saved-badge { padding: 0 8px; border-radius: var(--r-full); background: rgba(4, 1, 8, 0.86); color: var(--ink); font-size: 11px; font-weight: 500; line-height: 22px; }
 .saved-badge.badge-video::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: var(--accent); vertical-align: 1px; }
 .saved-fav-btn {
   display: flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: 0; border-radius: 50%;
-  background: rgba(10, 10, 10, 0.78); color: var(--ink-2); font-size: 13px; cursor: pointer;
+  background: rgba(4, 1, 8, 0.78); color: var(--ink-2); font-size: 13px; cursor: pointer;
   transition: color 150ms ease, transform 160ms var(--ease-out);
 }
 .saved-fav-btn:hover { color: var(--ink); transform: scale(1.06); }
@@ -801,7 +802,7 @@ input[type="file"].input::file-selector-button {
 .upgrade-body h2 { margin: 0; padding-right: 32px; font-family: var(--font-display); font-weight: 300; font-size: 36px; line-height: 1.05; letter-spacing: -0.022em; }
 .upgrade-lede { margin: 0; color: var(--ink-2); font-size: 15px; }
 .upgrade-gets { display: grid; gap: 8px; margin: 4px 0; padding: 0; list-style: none; font-size: 14px; }
-.upgrade-gets i { margin-right: 10px; color: var(--accent); font-size: 12px; }
+.upgrade-gets i { margin-right: 10px; color: var(--accent-bright); font-size: 12px; }
 .upgrade-plans { display: grid; grid-template-columns: 1fr 1fr; gap: var(--gap); margin-top: 4px; }
 .upgrade-plan {
   position: relative; display: grid; gap: 2px; padding: 14px; border-radius: var(--r); background: var(--raised); cursor: pointer;
@@ -852,7 +853,7 @@ input[type="file"].input::file-selector-button {
 .preset-ref-item { position: relative; flex: 0 0 90px; height: 112px; overflow: hidden; border-radius: 6px; background: var(--bg); transition: transform 160ms var(--ease-out); }
 @media (hover: hover) and (pointer: fine) { .preset-ref-item:hover { z-index: 2; transform: scale(1.04); } }
 .preset-ref-item img { width: 100%; height: 100%; object-fit: cover; }
-.preset-ref-item .pin-overlay { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 6px; background: rgba(10, 10, 10, 0.5); opacity: 0; transition: opacity 150ms ease; }
+.preset-ref-item .pin-overlay { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 6px; background: rgba(4, 1, 8, 0.5); opacity: 0; transition: opacity 150ms ease; }
 .preset-ref-item:hover .pin-overlay { opacity: 1; }
 .preset-ref-item .pin-overlay i { color: var(--ink); font-size: 14px; }
 .preset-palette-chips { display: flex; align-items: center; gap: 6px; }
@@ -867,7 +868,7 @@ dialog.viewer {
   overflow: hidden; border: 0; border-radius: 0; background: none; box-shadow: none; opacity: 1; transform: none; transition: none;
 }
 dialog.viewer::backdrop { display: none; }
-.viewer-scrim { position: absolute; inset: 0; background: rgba(10, 10, 10, 0.94); opacity: 0; }
+.viewer-scrim { position: absolute; inset: 0; background: rgba(4, 1, 8, 0.94); opacity: 0; }
 .viewer-stage { position: absolute; inset: 0; }
 .viewer-media { position: absolute; max-width: none; object-fit: contain; background: #000; transform-origin: center; will-change: transform; touch-action: none; cursor: grab; user-select: none; -webkit-user-drag: none; }
 .viewer-media.is-dragging { cursor: grabbing; }
@@ -984,7 +985,7 @@ dialog.viewer::backdrop { display: none; }
   transition: transform 200ms var(--ease-out);
 }
 .example-frame img { width: 100%; height: 100%; object-fit: cover; transition: transform 400ms var(--ease-out); }
-.example-frame span { position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 8px 10px; border-radius: 6px; background: rgba(10, 10, 10, 0.86); font-size: 13px; font-weight: 500; line-height: 1.3; }
+.example-frame span { position: absolute; left: 8px; right: 8px; bottom: 8px; padding: 8px 10px; border-radius: 6px; background: rgba(4, 1, 8, 0.86); font-size: 13px; font-weight: 500; line-height: 1.3; }
 .example-frame:hover img { transform: scale(1.04); }
 .example-frame:active { transform: scale(0.98); }
 @media (max-width: 760px) { .example-frame { width: calc((100vw - 48px) / 3); } .example-frame span { font-size: 11px; padding: 6px; } }
@@ -1767,7 +1768,7 @@ dialog.viewer::backdrop { display: none; }
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--accent), #e05d38);
+  background: linear-gradient(135deg, #1453fa, #824bc2 60%, #f5544a);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2173,7 +2174,7 @@ dialog.viewer::backdrop { display: none; }
 .tpl-pill-badge {
   padding: 3px 9px;
   border-radius: var(--r-full);
-  background: rgba(10, 10, 10, 0.82);
+  background: rgba(4, 1, 8, 0.82);
   backdrop-filter: blur(8px);
   color: var(--ink);
   font-size: 11px;
@@ -2184,7 +2185,7 @@ dialog.viewer::backdrop { display: none; }
 .tpl-card-hover-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to top, rgba(10, 10, 10, 0.94) 0%, rgba(10, 10, 10, 0.3) 55%, transparent 100%);
+  background: linear-gradient(to top, rgba(4, 1, 8, 0.94) 0%, rgba(4, 1, 8, 0.3) 55%, transparent 100%);
   display: flex;
   flex-direction: column;
   justify-content: flex-end;
@@ -2252,7 +2253,7 @@ dialog.viewer::backdrop { display: none; }
   align-items: center;
   gap: 10px;
   width: min(580px, calc(100% - 32px));
-  background: rgba(20, 20, 20, 0.92);
+  background: rgba(14, 12, 22, 0.92);
   backdrop-filter: blur(20px);
   border: 1px solid var(--rule);
   border-radius: var(--r-full);
@@ -2358,7 +2359,7 @@ dialog.viewer::backdrop { display: none; }
   flex-direction: column;
   gap: 6px;
   padding: 12px 14px;
-  background: #141414;
+  background: var(--surface);
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -2499,7 +2500,7 @@ dialog.viewer::backdrop { display: none; }
 }
 
 .rec-dropzone:hover {
-  border-color: #555;
+  border-color: #55536a;
   background: var(--surface);
 }
 
@@ -2580,7 +2581,7 @@ dialog.viewer::backdrop { display: none; }
 .rec-change-btn {
   background: none;
   border: 0;
-  color: var(--accent);
+  color: var(--accent-bright);
   font-size: 11px;
   font-weight: 600;
   text-align: left;
@@ -2604,7 +2605,7 @@ dialog.viewer::backdrop { display: none; }
 }
 
 .rec-input {
-  background: #151515 !important;
+  background: var(--surface) !important;
   border: 1px solid rgba(255, 255, 255, 0.1) !important;
   border-radius: 10px !important;
   height: 36px;
@@ -2643,7 +2644,7 @@ dialog.viewer::backdrop { display: none; }
 }
 
 .rec-textarea:focus {
-  border-color: #555;
+  border-color: #55536a;
 }
 
 .rec-aspect-seg {
@@ -2718,7 +2719,7 @@ dialog.viewer::backdrop { display: none; }
   font-weight: 600;
   padding: 2px 7px;
   border-radius: var(--r-full);
-  background: rgba(10, 10, 10, 0.1);
+  background: rgba(4, 1, 8, 0.1);
   color: var(--paper-ink);
   letter-spacing: 0.02em;
 }
@@ -2738,7 +2739,7 @@ dialog.viewer::backdrop { display: none; }
 }
 
 .rec-status-alert i {
-  color: var(--accent);
+  color: var(--accent-bright);
   font-size: 14px;
 }
 
@@ -2864,7 +2865,7 @@ dialog.viewer::backdrop { display: none; }
 .editor-stage-pane {
   display: flex;
   flex-direction: column;
-  background: #0a0b0d;
+  background: var(--bg);
   position: relative;
   border-right: 1px solid var(--rule);
   min-height: 0;
@@ -2878,7 +2879,7 @@ dialog.viewer::backdrop { display: none; }
   padding: 24px;
   overflow: hidden;
   position: relative;
-  background: radial-gradient(circle at center, #18191e 0%, #0a0b0d 100%);
+  background: radial-gradient(circle at center, #171521 0%, #040108 100%);
 }
 
 .editor-canvas-wrap {
@@ -3208,5 +3209,50 @@ dialog.viewer::backdrop { display: none; }
   gap: 6px;
 }
 
+/* ==========================================================================
+   The spectrum in the app
+   ========================================================================== */
+/* campaign: light falls from the top right, behind the title and the ads */
+#view_campaign { position: relative; isolation: isolate; }
+#view_campaign > .spectrum {
+  inset: 0 auto auto 50%; z-index: -1; width: 60vw; height: 560px; margin-left: -10vw;
+  -webkit-mask: linear-gradient(#000 40%, transparent); mask: linear-gradient(#000 40%, transparent);
+}
+/* the studios: a glow along the floor, behind the composer and behind every picture */
+.page-studio { position: relative; isolation: isolate; }
+.page-studio > .spectrum { position: fixed; inset: auto 0 0; z-index: -1; height: min(46vh, 420px); }
+.composer:focus-within::before {
+  content: ""; position: absolute; left: 14px; right: 14px; top: -1px; height: 1px;
+  background: var(--spectrum-loop) 0 0 / 300px 100%; animation: sp-flow 4s linear infinite; pointer-events: none;
+}
+/* library: one lit tile behind the active section */
+.lib-filter-btn.active { background: var(--accent-soft); }
 
+/* a view arrives once: its title, then what it holds */
+[data-view-panel]:not([hidden]) > .page-head, [data-view-panel]:not([hidden]) > .studio-head { animation: view-in 420ms var(--ease-out) both; }
+[data-view-panel]:not([hidden]) > .showcase .frame { animation: frame-in 620ms var(--ease-out) both; }
+.showcase .frame:nth-child(2) { animation-delay: 50ms !important; }
+.showcase .frame:nth-child(3) { animation-delay: 100ms !important; }
+.showcase .frame:nth-child(4) { animation-delay: 150ms !important; }
+.showcase .frame:nth-child(5) { animation-delay: 200ms !important; }
+.showcase .frame:nth-child(n+6) { animation-delay: 250ms !important; }
+@keyframes view-in { from { opacity: 0; transform: translateY(10px); } }
+@keyframes frame-in { from { opacity: 0; transform: translateY(24px); } }
 
+/* menu cards: the mosaic eats in from the right edge */
+.mega-thumb { position: relative; }
+.mega-thumb::after {
+  content: ""; position: absolute; inset: 0; background: var(--spectrum);
+  -webkit-mask: var(--px-mask) right 0 / auto 64px repeat-y; mask: var(--px-mask) right 0 / auto 64px repeat-y;
+  clip-path: inset(0 0 0 100%); transition: clip-path 420ms steps(10, end); pointer-events: none;
+}
+@media (hover: hover) and (pointer: fine) {
+  .mega-card:hover .mega-thumb::after { clip-path: inset(0 0 0 70%); animation: px-drift 2s steps(16) infinite; }
+}
+@media (max-width: 760px) {
+  #view_campaign > .spectrum { width: 50vw; height: 96px; margin-left: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-view-panel]:not([hidden]) > .page-head, [data-view-panel]:not([hidden]) > .studio-head,
+  [data-view-panel]:not([hidden]) > .showcase .frame, .composer:focus-within::before, .mega-card:hover .mega-thumb::after { animation: none !important; }
+}

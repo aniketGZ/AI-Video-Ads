@@ -395,13 +395,14 @@
       });
       drop.addEventListener("dragleave", (e) => {
         recDropCounter--;
-        if (recDropCounter <= 0 || !e.relatedTarget || !drop.contains(e.relatedTarget)) {
+        if (recDropCounter <= 0 || (e.relatedTarget && !drop.contains(e.relatedTarget))) {
           recDropCounter = 0;
           drop.style.borderColor = "";
         }
       });
       drop.addEventListener("drop", (e) => {
         e.preventDefault();
+        e.stopPropagation();
         recDropCounter = 0;
         drop.style.borderColor = "";
         if (e.dataTransfer?.files?.[0]) {
@@ -1111,7 +1112,7 @@
         try {
           await navigator.clipboard.writeText(prompt);
           const orig = copyBtn.innerHTML;
-          copyBtn.innerHTML = '<i class="fa-solid fa-check" style="color:var(--accent);"></i> Copied';
+          copyBtn.innerHTML = '<i class="fa-solid fa-check" style="color:var(--accent-bright);"></i> Copied';
           setTimeout(() => {
             copyBtn.innerHTML = orig;
           }, 1800);

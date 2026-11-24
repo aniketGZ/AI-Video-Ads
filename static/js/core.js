@@ -310,14 +310,14 @@ document.addEventListener("click", (e) => {
 window.addEventListener("dragend", () => {
   document.querySelectorAll(".dragover, .drag-active").forEach((el) => el.classList.remove("dragover", "drag-active"));
 });
-document.addEventListener("dragleave", (e) => {
-  if (!e.relatedTarget) {
+window.addEventListener("dragleave", (e) => {
+  if (!e.relatedTarget && (e.clientX <= 0 || e.clientY <= 0 || e.clientX >= window.innerWidth || e.clientY >= window.innerHeight)) {
     document.querySelectorAll(".dragover, .drag-active").forEach((el) => el.classList.remove("dragover", "drag-active"));
   }
 });
-document.addEventListener("drop", () => {
+window.addEventListener("drop", () => {
   document.querySelectorAll(".dragover, .drag-active").forEach((el) => el.classList.remove("dragover", "drag-active"));
-});
+}, true);
 
 // ---------------------------------------------------------------- sliding selection
 // A shared thumb moves between the options, so the eye follows the change instead of finding it again.
@@ -460,13 +460,14 @@ function imageDropzone({ zone, input, thumbs, max = 4 }) {
   });
   zoneEl.addEventListener("dragleave", (e) => {
     zoneDragCount--;
-    if (zoneDragCount <= 0 || !e.relatedTarget || !zoneEl.contains(e.relatedTarget)) {
+    if (zoneDragCount <= 0 || (e.relatedTarget && !zoneEl.contains(e.relatedTarget))) {
       zoneDragCount = 0;
       zoneEl.classList.remove("dragover");
     }
   });
   zoneEl.addEventListener("drop", (e) => {
     e.preventDefault();
+    e.stopPropagation();
     zoneDragCount = 0;
     zoneEl.classList.remove("dragover");
     add(e.dataTransfer.files);
