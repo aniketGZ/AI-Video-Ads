@@ -23,6 +23,7 @@
   let currentViewMode = "templates"; // 'templates' | 'generations'
   let activeCategory = "all";
   let activeIndustry = "all";
+  let activeKeyword = "all";
   let templateSearchQuery = "";
   let templateMediaType = "all";
   let recreateAspect = "4:5";
@@ -84,6 +85,7 @@
       const params = new URLSearchParams();
       if (activeCategory && activeCategory !== "all") params.set("category", activeCategory);
       if (activeIndustry && activeIndustry !== "all") params.set("industry", activeIndustry);
+      if (activeKeyword && activeKeyword !== "all") params.set("keyword", activeKeyword);
       if (templateMediaType && templateMediaType !== "all") params.set("media_type", templateMediaType);
       if (templateSearchQuery) params.set("q", templateSearchQuery);
 
@@ -92,6 +94,7 @@
       const data = await res.json();
       exploreTemplates = data.templates || [];
       renderIndustryBar(data.industries || []);
+      renderKeywordBar(data.keywords || []);
       syncFilterUrl();
       renderTemplatesGrid();
     } catch (err) {
@@ -115,6 +118,18 @@
     bar.innerHTML = chip("all", "All industries", total) + industries.map((f) => chip(f.id, f.label, f.count)).join("");
   }
 
+  // Third filter row: curated aesthetic & subject keywords with live counts
+  function renderKeywordBar(keywords) {
+    const bar = $("explore_kw_bar");
+    if (!bar) return;
+    if (activeKeyword !== "all" && !keywords.some((k) => k.id === activeKeyword)) {
+      keywords = keywords.concat([{ id: activeKeyword, label: activeKeyword, count: 0 }]);
+    }
+    const chip = (id, label, count) =>
+      `<button type="button" class="tpl-cat-btn${id === activeKeyword ? " active" : ""}" data-kw="${esc(id)}" aria-pressed="${id === activeKeyword}">${esc(label)}${count !== null ? ` <span class="muted">${count.toLocaleString()}</span>` : ""}</button>`;
+    bar.innerHTML = chip("all", "All keywords", null) + keywords.map((k) => chip(k.id, k.label, k.count)).join("");
+  }
+
   // Filters and the open template live in the address, so a view can be shared or reopened:
   // /app?cat=UGC&ind=beauty-cosmetics#library, and ?template=<id> opens that template.
   function setUrlParams(changes) {
@@ -130,23 +145,25 @@
 
   function syncFilterUrl() {
     if (currentViewMode !== "templates" || (location.hash && location.hash !== "#library" && location.hash !== "#saved")) return;
-    setUrlParams({ cat: activeCategory, ind: activeIndustry, q: templateSearchQuery });
+    setUrlParams({ cat: activeCategory, ind: activeIndustry, kw: activeKeyword, q: templateSearchQuery });
   }
 
-  // Read ?cat / ?ind / ?q / ?template once on load (and open the template if one is named)
+  // Read ?cat / ?ind / ?kw / ?q / ?template once on load (and open the template if one is named)
   function applyUrlParams() {
     let p;
     try { p = new URLSearchParams(location.search); } catch (_) { return false; }
     const cat = p.get("cat");
     const ind = p.get("ind");
+    const kw = p.get("kw");
     const q = p.get("q");
     const tpl = p.get("template");
-    if (!cat && !ind && !q && !tpl) return false;
+    if (!cat && !ind && !kw && !q && !tpl) return false;
     if (cat) {
       activeCategory = cat;
       document.querySelectorAll("#explore_cat_bar .tpl-cat-btn").forEach((b) => b.classList.toggle("active", b.dataset.cat === cat));
     }
     if (ind) activeIndustry = ind;
+    if (kw) activeKeyword = kw;
     if (q) {
       templateSearchQuery = q;
       if ($("tpl_search_input")) $("tpl_search_input").value = q;
@@ -159,13 +176,99 @@
 
   let tplRenderLimit = 48;
   let tplObserver = null;
+  let isAppendingTemplates = false;
+
+  function buildTemplateCardHtml(tpl) {
+    const cat = tpl.category || "Ads";
+    const ind = tpl.industry_label || "";
+    const title = tpl.title || "Advertising Visual Reference";
+    const movement = tpl.movement || "";
+    const kws = Array.isArray(tpl.keywords) ? tpl.keywords.slice(0, 3) : [];
+    const kwHtml = kws.length
+      ? `<div style="display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 6px;">${kws.map((k) => `<span class="tpl-pill-badge" style="font-size:10px;opacity:0.9;">${esc(k)}</span>`).join("")}</div>`
+      : "";
+
+    return `
+        <article class="tpl-card" data-template-id="${esc(tpl.id)}">
+          <div class="tpl-card-media" role="button" tabindex="0" title="Click to recreate visual with your product">
+            <img src="${esc(tpl.image_url)}" alt="${esc(title)}" loading="lazy">
+            <div class="tpl-card-top-badges">
+              <span class="tpl-pill-badge">${esc(cat)}</span>
+              ${ind ? `<span class="tpl-pill-badge" style="font-size:10px;">${esc(ind)}</span>` : ""}
+            </div>
+            <div class="tpl-card-hover-overlay">
+              <h4 class="tpl-hover-title">${esc(title)}</h4>
+              ${movement ? `<p class="tpl-hover-sub">${esc(movement)}</p>` : ""}
+              ${kwHtml}
+              <button type="button" class="btn-tpl-recreate-hover" data-open-recreate="${esc(tpl.id)}">
+                <i class="fa-solid fa-wand-magic-sparkles"></i> Recreate Ad
+              </button>
+            </div>
+          </div>
+        </article>
+      `;
+  }
+
+  function appendNextTemplatesBatch() {
+    if (isAppendingTemplates) return;
+    const grid = $("explore_templates_grid");
+    if (!grid || tplRenderLimit >= exploreTemplates.length) return;
+
+    isAppendingTemplates = true;
+    try {
+      const prevLimit = tplRenderLimit;
+      tplRenderLimit = Math.min(exploreTemplates.length, tplRenderLimit + 48);
+      const nextCardsHtml = exploreTemplates.slice(prevLimit, tplRenderLimit).map(buildTemplateCardHtml).join("");
+      const wrap = $("explore_load_more_wrap");
+
+      if (wrap) {
+        wrap.insertAdjacentHTML("beforebegin", nextCardsHtml);
+        if (tplRenderLimit >= exploreTemplates.length) {
+          if (tplObserver) tplObserver.disconnect();
+          wrap.remove();
+        } else {
+          const countEl = wrap.querySelector(".explore-load-count");
+          const btnMore = $("btn_load_more_tpls");
+          if (countEl) countEl.textContent = `Showing ${tplRenderLimit} of ${exploreTemplates.length} templates`;
+          if (btnMore) {
+            btnMore.innerHTML = `<i class="fa-solid fa-arrow-down"></i> Load More (${exploreTemplates.length - tplRenderLimit} remaining)`;
+          }
+        }
+      } else {
+        grid.insertAdjacentHTML("beforeend", nextCardsHtml);
+      }
+    } finally {
+      isAppendingTemplates = false;
+    }
+  }
 
   function renderTemplatesGrid(resetLimit = true) {
     const grid = $("explore_templates_grid");
     if (!grid) return;
 
-    if (resetLimit) {
-      tplRenderLimit = 48;
+    if (!resetLimit) {
+      appendNextTemplatesBatch();
+      return;
+    }
+
+    if (tplObserver) {
+      tplObserver.disconnect();
+      tplObserver = null;
+    }
+    tplRenderLimit = Math.min(48, exploreTemplates.length);
+
+    if (!grid.dataset.cardWired) {
+      grid.dataset.cardWired = "1";
+      grid.addEventListener("click", (e) => {
+        if (e.target.closest("#btn_load_more_tpls")) {
+          appendNextTemplatesBatch();
+          return;
+        }
+        const card = e.target.closest(".tpl-card");
+        if (card && card.dataset.templateId) {
+          openRecreateModal(card.dataset.templateId);
+        }
+      });
     }
 
     if (!exploreTemplates.length) {
@@ -182,6 +285,7 @@
         resetBtn.addEventListener("click", () => {
           activeCategory = "all";
           activeIndustry = "all";
+          activeKeyword = "all";
           templateSearchQuery = "";
           const catBtns = document.querySelectorAll("#explore_cat_bar .tpl-cat-btn");
           catBtns.forEach((b) => b.classList.toggle("active", b.dataset.cat === "all"));
@@ -194,40 +298,13 @@
 
     const visibleTemplates = exploreTemplates.slice(0, tplRenderLimit);
     const hasMore = tplRenderLimit < exploreTemplates.length;
-
-    const cardsHtml = visibleTemplates
-      .map((tpl) => {
-        const cat = tpl.category || "Ads";
-        const ind = tpl.industry_label || "";
-        const title = tpl.title || "Advertising Visual Reference";
-        const movement = tpl.movement || "";
-
-        return `
-        <article class="tpl-card" data-template-id="${esc(tpl.id)}">
-          <div class="tpl-card-media" role="button" tabindex="0" title="Click to recreate visual with your product">
-            <img src="${esc(tpl.image_url)}" alt="${esc(title)}" loading="lazy">
-            <div class="tpl-card-top-badges">
-              <span class="tpl-pill-badge">${esc(cat)}</span>
-              ${ind ? `<span class="tpl-pill-badge" style="font-size:10px;">${esc(ind)}</span>` : ""}
-            </div>
-            <div class="tpl-card-hover-overlay">
-              <h4 class="tpl-hover-title">${esc(title)}</h4>
-              ${movement ? `<p class="tpl-hover-sub">${esc(movement)}</p>` : ""}
-              <button type="button" class="btn-tpl-recreate-hover" data-open-recreate="${esc(tpl.id)}">
-                <i class="fa-solid fa-wand-magic-sparkles"></i> Recreate Ad
-              </button>
-            </div>
-          </div>
-        </article>
-      `;
-      })
-      .join("");
+    const cardsHtml = visibleTemplates.map(buildTemplateCardHtml).join("");
 
     let moreHtml = "";
     if (hasMore) {
       moreHtml = `
         <div class="explore-load-more-wrap" id="explore_load_more_wrap" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 0 40px; gap: 8px;">
-          <span class="muted small">Showing ${visibleTemplates.length} of ${exploreTemplates.length} templates</span>
+          <span class="muted small explore-load-count">Showing ${visibleTemplates.length} of ${exploreTemplates.length} templates</span>
           <button type="button" class="btn btn-sm btn-outline" id="btn_load_more_tpls" style="border-radius: var(--r-full); padding: 8px 24px;">
             <i class="fa-solid fa-arrow-down"></i> Load More (${exploreTemplates.length - visibleTemplates.length} remaining)
           </button>
@@ -237,33 +314,15 @@
 
     grid.innerHTML = cardsHtml + moreHtml;
 
-    // Infinite scroll observer & button click
-    const btnMore = $("btn_load_more_tpls");
-    if (btnMore) {
-      btnMore.addEventListener("click", () => {
-        tplRenderLimit += 48;
-        renderTemplatesGrid(false);
-      });
-
-      if (window.IntersectionObserver) {
-        if (tplObserver) tplObserver.disconnect();
-        tplObserver = new IntersectionObserver((entries) => {
-          if (entries[0].isIntersecting) {
-            tplRenderLimit += 48;
-            renderTemplatesGrid(false);
-          }
-        }, { rootMargin: "400px" });
-        tplObserver.observe(btnMore);
-      }
+    const wrap = $("explore_load_more_wrap");
+    if (wrap && window.IntersectionObserver) {
+      tplObserver = new IntersectionObserver((entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          appendNextTemplatesBatch();
+        }
+      }, { rootMargin: "500px" });
+      tplObserver.observe(wrap);
     }
-
-    // Wire template card click
-    grid.querySelectorAll(".tpl-card").forEach((card) => {
-      card.addEventListener("click", (e) => {
-        const tplId = card.dataset.templateId;
-        if (tplId) openRecreateModal(tplId);
-      });
-    });
   }
 
   // -------------------------------------------------------------------------
@@ -1280,6 +1339,16 @@
     const indBtn = e.target.closest("#explore_ind_bar .tpl-cat-btn");
     if (indBtn) {
       activeIndustry = indBtn.dataset.ind || "all";
+      loadExploreTemplates();
+      return;
+    }
+    const kwBtn = e.target.closest("#explore_kw_bar .tpl-cat-btn");
+    if (kwBtn) {
+      activeKeyword = kwBtn.dataset.kw || "all";
+      loadExploreTemplates();
+      return;
+    }
+    if (e.target.closest("#btn_shuffle_tpls")) {
       loadExploreTemplates();
       return;
     }

@@ -15,7 +15,7 @@ from typing import Any, Dict, Optional
 import httpx
 from urllib.parse import urlparse
 from fastapi import APIRouter, File, Form, Header, HTTPException, Request, UploadFile
-from PIL import Image, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageStat
 
 from media_utils import (
     require_gemini_client as require_client,
@@ -169,6 +169,47 @@ def _decode_mask_img(mask_data: str, target_size: tuple[int, int]) -> tuple[Imag
         raise HTTPException(status_code=400, detail=f"Invalid mask data: {e}")
 
 
+def _match_border_tone(gen_img: Image.Image, base_img: Image.Image, bw_mask: Image.Image) -> Image.Image:
+    """Aligns gen_img's RGB exposure/color to base_img using the untouched ring right outside the mask."""
+    ring_outer = bw_mask.filter(ImageFilter.MaxFilter(25))
+    ring = ImageChops.subtract(ring_outer, bw_mask)
+    stat_base = ImageStat.Stat(base_img.convert("RGB"), mask=ring)
+    if not stat_base.count or stat_base.count[0] == 0:
+        return gen_img
+    stat_gen = ImageStat.Stat(gen_img.convert("RGB"), mask=ring)
+
+    deltas = [
+        max(-35.0, min(35.0, stat_base.mean[c] - stat_gen.mean[c]))
+        for c in range(3)
+    ]
+    if all(abs(d) < 0.75 for d in deltas):
+        return gen_img
+
+    r, g, b, a = gen_img.convert("RGBA").split()
+    channels = []
+    for ch, d in zip((r, g, b), deltas):
+        lut = [max(0, min(255, int(round(i + d)))) for i in range(256)]
+        channels.append(ch.point(lut))
+    return Image.merge("RGBA", (*channels, a))
+
+
+def _seamless_inpaint_composite(
+    gen_img: Image.Image,
+    base_rgba: Image.Image,
+    bw_mask: Image.Image,
+) -> Image.Image:
+    """Matches border tone and blends with a wide, smooth-feathered mask to prevent visible patch seams."""
+    aligned_gen = _match_border_tone(gen_img, base_rgba, bw_mask)
+
+    min_dim = min(base_rgba.size)
+    feather = max(14, min(36, int(min_dim * 0.025)))
+    dilate_k = max(5, min(21, (feather // 2) | 1))
+    soft_mask = bw_mask.filter(ImageFilter.MaxFilter(dilate_k)).filter(
+        ImageFilter.GaussianBlur(radius=feather)
+    )
+    return Image.composite(aligned_gen, base_rgba, soft_mask)
+
+
 @router.post("/inpaint")
 async def inpaint_creative(
     image_url: Optional[str] = Form(None),
@@ -211,8 +252,9 @@ async def inpaint_creative(
         f"The second image is a binary mask where WHITE marks the exact region to edit, "
         f"and BLACK marks the untouched region. "
         f"Perform this edit ONLY within the white marked region: {clean_prompt}. "
-        f"Ensure seamless photorealistic blending, matching lighting, natural shadow transitions, "
-        f"and keep everything outside the white mask unchanged."
+        f"CRITICAL SEAMLESS BLENDING: Match the exact background color, gradient, luminance, surface texture, "
+        f"and film grain of the surrounding untouched pixels. Do NOT darken, brighten, or tint the masked area, "
+        f"and leave zero visible brush outline, halo, or bounding box. Keep everything outside the white mask identical."
     )
 
     contents = [
@@ -260,14 +302,13 @@ async def inpaint_creative(
             detail = f"Gemini inpainting completed without returning an image. {explanation}".strip()
             raise RuntimeError(detail)
 
-        # 5. Composite: Guarantee pixels outside the brush mask are 100% preserved
+        # 5. Composite: Align border tone and feather smoothly so no patch seam appears
         gen_img = Image.open(io.BytesIO(out_bytes)).convert("RGBA")
         if gen_img.size != target_size:
             gen_img = gen_img.resize(target_size, Image.Resampling.LANCZOS)
 
         base_rgba = base_pil.convert("RGBA")
-        feathered_mask = bw_mask.filter(ImageFilter.GaussianBlur(radius=3))
-        composite = Image.composite(gen_img, base_rgba, feathered_mask)
+        composite = _seamless_inpaint_composite(gen_img, base_rgba, bw_mask)
 
         # Preserve alpha channel if base creative had transparency, otherwise RGB
         final_mode = "RGBA" if ("A" in base_pil.getbands() or base_mime == "image/png") else "RGB"

@@ -8,7 +8,10 @@ import asyncio
 import json
 import logging
 import os
+import random
+import re
 import uuid
+from collections import Counter
 from typing import Any, Dict, List, Optional
 import httpx
 from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Request, UploadFile
@@ -36,6 +39,7 @@ def load_templates() -> List[Dict[str, Any]]:
         else:
             _TEMPLATES_CACHE = []
         _normalise_industry_labels(_TEMPLATES_CACHE)
+        _enrich_template_keywords(_TEMPLATES_CACHE)
     return _TEMPLATES_CACHE
 
 
@@ -70,16 +74,115 @@ def _industry_facets(tpls: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     return sorted(seen.values(), key=lambda f: (f["id"] == OTHER_INDUSTRY, -f["count"], f["label"]))
 
 
+# Curated design, mood, layout, and subject keywords used to arrange templates
+_CURATED_KEYWORDS = [
+    ("minimalist", ("minimalist", "minimal", "clean", "negative space")),
+    ("luxury", ("luxury", "premium", "high-end", "gold", "travertine", "marble")),
+    ("editorial", ("editorial", "magazine", "didone", "serif", "vogue")),
+    ("ugc", ("ugc", "selfie", "handheld", "candid", "creator", "authentic")),
+    ("studio", ("studio", "plinth", "pedestal", "backdrop", "spotlight")),
+    ("lifestyle", ("lifestyle", "everyday", "morning", "outdoor", "home")),
+    ("dark mode", ("dark", "noir", "black", "moody", "neon", "cyber")),
+    ("botanical", ("botanical", "organic", "leaves", "nature", "herbal", "eco")),
+    ("typography", ("typography", "headline", "bold type", "swiss", "poster")),
+    ("3d & bento", ("3d", "bento", "ui", "saas", "dashboard", "glassmorphism")),
+    ("macro", ("macro", "texture", "swatch", "droplet", "splash", "close-up")),
+    ("pastel & warm", ("pastel", "warm", "beige", "sand", "soft light", "dewy")),
+    ("monochrome", ("monochrome", "black and white", "grayscale")),
+    ("split layout", ("split", "before", "after", "comparison", "grid")),
+    ("skincare", ("skincare", "serum", "cream", "cleanser", "glow", "spf")),
+    ("fintech", ("fintech", "card", "banking", "finance", "wallet", "crypto")),
+    ("food & drink", ("coffee", "cafe", "drink", "beverage", "food", "snack", "bottle")),
+    ("fashion", ("fashion", "apparel", "sneaker", "streetwear", "outfit")),
+    ("jewelry", ("jewelry", "jewellery", "watch", "ring", "diamond")),
+    ("fitness", ("fitness", "gym", "sport", "athletic", "workout")),
+]
+
+
+def _enrich_template_keywords(tpls: List[Dict[str, Any]]) -> None:
+    """Assign clean, searchable keywords to each template from its visual & industry metadata."""
+    for t in tpls:
+        existing = [str(k).strip().lower() for k in (t.get("keywords") or []) if str(k).strip()]
+        blob = " ".join([
+            t.get("title") or "",
+            t.get("category") or "",
+            t.get("industry_label") or "",
+            t.get("movement") or "",
+            t.get("preset_name") or "",
+            t.get("lighting") or "",
+            t.get("composition") or "",
+            t.get("description") or "",
+        ]).lower()
+
+        kws: List[str] = []
+        seen = set()
+
+        def add_kw(val: str) -> None:
+            v = val.strip().lower()
+            if v and v not in seen:
+                seen.add(v)
+                kws.append(v)
+
+        for k in existing:
+            add_kw(k)
+        for label, triggers in _CURATED_KEYWORDS:
+            if any(re.search(rf"\b{re.escape(tr)}\b", blob) for tr in triggers):
+                add_kw(label)
+
+        # Fallback: include category / industry token if very few matched
+        if len(kws) < 2:
+            cat = (t.get("category") or "").strip().lower()
+            if cat:
+                add_kw(cat)
+            ind_lbl = (t.get("industry_label") or "").split("&")[0].strip().lower()
+            if ind_lbl and ind_lbl != "lifestyle":
+                add_kw(ind_lbl)
+
+        t["keywords"] = kws
+
+
+def _keyword_facets(tpls: List[Dict[str, Any]], limit: int = 20) -> List[Dict[str, Any]]:
+    """Most common keywords across `tpls`, sorted by frequency."""
+    counts: Counter = Counter()
+    for t in tpls:
+        for kw in t.get("keywords") or []:
+            counts[kw] += 1
+    return [
+        {"id": kw, "label": kw.title() if kw != "ugc" else "UGC", "count": cnt}
+        for kw, cnt in counts.most_common(limit)
+    ]
+
+
+def _matches_query(t: Dict[str, Any], query: str) -> bool:
+    tokens = [tok for tok in query.lower().split() if tok]
+    if not tokens:
+        return True
+    haystack = " ".join([
+        t.get("title") or "",
+        t.get("movement") or "",
+        t.get("industry_label") or "",
+        t.get("category") or "",
+        t.get("preset_name") or "",
+        t.get("composition") or "",
+        t.get("lighting") or "",
+        t.get("description") or "",
+        " ".join(t.get("keywords") or []),
+    ]).lower()
+    return all(tok in haystack for tok in tokens)
+
+
 @router.get("/explore")
 async def get_explore_templates(
     category: Optional[str] = None,
     industry: Optional[str] = None,
+    keyword: Optional[str] = None,
     media_type: Optional[str] = None,
     q: Optional[str] = None,
+    shuffle: bool = True,
 ):
-    """List and filter Pinterest ad creative templates."""
+    """List, filter by category/industry/keyword, and randomize Pinterest ad creative templates."""
     all_tpls = load_templates()
-    filtered = all_tpls
+    filtered = list(all_tpls)
 
     if category and category.lower() != "all":
         cat_lower = category.lower()
@@ -90,24 +193,23 @@ async def get_explore_templates(
         filtered = [t for t in filtered if t.get("media_type", "image").lower() == med_lower]
 
     if q and q.strip():
-        query = q.strip().lower()
-        filtered = [
-            t
-            for t in filtered
-            if query in t.get("title", "").lower()
-            or query in t.get("movement", "").lower()
-            or query in t.get("industry_label", "").lower()
-            or query in t.get("category", "").lower()
-            or query in t.get("description", "").lower()
-        ]
+        filtered = [t for t in filtered if _matches_query(t, q.strip())]
 
-    # Two filter rows, like a format row over a genre row: the industry chips are counted
-    # against the other filters, so each chip says how many templates it would show.
+    # Industry and keyword facets reflect the active format/search filters
     industries = _industry_facets(filtered)
 
     if industry and industry.lower() != "all":
         ind_lower = industry.lower()
         filtered = [t for t in filtered if t.get("industry", "").lower() == ind_lower]
+
+    keywords = _keyword_facets(filtered)
+
+    if keyword and keyword.lower() != "all":
+        kw_lower = keyword.strip().lower()
+        filtered = [t for t in filtered if kw_lower in (t.get("keywords") or [])]
+
+    if shuffle:
+        random.shuffle(filtered)
 
     categories = [
         "All",
@@ -127,6 +229,7 @@ async def get_explore_templates(
         "total_templates": len(all_tpls),
         "categories": categories,
         "industries": industries,
+        "keywords": keywords,
     }
 
 
