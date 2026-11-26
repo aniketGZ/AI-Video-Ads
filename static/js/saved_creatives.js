@@ -533,6 +533,7 @@
 
       const res = await fetch("/api/templates/recreate", {
         method: "POST",
+        headers: typeof apiHeaders === "function" ? apiHeaders() : {},
         body: fd,
       });
 

@@ -11,7 +11,7 @@ import os
 import uuid
 from typing import Any, Dict, List, Optional
 import httpx
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
+from fastapi import APIRouter, Depends, File, Form, Header, HTTPException, Request, UploadFile
 from google.genai import types
 
 from access import current_user
@@ -152,6 +152,7 @@ async def recreate_template_visual(
     aspect_ratio: str = Form("4:5"),
     resolution: str = Form("2K"),
     folder_id: Optional[str] = Form(None),
+    x_api_key: Optional[str] = Header(None),
     user: Optional[Dict[str, Any]] = Depends(current_user),
 ):
     """
@@ -229,22 +230,36 @@ async def recreate_template_visual(
             logger.warning(f"Could not process logo image: {e}")
 
     # 5. STEP 1: Gemini Multimodal Analysis -> Synthesizes prompt based on images & instructions
-    client = require_client()
+    client = require_client(x_api_key)
 
     analysis_parts = []
     has_product = prod_bytes is not None and prod_mime is not None
+    has_tpl = tpl_bytes is not None and tpl_mime is not None
+    has_logo = logo_bytes is not None and logo_mime is not None
+
+    img_idx = 0
+    prod_idx = tpl_idx = logo_idx = None
 
     if has_product:
+        img_idx += 1
+        prod_idx = img_idx
+        analysis_parts.append(f"IMAGE {prod_idx} (USER PRODUCT — preserve exact packaging, shape, colors, and label):")
         analysis_parts.append(types.Part.from_bytes(data=prod_bytes, mime_type=prod_mime))
 
     tpl_context = []
-    if tpl_bytes and tpl_mime:
+    if has_tpl:
+        img_idx += 1
+        tpl_idx = img_idx
+        analysis_parts.append(f"IMAGE {tpl_idx} (TEMPLATE CREATIVE REFERENCE — recreate its layout, lighting, and visual hierarchy):")
         analysis_parts.append(types.Part.from_bytes(data=tpl_bytes, mime_type=tpl_mime))
-        tpl_context.append("IMAGE REFERENCE: The commercial advertising visual selected by the user from Pinterest.")
+        tpl_context.append(f"IMAGE {tpl_idx} is the commercial advertising template selected by the user.")
     else:
-        tpl_context.append("Template composition and lighting metadata is described below.")
+        tpl_context.append("No template image could be fetched; rely on the template composition and lighting metadata below.")
 
-    if logo_bytes and logo_mime:
+    if has_logo:
+        img_idx += 1
+        logo_idx = img_idx
+        analysis_parts.append(f"IMAGE {logo_idx} (USER BRAND LOGO):")
         analysis_parts.append(types.Part.from_bytes(data=logo_bytes, mime_type=logo_mime))
 
     brand = brand_name.strip() if brand_name else "the featured brand"
@@ -253,33 +268,48 @@ async def recreate_template_visual(
 
     if has_product:
         product_instruction = (
-            "1. VISUAL AUDIT: Examine the packaging geometry, materials, cap/closure, typography, and palette of the authentic product in IMAGE 1.\n"
-            "2. SCENE RECREATION: Examine the composition, camera angle, focal depth, surface materials, and lighting in the template visual.\n"
-            "3. WRITE THE PROMPT: Feature the authentic product from IMAGE 1 as the central hero subject, situated within the lighting and composition of the reference template, applying user directives."
+            f"1. VISUAL AUDIT: Examine the packaging geometry, materials, cap/closure, typography, and palette of the authentic product in IMAGE {prod_idx}.\n"
+            + (
+                f"2. SCENE RECREATION: Examine the exact composition, camera angle, focal depth, surface materials, typography placement, and lighting in IMAGE {tpl_idx} (the template creative).\n"
+                if has_tpl else
+                "2. SCENE RECREATION: Use the template metadata below for composition, camera angle, surface materials, and lighting.\n"
+            )
+            + f"3. WRITE THE PROMPT: Feature the authentic product from IMAGE {prod_idx} as the central hero subject, placed into the exact layout, lighting, and visual hierarchy of "
+            + (f"IMAGE {tpl_idx}, " if has_tpl else "the reference template, ")
+            + "replacing any original brand/product/text from the template with the user's brand and directives."
         )
     else:
         product_instruction = (
-            "1. SCENE RECREATION: Examine the composition, camera angle, lighting setup, surface textures, reflections, and mood of the reference template visual.\n"
-            f"2. HERO CONCEPT: Feature {brand}'s {prod} as the hero subject based on user prompt/directives: '{edits}'.\n"
-            "3. WRITE THE PROMPT: Write a photorealistic commercial advertising photograph prompt for Nano Banana 2.1 that places this hero concept into the exact studio lighting, environment surfaces, and aesthetic of the reference template."
+            (
+                f"1. SCENE RECREATION: Examine the exact composition, camera angle, lighting setup, surface textures, typography placement, and mood of IMAGE {tpl_idx} (the template creative).\n"
+                if has_tpl else
+                "1. SCENE RECREATION: Use the template metadata below for composition, camera angle, lighting setup, surface textures, and mood.\n"
+            )
+            + f"2. HERO CONCEPT: Feature {brand}'s {prod} as the hero subject based on user prompt/directives: '{edits}'.\n"
+            + "3. WRITE THE PROMPT: Write a photorealistic commercial advertising photograph prompt for Nano Banana 2.1 that places this hero concept into the exact layout, studio lighting, environment surfaces, and aesthetic of "
+            + (f"IMAGE {tpl_idx}, replacing any original brand/product/text from the template." if has_tpl else "the reference template.")
         )
 
     palette_list = template.get("colors") or template.get("color_palette") or []
 
     analysis_prompt = (
         "You are an elite commercial advertising art director and generative vision prompt engineer.\n\n"
-        "You are synthesizing an exact generation prompt tailored specifically for the Nano Banana 2.1 image model.\n\n"
+        "You are synthesizing an exact generation prompt tailored specifically for the Nano Banana 2.1 image model. "
+        "Nano Banana 2.1 will receive the exact same numbered reference images listed above.\n\n"
         "TEMPLATE CREATIVE ATTRIBUTES:\n"
+        f"- Reference Status: {' '.join(tpl_context)}\n"
         f"- Title: {template.get('title', 'Advertising Template')}\n"
         f"- Category: {template.get('category', 'Product shot')}\n"
         f"- Industry: {template.get('industry_label', template.get('industry', 'Commercial'))}\n"
         f"- Movement / Style: {template.get('movement', 'High-end commercial aesthetic')}\n"
+        f"- Composition: {template.get('composition', '')}\n"
         f"- Studio Lighting: {template.get('lighting', 'Clean studio lighting with soft diffused shadows and crisp highlights')}\n"
         f"- Color Palette: {', '.join(palette_list[:5])}\n"
         f"- Scene Atmosphere: {template.get('description', '')}\n\n"
         "USER DIRECTIVES & PROMPT:\n"
         f"- Brand Name: {brand}\n"
         f"- Product / Subject: {prod}\n"
+        f"- Aspect Ratio: {aspect_ratio}\n"
         f"- User Custom Prompt / Instructions: {edits}\n\n"
         f"SYNTHESIS PROTOCOL:\n"
         f"{product_instruction}\n"
@@ -331,14 +361,32 @@ async def recreate_template_visual(
             "Pristine optical clarity, physical contact shadows on surfaces, hyper-detailed commercial ad photography."
         )
 
-    # 6. STEP 2: Render using Nano Banana 2.1
+    # 6. STEP 2: Render using Nano Banana 2.1 (order matches IMAGE 1, 2, 3 roles)
     render_contents = []
+    role_lines = ["REFERENCE ROLES (follow strictly):"]
     if has_product:
         render_contents.append(types.Part.from_bytes(data=prod_bytes, mime_type=prod_mime))
-    if logo_bytes and logo_mime:
+        role_lines.append(
+            f"- IMAGE {prod_idx} = PRODUCT-REF: the real {prod} by {brand}. Reproduce it as the hero with exact shape, proportions, materials, and label typography."
+        )
+    if has_tpl:
+        render_contents.append(types.Part.from_bytes(data=tpl_bytes, mime_type=tpl_mime))
+        role_lines.append(
+            f"- IMAGE {tpl_idx} = TEMPLATE LAYOUT-REF: copy ONLY its compositional architecture, framing, camera angle, lighting, and visual hierarchy. "
+            f"Do NOT copy the template's original brand name, logo, product, or unrelated text; replace them with {brand}'s {prod}."
+        )
+    if has_logo:
         render_contents.append(types.Part.from_bytes(data=logo_bytes, mime_type=logo_mime))
+        role_lines.append(
+            f"- IMAGE {logo_idx} = BRAND LOGO: place the authentic {brand} logo cleanly without redrawing or distorting it."
+        )
 
-    render_contents.append(synthesized_prompt)
+    final_render_prompt = (
+        "\n".join(role_lines) + "\n\n" + synthesized_prompt
+        if len(role_lines) > 1
+        else synthesized_prompt
+    )
+    render_contents.append(final_render_prompt)
 
     res_clean = (resolution or "2K").strip().upper()
     if res_clean not in ["1K", "2K", "4K"]:
@@ -347,6 +395,8 @@ async def recreate_template_visual(
     image_bytes = await asyncio.to_thread(
         generate_gemini_image, client, render_contents, aspect_ratio, "nano-banana-2.1", res_clean
     )
+    if not image_bytes:
+        raise HTTPException(status_code=502, detail="Nano Banana 2.1 did not return an image. Please try again.")
 
     out_filename = f"ad_recreate_{uuid.uuid4().hex}.png"
     out_url = save_generated_media(out_filename, image_bytes, "image/png")
